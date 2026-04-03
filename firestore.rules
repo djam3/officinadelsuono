@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: auto-generated
+    // Fields:
+    //   - name: string (required) - The name of the product
+    //   - category: string (required) - The category of the product
+    //   - price: number (required) - The price of the product
+    //   - image: string (required) - URL of the product image
+    //   - badge: string (optional) - Optional badge text
+    //   - createdAt: timestamp (optional) - Creation timestamp
+    //
+    // Collection: users
+    // Document ID: user UID
+    // Fields:
+    //   - email: string (required) - The user's email address
+    //   - role: string (required) - The user's role ('admin' or 'user')
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        ((request.auth.token.email == "amerigodecristofaro8@gmail.com" && request.auth.token.email_verified == true) ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function isValidProduct() {
+      return hasRequiredFields(['name', 'category', 'price']) &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100 &&
+        request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() < 50 &&
+        request.resource.data.price is number && request.resource.data.price >= 0 &&
+        (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() < 800000)) &&
+        (!('images' in request.resource.data) || (request.resource.data.images is list && request.resource.data.images.size() <= 5)) &&
+        (!('badge' in request.resource.data) || (request.resource.data.badge is string && request.resource.data.badge.size() < 50)) &&
+        (!('createdAt' in request.resource.data) || request.resource.data.createdAt is string) &&
+        (!('specs' in request.resource.data) || request.resource.data.specs is map);
+    }
+
+    function isValidUser() {
+      return hasRequiredFields(['email', 'role']) &&
+        request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 100 &&
+        request.resource.data.role in ['admin', 'user'];
+    }
+
+    function isValidReview() {
+      return hasRequiredFields(['productId', 'userId', 'userName', 'rating', 'text', 'createdAt']) &&
+        request.resource.data.productId is string && request.resource.data.productId.size() > 0 && request.resource.data.productId.size() < 100 &&
+        request.resource.data.userId is string && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100 &&
+        request.resource.data.rating is number && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+        request.resource.data.text is string && request.resource.data.text.size() <= 1000 &&
+        request.resource.data.createdAt is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /reviews/{reviewId} {
+      // Anyone can read reviews
+      allow read: if true;
+      // Authenticated users can create reviews for themselves
+      allow create: if isAuthenticated() && isValidReview();
+      // Users can update their own reviews
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && isValidReview() && request.resource.data.userId == resource.data.userId && request.resource.data.productId == resource.data.productId;
+      // Users can delete their own reviews
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    match /products/{productId} {
+      // Anyone can read products
+      allow read: if true;
+      // Only admins can create, update, delete products
+      allow create: if isAdmin() && isValidProduct();
+      allow update: if isAdmin() && isValidProduct();
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      // Admins can read all users. Users can read their own profile.
+      allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
+      // Only admins can create or update users (to prevent self-escalation)
+      allow create: if isAdmin() && isValidUser();
+      allow update: if isAdmin() && isValidUser();
+      allow delete: if isAdmin();
+    }
+
+    match /settings/{settingId} {
+      // Anyone can read settings
+      allow read: if true;
+      // Only admins can write to settings
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /newsletter_subscriptions/{subscriptionId} {
+      // Only admins can read subscriptions
+      allow read: if isAdmin();
+      // Anyone can create a subscription
+      allow create: if hasRequiredFields(['email', 'privacyConsent', 'timestamp']) &&
+        request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 100 &&
+        request.resource.data.privacyConsent is bool && request.resource.data.privacyConsent == true &&
+        request.resource.data.timestamp is string &&
+        (!('marketingConsent' in request.resource.data) || request.resource.data.marketingConsent is bool) &&
+        (!('source' in request.resource.data) || request.resource.data.source is string);
+      // Only admins can update or delete
+      allow update, delete: if isAdmin();
+    }
+  }
+}
