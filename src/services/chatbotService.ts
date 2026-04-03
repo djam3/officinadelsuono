@@ -20,6 +20,16 @@ interface Product {
   specs?: Record<string, string>;
 }
 
+interface BlogPost {
+  id: string;
+  title: string;
+  excerpt?: string;
+  content?: string;
+  category?: string;
+  tags?: string[];
+  readTime?: number;
+}
+
 export interface KnowledgeEntry {
   id: string;
   question: string;
@@ -41,11 +51,14 @@ export interface ChatLog {
 class ChatbotService {
   private products: Product[] = [];
   private knowledge: KnowledgeEntry[] = [];
+  private blogPosts: BlogPost[] = [];
   private productFuse: Fuse<Product> | null = null;
   private knowledgeFuse: Fuse<KnowledgeEntry> | null = null;
+  private blogFuse: Fuse<BlogPost> | null = null;
   private initialized = false;
   private unsubscribeProducts: (() => void) | null = null;
   private unsubscribeKnowledge: (() => void) | null = null;
+  private unsubscribeBlog: (() => void) | null = null;
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -73,16 +86,29 @@ class ChatbotService {
       () => { /* silently fail */ }
     );
 
+    // Real-time listener per blog posts
+    this.unsubscribeBlog = onSnapshot(
+      collection(db, 'posts'),
+      (snap) => {
+        this.blogPosts = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
+        this.buildBlogFuse();
+      },
+      () => { /* silently fail */ }
+    );
+
     // Carica anche subito senza aspettare snapshot
     try {
-      const [prodSnap, knowSnap] = await Promise.all([
+      const [prodSnap, knowSnap, blogSnap] = await Promise.all([
         getDocs(collection(db, 'products')),
         getDocs(collection(db, 'chatbot_knowledge')),
+        getDocs(collection(db, 'posts')),
       ]);
       this.products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
       this.knowledge = knowSnap.docs.map(d => ({ id: d.id, ...d.data() } as KnowledgeEntry));
+      this.blogPosts = blogSnap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
       this.buildProductFuse();
       this.buildKnowledgeFuse();
+      this.buildBlogFuse();
     } catch { /* silently fail */ }
   }
 
@@ -112,13 +138,28 @@ class ChatbotService {
     });
   }
 
+  private buildBlogFuse() {
+    this.blogFuse = new Fuse(this.blogPosts, {
+      keys: [
+        { name: 'title', weight: 3 },
+        { name: 'tags', weight: 2 },
+        { name: 'category', weight: 2 },
+        { name: 'excerpt', weight: 1.5 },
+        { name: 'content', weight: 1 },
+      ],
+      threshold: 0.4,
+      includeScore: true,
+      minMatchCharLength: 3,
+    });
+  }
+
   // ── Risposta principale ───────────────────────────────────────────────────
 
   async getResponse(userMessage: string): Promise<string> {
     await this.initialize();
     const q = userMessage.toLowerCase().trim();
 
-    // 1. Knowledge base admin (massima priorità — l'admin insegna risposte specifiche)
+    // 1. Knowledge base admin (massima priorità)
     const knowledgeResponse = this.searchKnowledge(q);
     if (knowledgeResponse) return knowledgeResponse;
 
@@ -130,11 +171,15 @@ class ChatbotService {
     const productResponse = this.searchProducts(q);
     if (productResponse) return productResponse;
 
-    // 4. Knowledge base DJ built-in (brand, categorie, troubleshooting)
+    // 4. Ricerca nel blog
+    const blogResponse = this.searchBlog(q);
+    if (blogResponse) return blogResponse;
+
+    // 5. Knowledge base DJ built-in (brand, categorie, troubleshooting)
     const builtinResponse = this.searchBuiltin(q);
     if (builtinResponse) return builtinResponse;
 
-    // 5. Fallback WhatsApp
+    // 6. Fallback WhatsApp
     return `Non ho trovato una risposta precisa per questa domanda. 🤔\n\nContatta **Amerigo** direttamente per una consulenza personalizzata:\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **officinadelsuono99@gmail.com**`;
   }
 
@@ -160,12 +205,10 @@ class ChatbotService {
     const best = results[0];
     if ((best.score ?? 1) > 0.4) return null;
 
-    // Prodotto singolo specifico
     if ((best.score ?? 1) < 0.25 || results.length === 1) {
       return this.formatProduct(best.item);
     }
 
-    // Più prodotti trovati
     const top = results.slice(0, 3).map(r => r.item);
     return this.formatMultipleProducts(top);
   }
@@ -202,13 +245,61 @@ class ChatbotService {
     return r;
   }
 
+  // ── Ricerca blog ──────────────────────────────────────────────────────────
+
+  private searchBlog(q: string): string | null {
+    if (!this.blogFuse || this.blogPosts.length === 0) return null;
+
+    // Parole chiave che suggeriscono interesse per guide/tutorial
+    const blogKeywords = /come|guida|tutorial|impara|capire|differenza|scegliere|consigli|miglio|spieg|cos.è|cos'è|cosa sono|recensione/i;
+    if (!blogKeywords.test(q) && q.length < 6) return null;
+
+    const results = this.blogFuse.search(q);
+    if (results.length === 0) return null;
+
+    const best = results[0];
+    if ((best.score ?? 1) > 0.4) return null;
+
+    const post = best.item;
+    let r = `📖 Ho trovato un articolo del nostro blog che potrebbe rispondere alla tua domanda:\n\n`;
+    r += `**${post.title}**\n`;
+    if (post.category) r += `*Categoria: ${post.category}*\n`;
+    if (post.readTime) r += `⏱️ ${post.readTime} min di lettura\n`;
+    r += '\n';
+    if (post.excerpt) r += `${post.excerpt}\n\n`;
+
+    if (results.length > 1 && (results[1].score ?? 1) < 0.4) {
+      r += `Trovi anche: **${results[1].item.title}**\n\n`;
+    }
+
+    r += `Vai nella sezione **Blog** per leggerlo! 📚\n\nHai altre domande su questo argomento?`;
+    return r;
+  }
+
   // ── Intent detection ──────────────────────────────────────────────────────
 
   private detectIntent(q: string): string | null {
     // Saluto
     if (/^(ciao|salve|buongiorno|buonasera|hey|hi|hello)\b/.test(q)) {
       const count = this.products.length;
-      return `Ciao! 👋 Sono l'assistente AI di **Officinadelsuono**.\n\nSono qui per aiutarti a trovare l'attrezzatura DJ perfetta per te. Abbiamo **${count > 0 ? count + ' prodotti' : 'tantissimi prodotti'}** nel catalogo.\n\nPosso aiutarti con:\n🎛️ Consigli su prodotti e brand\n💰 Prezzi e disponibilità\n🔧 Supporto tecnico\n📦 Spedizioni e garanzie\n\nCosa cerchi?`;
+      const blogCount = this.blogPosts.length;
+      return `Ciao! 👋 Sono l'assistente AI di **Officinadelsuono**.\n\nSono qui per aiutarti a trovare l'attrezzatura DJ perfetta. Ho accesso a:\n🎛️ **${count > 0 ? count + ' prodotti' : 'tutto il catalogo'}** del negozio\n📖 **${blogCount > 0 ? blogCount + ' articoli'  : 'tutti gli articoli'}** del blog\n\nPosso aiutarti con prodotti, prezzi, guide tecniche e consigli. Cosa cerchi?`;
+    }
+
+    // Blog
+    if (/blog|articol|guida|tutorial|legger|post/.test(q)) {
+      if (this.blogPosts.length === 0) {
+        return `📖 Il nostro blog è ricco di guide, recensioni e tutorial DJ!\n\nVai nella sezione **Blog** dal menu per sfogliare tutti gli articoli. Posso anche cercare un argomento specifico — dimmi cosa ti interessa!`;
+      }
+      const recent = this.blogPosts.slice(0, 3);
+      let r = `📖 **Blog Officinadelsuono** — ${this.blogPosts.length} articoli disponibili:\n\n`;
+      recent.forEach(p => {
+        r += `- **${p.title}**`;
+        if (p.category) r += ` *(${p.category})*`;
+        r += '\n';
+      });
+      r += `\nC'è un argomento specifico che vuoi approfondire?`;
+      return r;
     }
 
     // Grazie
@@ -273,7 +364,6 @@ class ChatbotService {
   // ── Knowledge base built-in ───────────────────────────────────────────────
 
   private searchBuiltin(q: string): string | null {
-    // Brand e prodotti specifici
     for (const [brandId, brand] of Object.entries(DJ_KNOWLEDGE_BASE.brands)) {
       const brandName = brand.name.toLowerCase();
       if (q.includes(brandId) || q.includes(brandName.split(' ')[0].toLowerCase())) {
@@ -290,21 +380,18 @@ class ChatbotService {
       }
     }
 
-    // Categorie
     for (const [catId, catDesc] of Object.entries(DJ_KNOWLEDGE_BASE.categories)) {
       if (q.includes(catId)) {
         return `📦 **${catId.charAt(0).toUpperCase() + catId.slice(1)}**: ${catDesc}`;
       }
     }
 
-    // Troubleshooting
     for (const [issue, solution] of Object.entries(DJ_KNOWLEDGE_BASE.troubleshooting)) {
       if (q.includes(issue) || q.includes(issue.replace('-', ' '))) {
         return `🔧 **Soluzione (${issue}):**\n\n${solution}`;
       }
     }
 
-    // FAQ
     for (const [faqId, faqAns] of Object.entries(DJ_KNOWLEDGE_BASE.faq)) {
       if (q.includes(faqId)) return faqAns;
     }
@@ -338,8 +425,6 @@ class ChatbotService {
     } catch { return []; }
   }
 
-  // ── Admin: gestione knowledge ─────────────────────────────────────────────
-
   async addKnowledge(entry: Omit<KnowledgeEntry, 'id'>): Promise<void> {
     await addDoc(collection(db, 'chatbot_knowledge'), {
       ...entry,
@@ -352,6 +437,7 @@ class ChatbotService {
   getProducts(): Product[] { return this.products; }
   getProductCount(): number { return this.products.length; }
   getKnowledgeCount(): number { return this.knowledge.length; }
+  getBlogCount(): number { return this.blogPosts.length; }
 }
 
 export const chatbotService = new ChatbotService();

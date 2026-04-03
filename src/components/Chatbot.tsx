@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Bot, Loader2, Brain, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatbotService } from '../services/chatbotService';
 
@@ -102,6 +102,7 @@ export function Chatbot() {
 
   const prodCount = chatbotService.getProductCount();
   const knowCount = chatbotService.getKnowledgeCount();
+  const blogCount = chatbotService.getBlogCount();
 
   return (
     <>
@@ -109,30 +110,55 @@ export function Chatbot() {
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        className={`fixed bottom-6 right-6 flex flex-col items-center gap-2 z-50 group ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'} transition-all duration-300`}
+        className={`fixed bottom-6 right-6 flex flex-col items-end gap-2 z-50 group ${isOpen ? 'scale-0 opacity-0 pointer-events-none' : 'scale-100 opacity-100'} transition-all duration-300`}
       >
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsOpen(true)}
-          className="relative group"
+        {/* Tooltip */}
+        <motion.div
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.5, duration: 0.4 }}
+          className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm mr-1 group-hover:opacity-0 transition-opacity duration-300"
         >
-          <div className="absolute -inset-2 bg-brand-orange rounded-full blur-lg opacity-20 group-hover:opacity-40 transition-opacity animate-pulse" />
-          <div className="w-14 h-14 bg-brand-orange text-white rounded-full shadow-2xl flex items-center justify-center relative z-10">
-            <Bot className="w-7 h-7" />
+          <p className="text-[11px] font-bold text-white whitespace-nowrap">Chiedimi qualcosa! 🎧</p>
+          <p className="text-[9px] text-zinc-500 whitespace-nowrap">AI su prodotti e guide</p>
+        </motion.div>
+
+        <motion.button
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+          onClick={() => setIsOpen(true)}
+          className="relative"
+        >
+          {/* Glow */}
+          <div className="absolute -inset-3 bg-brand-orange/20 rounded-2xl blur-xl group-hover:bg-brand-orange/35 transition-all duration-500" />
+
+          {/* Bottone principale */}
+          <div className="relative w-16 h-16 bg-gradient-to-br from-brand-orange to-orange-600 rounded-2xl shadow-[0_8px_32px_rgba(242,125,38,0.4)] flex flex-col items-center justify-center gap-1.5 z-10 border border-white/10">
+            {/* Equalizer bars animate */}
+            <div className="flex items-end gap-[3px] h-5">
+              {[0.6, 1, 0.75, 1, 0.5].map((h, i) => (
+                <motion.div
+                  key={i}
+                  className="w-[3px] bg-white rounded-full"
+                  animate={{ scaleY: [h, 1, h * 0.4, 1, h] }}
+                  transition={{
+                    duration: 1.2,
+                    repeat: Infinity,
+                    delay: i * 0.15,
+                    ease: 'easeInOut',
+                  }}
+                  style={{ height: `${h * 20}px`, transformOrigin: 'bottom' }}
+                />
+              ))}
+            </div>
+            <span className="text-[8px] font-black text-white/90 tracking-[0.15em] uppercase">AI</span>
           </div>
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-lg z-20">
-            <div className="w-2 h-2 bg-brand-orange rounded-full animate-ping" />
+
+          {/* Badge online */}
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-zinc-950 z-20 shadow-lg">
+            <div className="w-full h-full bg-green-400 rounded-full animate-ping opacity-75" />
           </div>
         </motion.button>
-        <div className="flex flex-col items-center">
-          <span className="text-[10px] font-bold text-white bg-white/10 border border-white/20 px-4 py-1.5 rounded-full backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)] tracking-[0.25em] uppercase opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
-            AI Expert
-          </span>
-          <span className="text-[9px] font-medium text-brand-orange/80 tracking-[0.3em] mt-2 group-hover:hidden transition-opacity duration-300 uppercase">
-            Proprietario
-          </span>
-        </div>
       </motion.div>
 
       {/* Finestra chat */}
@@ -148,20 +174,28 @@ export function Chatbot() {
             {/* Header */}
             <div className="p-4 bg-black border-b border-white/10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-9 h-9 bg-brand-orange rounded-full flex items-center justify-center">
-                    <Brain className="w-5 h-5 text-white" />
+                <div className="relative shrink-0">
+                  <div className="w-9 h-9 bg-gradient-to-br from-brand-orange to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <div className="flex items-end gap-[2px] h-4">
+                      {[0.6, 1, 0.7, 1].map((h, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-[2px] bg-white rounded-full"
+                          animate={isInit ? { scaleY: [h, 1, h * 0.4, 1, h] } : { scaleY: 1 }}
+                          transition={{ duration: 1.4, repeat: Infinity, delay: i * 0.18, ease: 'easeInOut' }}
+                          style={{ height: `${h * 14}px`, transformOrigin: 'bottom' }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  {isInit && (
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-black" />
-                  )}
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-black ${isInit ? 'bg-green-500' : 'bg-zinc-500'}`} />
                 </div>
                 <div>
                   <h3 className="font-bold text-white text-sm">Officinadelsuono AI</h3>
                   <p className="text-[10px] text-zinc-400">
                     {isInit
-                      ? `${prodCount} prodotti · ${knowCount} risposte apprese`
-                      : 'Caricamento catalogo...'}
+                      ? `${prodCount} prodotti · ${blogCount} guide · ${knowCount} risposte`
+                      : 'Caricamento dati...'}
                   </p>
                 </div>
               </div>
