@@ -32,7 +32,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        ((request.auth.token.email == "amerigodecristofaro8@gmail.com" && request.auth.token.email_verified == true) ||
+        ((request.auth.token.email == "officinadelsuono99@gmail.com" && request.auth.token.email_verified == true) ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
@@ -121,6 +121,21 @@ service cloud.firestore {
         (!('source' in request.resource.data) || request.resource.data.source is string);
       // Only admins can update or delete
       allow update, delete: if isAdmin();
+    }
+
+    match /error_logs/{errorId} {
+      // Only admin can read error logs
+      allow read: if isAdmin();
+      // Anyone (including anonymous visitors) can create an error log, size-limited to prevent abuse
+      allow create: if hasRequiredFields(['message', 'timestamp']) &&
+        request.resource.data.message is string && request.resource.data.message.size() < 2000 &&
+        (!('stack' in request.resource.data) || (request.resource.data.stack is string && request.resource.data.stack.size() < 5000)) &&
+        (!('url' in request.resource.data) || (request.resource.data.url is string && request.resource.data.url.size() < 500)) &&
+        (!('userAgent' in request.resource.data) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() < 500));
+      // Only admins can delete
+      allow delete: if isAdmin();
+      // No updates allowed
+      allow update: if false;
     }
   }
 }

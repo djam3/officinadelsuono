@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, X, Search, User, ChevronDown, MessageCircle, LogOut, Package } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, User, ChevronDown, MessageCircle, LogOut, Package, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '../store/cartStore';
@@ -21,6 +21,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const cartItems = useCartStore((state) => state.items);
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const isAdmin = user?.email?.toLowerCase() === 'officinadelsuono99@gmail.com';
 
   // Sincronizza carrello con Firestore quando l'utente è loggato
   useCartSync();
@@ -104,7 +105,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                     {user.displayName || user.email?.split('@')[0]}
                   </span>
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <div className="absolute right-0 mt-2 w-52 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="p-2">
                     <button
                       onClick={() => onNavigate('profile')}
@@ -113,9 +114,18 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                       <User className="w-4 h-4" />
                       Il mio profilo
                     </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => onNavigate('admin')}
+                        className="w-full text-left px-4 py-2 text-sm text-brand-orange hover:text-white hover:bg-brand-orange/10 rounded-lg flex items-center gap-2 font-bold border-t border-white/5 mt-1 pt-3"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        Pannello Admin
+                      </button>
+                    )}
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2 border-t border-white/5 mt-1 pt-3"
                     >
                       <LogOut className="w-4 h-4" />
                       Esci
@@ -189,6 +199,14 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                   >
                     Il mio profilo
                   </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => { onNavigate('admin'); setIsMenuOpen(false); }}
+                      className="block w-full text-left px-4 py-4 text-base font-black text-brand-orange hover:text-white uppercase tracking-wider border-t border-white/5"
+                    >
+                      Pannello Admin
+                    </button>
+                  )}
                   <button
                     onClick={() => { handleLogout(); setIsMenuOpen(false); }}
                     className="block w-full text-left px-4 py-4 text-base font-bold text-zinc-500 hover:text-white uppercase tracking-wider"

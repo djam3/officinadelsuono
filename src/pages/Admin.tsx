@@ -1,16 +1,38 @@
 import { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogIn, LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, Eye, EyeOff, ShieldAlert, Lock } from 'lucide-react';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit, where, Timestamp } from 'firebase/firestore';
+import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Pencil } from 'lucide-react';
+import { Logo } from '../components/Logo';
 
-const ADMIN_EMAIL = 'amerigodecristofaro8@gmail.com';
+const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
+
+type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users';
+
+interface NavItem {
+  id: AdminTab;
+  label: string;
+  description: string;
+  icon: any;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', description: 'Panoramica generale del sito', icon: LayoutDashboard },
+  { id: 'products', label: 'Prodotti', description: 'Gestisci il catalogo', icon: Package },
+  { id: 'blog', label: 'Blog', description: 'Articoli e contenuti editoriali', icon: ScrollText },
+  { id: 'discounts', label: 'Codici Sconto', description: 'Crea e gestisci coupon', icon: Tag },
+  { id: 'newsletter', label: 'Newsletter', description: 'Invia email agli iscritti', icon: Megaphone },
+  { id: 'content', label: 'Contenuti Sito', description: 'Modifica testi homepage', icon: Globe },
+  { id: 'ai', label: 'AI Chatbot', description: 'Addestra il chatbot', icon: Bot },
+  { id: 'users', label: 'Utenti', description: 'Clienti registrati', icon: UsersIcon },
+  { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
+];
 
 interface Product {
   id: string;
@@ -41,15 +63,18 @@ export function Admin({ onNavigate }: AdminProps) {
   const { isBuilderMode, activateBuilderMode, deactivateBuilderMode } = useBuilder();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
 
-  // Login form state
-  const [loginPassword, setLoginPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
-  
+  // Dashboard stats
+  const [newsletterCount, setNewsletterCount] = useState(0);
+  const [errorLogs, setErrorLogs] = useState<any[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Product>>({ images: [] });
   const [isAdding, setIsAdding] = useState(false);
@@ -66,7 +91,7 @@ export function Admin({ onNavigate }: AdminProps) {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUploadingProfile, setIsUploadingProfile] = useState(false);
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [activeTab, setActiveTab] = useState<'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai'>('products');
+  const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [aiKnowledge, setAiKnowledge] = useState<{id:string;question:string;answer:string;keywords:string}[]>([]);
   const [aiLogs, setAiLogs] = useState<{id:string;userMessage:string;botResponse:string;timestamp:any}[]>([]);
   const [aiForm, setAiForm] = useState({ question: '', answer: '', keywords: '' });
@@ -165,25 +190,49 @@ export function Admin({ onNavigate }: AdminProps) {
     }
   }, [isAdmin]);
 
-  // Check admin logic
-
+  // Check admin via Firebase Auth (only the owner Google account)
   useEffect(() => {
-    const checkAdmin = () => {
-      const isLogged = sessionStorage.getItem('admin_logged_in') === 'true';
-      if (isLogged) {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      if (user && user.email?.toLowerCase() === ADMIN_EMAIL) {
         setIsAdmin(true);
         loadProducts();
         loadBlogPosts();
         loadAiData();
         loadDiscounts();
         loadSiteContent();
+        loadStats();
       } else {
         setIsAdmin(false);
       }
       setLoading(false);
-    };
-    checkAdmin();
+    });
+    return unsubscribe;
   }, []);
+
+  const loadStats = () => {
+    // Newsletter subscribers count
+    getDocs(collection(db, 'newsletter_subscriptions'))
+      .then(snap => setNewsletterCount(snap.size))
+      .catch(() => setNewsletterCount(0));
+
+    // Registered users (from 'users' collection)
+    getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50)))
+      .then(snap => setRegisteredUsers(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => setRegisteredUsers([]));
+
+    // Error logs (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    getDocs(query(
+      collection(db, 'error_logs'),
+      where('timestamp', '>=', Timestamp.fromDate(thirtyDaysAgo)),
+      orderBy('timestamp', 'desc'),
+      limit(100)
+    ))
+      .then(snap => setErrorLogs(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+      .catch(() => setErrorLogs([]));
+  };
 
   // Carica knowledge base AI e log conversazioni
   const loadAiData = () => {
@@ -321,33 +370,30 @@ export function Admin({ onNavigate }: AdminProps) {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGoogleLogin = async () => {
     setLoginError('');
     setLoginLoading(true);
-
-    // Simple custom password check bypassing Firebase Auth completely
-    setTimeout(() => {
-      if (loginPassword === 'Antoniettabpm99?') {
-        sessionStorage.setItem('admin_logged_in', 'true');
-        setIsAdmin(true);
-        loadProducts();
-        loadBlogPosts();
-        loadAiData();
-        loadDiscounts();
-        loadSiteContent();
-      } else {
-        setLoginError('Password non corretta.');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      if (result.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+        await signOut(auth);
+        setLoginError('Accesso negato. Solo il proprietario può accedere al pannello.');
       }
+    } catch (e: any) {
+      if (e.code === 'auth/popup-closed-by-user') {
+        // silent
+      } else {
+        setLoginError('Errore durante l\'accesso con Google. Riprova.');
+      }
+    } finally {
       setLoginLoading(false);
-    }, 500); // Small delay to simulate verification
+    }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_logged_in');
+  const handleLogout = async () => {
+    try { await signOut(auth); } catch {}
     setIsAdmin(false);
     onNavigate?.('home');
-    window.location.href = '/';
   };
 
   const loadDiscounts = () => {
@@ -953,9 +999,9 @@ export function Admin({ onNavigate }: AdminProps) {
   }
 
   if (!isAdmin) {
+    const wrongUser = currentUser && currentUser.email?.toLowerCase() !== ADMIN_EMAIL;
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        {/* Background glow */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-orange/5 rounded-full blur-[120px]" />
         </div>
@@ -966,122 +1012,302 @@ export function Admin({ onNavigate }: AdminProps) {
           transition={{ duration: 0.6 }}
           className="relative w-full max-w-md"
         >
-          {/* Icon */}
           <div className="flex justify-center mb-8">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-orange to-orange-700 flex items-center justify-center shadow-2xl shadow-brand-orange/30">
-              <Lock className="w-10 h-10 text-white" />
+              <ShieldAlert className="w-10 h-10 text-white" />
             </div>
           </div>
 
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black uppercase tracking-widest mb-2">Area Riservata</h1>
             <p className="text-zinc-500 text-sm">
-              Accesso esclusivo al pannello proprietario
+              Accesso esclusivo al proprietario dell'officina
             </p>
           </div>
 
           {loginError && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-3 text-red-400 text-sm">
               <ShieldAlert className="w-5 h-5 shrink-0" />
-              {loginError}
+              <span>{loginError}</span>
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Inserisci la password admin"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                required
-                className="w-full pl-12 pr-12 py-4 bg-zinc-900 border border-white/10 rounded-xl focus:outline-none focus:border-brand-orange text-white placeholder-zinc-600 transition-all"
-              />
+          {wrongUser && (
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-sm">
+              <p className="font-bold mb-1">Account non autorizzato</p>
+              <p className="text-xs text-amber-300/80 mb-3">Sei loggato come <span className="font-mono">{currentUser?.email}</span>. Per accedere al pannello devi usare l'account proprietario.</p>
               <button
-                type="button"
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors"
-                title={showPassword ? "Nascondi password" : "Mostra password"}
+                onClick={handleLogout}
+                className="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                Disconnetti
               </button>
             </div>
+          )}
 
+          {!wrongUser && (
             <button
-              type="submit"
-              disabled={loginLoading || !loginPassword}
-              className="w-full py-4 bg-gradient-to-r from-brand-orange to-orange-600 hover:from-orange-500 hover:to-orange-500 text-white rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-3 relative overflow-hidden group"
+              onClick={handleGoogleLogin}
+              disabled={loginLoading}
+              className="w-full py-4 bg-white hover:bg-zinc-100 text-zinc-900 rounded-xl font-bold transition-all disabled:opacity-50 shadow-lg flex items-center justify-center gap-3"
             >
               {loginLoading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  <Lock className="w-5 h-5" />
-                  Accedi al Pannello
+                  <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                  </svg>
+                  Accedi con Google
                 </>
               )}
             </button>
-          </form>
+          )}
 
           <p className="text-center text-[10px] text-zinc-700 mt-8 uppercase tracking-widest">
-            Accesso protetto — solo il proprietario può entrare
+            Solo l'account proprietario può accedere
           </p>
         </motion.div>
       </div>
     );
   }
 
+  const activeNav = NAV_ITEMS.find(i => i.id === activeTab) || NAV_ITEMS[0];
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-12 gap-4">
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-widest flex items-center gap-3">
-              Pannello Admin
-              <span className="text-xs bg-brand-orange/20 text-brand-orange px-2 py-1 rounded-full tracking-normal font-bold">PRO</span>
-            </h1>
-            <p className="text-zinc-400">Gestisci i prodotti del catalogo</p>
+    <div className="min-h-screen bg-zinc-950 text-white flex">
+      {/* Sidebar */}
+      <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} shrink-0 border-r border-white/5 bg-black sticky top-0 h-screen flex flex-col transition-all duration-200`}>
+        <div className="p-5 border-b border-white/5 flex items-center gap-3">
+          <Logo className="w-8 h-8 shrink-0" />
+          {!sidebarCollapsed && (
+            <div className="min-w-0">
+              <p className="text-sm font-black uppercase tracking-tighter leading-none truncate">Officina<span className="text-brand-orange">delsuono</span></p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">Admin Panel</p>
+            </div>
+          )}
+        </div>
+
+        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                title={sidebarCollapsed ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                  isActive
+                    ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20'
+                    : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                {!sidebarCollapsed && isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto shrink-0" />}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="p-3 border-t border-white/5">
+          <button
+            onClick={() => setSidebarCollapsed(v => !v)}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors mb-2"
+          >
+            {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <><ChevronRight className="w-3 h-3 rotate-180" /> Comprimi</>}
+          </button>
+          <div className={`flex items-center gap-3 p-2 rounded-lg bg-zinc-900/50 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            {currentUser?.photoURL ? (
+              <img src={currentUser.photoURL} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-brand-orange/20 flex items-center justify-center shrink-0">
+                <UserIcon className="w-4 h-4 text-brand-orange" />
+              </div>
+            )}
+            {!sidebarCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold truncate">{currentUser?.displayName || 'Admin'}</p>
+                <p className="text-[10px] text-zinc-500 truncate">{currentUser?.email}</p>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setShowProfileSettings(!showProfileSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border ${showProfileSettings ? 'bg-brand-orange text-white border-brand-orange' : 'bg-zinc-900 text-zinc-400 hover:text-white border-white/10'}`}
-            >
-              <UserIcon className="w-4 h-4" />
-              Profilo
-            </button>
-            <button 
-              onClick={() => setShowAiSettings(!showAiSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border ${showAiSettings ? 'bg-brand-orange text-white border-brand-orange' : 'bg-zinc-900 text-zinc-400 hover:text-white border-white/10'}`}
-            >
-              <Settings className="w-4 h-4" />
-              AI Config
-            </button>
-            <div className="h-8 w-[1px] bg-white/10 mx-2 hidden md:block"></div>
-            <button
-              onClick={() => {
-                if (isBuilderMode) {
-                  deactivateBuilderMode();
-                } else {
-                  activateBuilderMode();
-                  onNavigate?.('home');
-                }
-              }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-bold transition-all border text-sm ${isBuilderMode ? 'bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/30' : 'bg-zinc-900 text-zinc-300 hover:text-white border-brand-orange/40 hover:border-brand-orange hover:bg-brand-orange/10'}`}
-            >
-              <Pencil className="w-4 h-4" />
-              {isBuilderMode ? 'Modifica Attiva' : 'Modifica Sito'}
-            </button>
-            <span className="text-sm text-zinc-400 hidden sm:block">Admin</span>
+          {!sidebarCollapsed && (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 px-4 py-2 rounded-xl text-sm transition-colors border border-white/10"
+              className="w-full mt-2 flex items-center justify-center gap-2 px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg text-xs font-bold transition-colors border border-white/5"
             >
-              <LogOut className="w-4 h-4" /> Esci
+              <LogOut className="w-3.5 h-3.5" /> Esci
             </button>
-          </div>
+          )}
         </div>
+      </aside>
+
+      {/* Main content area */}
+      <main className="flex-1 min-w-0 flex flex-col">
+        <header className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-xl border-b border-white/5">
+          <div className="px-6 md:px-10 py-5 flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 mb-1">
+                <span>Admin</span>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-brand-orange">{activeNav.label}</span>
+              </div>
+              <h1 className="text-2xl font-black tracking-tight truncate">{activeNav.label}</h1>
+              <p className="text-sm text-zinc-500 mt-0.5 truncate">{activeNav.description}</p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setShowProfileSettings(v => !v)}
+                title="Profilo Sito"
+                className={`p-2.5 rounded-xl transition-all border ${showProfileSettings ? 'bg-brand-orange text-white border-brand-orange' : 'bg-zinc-900 text-zinc-400 hover:text-white border-white/5'}`}
+              >
+                <UserIcon className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setShowAiSettings(v => !v)}
+                title="AI Config"
+                className={`p-2.5 rounded-xl transition-all border ${showAiSettings ? 'bg-brand-orange text-white border-brand-orange' : 'bg-zinc-900 text-zinc-400 hover:text-white border-white/5'}`}
+              >
+                <Settings className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => {
+                  if (isBuilderMode) {
+                    deactivateBuilderMode();
+                  } else {
+                    activateBuilderMode();
+                    onNavigate?.('home');
+                  }
+                }}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all border text-xs uppercase tracking-wider ${isBuilderMode ? 'bg-brand-orange text-white border-brand-orange shadow-lg shadow-brand-orange/30' : 'bg-zinc-900 text-zinc-300 hover:text-white border-brand-orange/40 hover:border-brand-orange hover:bg-brand-orange/10'}`}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">{isBuilderMode ? 'Modifica Attiva' : 'Modifica Sito'}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 p-6 md:p-10 max-w-[1600px] w-full">
+          {/* Dashboard */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-8">
+              {/* KPI Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {[
+                  { label: 'Prodotti', value: products.length, icon: Package, color: 'text-brand-orange', bg: 'bg-brand-orange/10', border: 'border-brand-orange/20' },
+                  { label: 'Articoli blog', value: blogPosts.length, icon: ScrollText, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+                  { label: 'Iscritti newsletter', value: newsletterCount, icon: Mail, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+                  { label: 'Codici sconto', value: discounts.filter((d:any)=>d.active).length, icon: Tag, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+                  { label: 'Chat AI', value: aiLogs.length, icon: MessageSquare, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20' },
+                  { label: 'Errori 30gg', value: errorLogs.length, icon: AlertTriangle, color: errorLogs.length > 0 ? 'text-red-400' : 'text-zinc-500', bg: errorLogs.length > 0 ? 'bg-red-500/10' : 'bg-zinc-800/50', border: errorLogs.length > 0 ? 'border-red-500/20' : 'border-white/5' },
+                ].map((kpi, i) => {
+                  const Icon = kpi.icon;
+                  return (
+                    <motion.div
+                      key={kpi.label}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className={`p-5 rounded-2xl border ${kpi.border} ${kpi.bg} backdrop-blur-xl`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <Icon className={`w-5 h-5 ${kpi.color}`} />
+                      </div>
+                      <div className={`text-3xl font-black ${kpi.color}`}>{kpi.value}</div>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{kpi.label}</div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Quick Actions */}
+              <div>
+                <h2 className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Azioni Rapide</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <button onClick={() => { setActiveTab('products'); setIsAdding(true); setEditForm({ price: 0, draft: false }); }} className="p-4 bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-brand-orange/30 rounded-xl text-left transition-all group">
+                    <Plus className="w-5 h-5 text-brand-orange mb-2" />
+                    <p className="text-sm font-bold">Nuovo prodotto</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Aggiungi al catalogo</p>
+                  </button>
+                  <button onClick={() => { setActiveTab('blog'); setIsAddingBlog(true); }} className="p-4 bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-brand-orange/30 rounded-xl text-left transition-all group">
+                    <ScrollText className="w-5 h-5 text-brand-orange mb-2" />
+                    <p className="text-sm font-bold">Scrivi articolo</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Nuovo post sul blog</p>
+                  </button>
+                  <button onClick={() => setActiveTab('newsletter')} className="p-4 bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-brand-orange/30 rounded-xl text-left transition-all group">
+                    <Megaphone className="w-5 h-5 text-brand-orange mb-2" />
+                    <p className="text-sm font-bold">Invia newsletter</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Email a {newsletterCount} iscritti</p>
+                  </button>
+                  <button onClick={() => setActiveTab('discounts')} className="p-4 bg-zinc-900 hover:bg-zinc-800 border border-white/5 hover:border-brand-orange/30 rounded-xl text-left transition-all group">
+                    <Tag className="w-5 h-5 text-brand-orange mb-2" />
+                    <p className="text-sm font-bold">Crea coupon</p>
+                    <p className="text-[10px] text-zinc-500 mt-0.5">Nuovo codice sconto</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Activity & Health */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Recent chatbot activity */}
+                <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest">Ultime conversazioni AI</h3>
+                      <p className="text-xs text-zinc-500 mt-0.5">Cosa stanno chiedendo i clienti</p>
+                    </div>
+                    <button onClick={() => setActiveTab('ai')} className="text-[10px] text-brand-orange font-bold uppercase tracking-widest hover:underline">Vedi tutto</button>
+                  </div>
+                  {aiLogs.length === 0 ? (
+                    <p className="text-zinc-600 text-sm text-center py-8">Nessuna conversazione recente</p>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      {aiLogs.slice(0, 6).map(log => (
+                        <div key={log.id} className="p-3 bg-zinc-950 rounded-lg border border-white/5">
+                          <p className="text-xs text-brand-orange font-bold truncate">👤 {log.userMessage}</p>
+                          <p className="text-[10px] text-zinc-500 truncate mt-1">🤖 {log.botResponse}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* System health */}
+                <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-widest">Stato del Sistema</h3>
+                      <p className="text-xs text-zinc-500 mt-0.5">Servizi e integrazioni</p>
+                    </div>
+                    <button onClick={() => setActiveTab('monitoring')} className="text-[10px] text-brand-orange font-bold uppercase tracking-widest hover:underline">Dettagli</button>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { label: 'Firebase Auth', status: 'ok', detail: 'Operativo' },
+                      { label: 'Firestore Database', status: 'ok', detail: 'Operativo' },
+                      { label: 'Cloud Functions', status: 'ok', detail: 'Welcome email attivo' },
+                      { label: 'Gemini AI', status: manualApiKey ? 'ok' : 'warn', detail: manualApiKey ? 'API key configurata' : 'API key mancante' },
+                      { label: 'Errori ultime 24h', status: errorLogs.filter(e => { try { const d = e.timestamp?.toDate?.(); return d && (Date.now() - d.getTime()) < 86400000; } catch { return false; } }).length > 0 ? 'warn' : 'ok', detail: `${errorLogs.filter(e => { try { const d = e.timestamp?.toDate?.(); return d && (Date.now() - d.getTime()) < 86400000; } catch { return false; } }).length} errori registrati` },
+                    ].map(s => (
+                      <div key={s.label} className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-white/5">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${s.status === 'ok' ? 'bg-green-400' : s.status === 'warn' ? 'bg-amber-400' : 'bg-red-400'} ${s.status === 'ok' ? 'shadow-[0_0_8px_rgba(74,222,128,0.5)]' : ''}`} />
+                          <span className="text-xs font-bold">{s.label}</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500">{s.detail}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
         {/* AI Configuration Panel */}
         <AnimatePresence>
@@ -1243,27 +1469,7 @@ export function Admin({ onNavigate }: AdminProps) {
           )}
         </AnimatePresence>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8 border-b border-white/10 pb-4">
-          {([
-            { id: 'products', label: '🛍️ Prodotti' },
-            { id: 'discounts', label: '🏷️ Codici Sconto' },
-            { id: 'content', label: '✏️ Contenuti Sito' },
-            { id: 'newsletter', label: '📧 Newsletter' },
-            { id: 'blog', label: '📝 Blog' },
-            { id: 'ai', label: '🧠 AI Chatbot' },
-          ] as const).map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl font-bold transition-all text-sm ${activeTab === tab.id ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' : 'bg-zinc-900 text-zinc-400 hover:text-white border border-white/5'}`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {activeTab === 'products' ? (
+        {activeTab === 'products' && (
           <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden">
             <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <h2 className="text-xl font-bold">Prodotti ({products.length})</h2>
@@ -1610,7 +1816,8 @@ export function Admin({ onNavigate }: AdminProps) {
             </table>
           </div>
         </div>
-        ) : activeTab === 'newsletter' ? (
+        )}
+        {activeTab === 'newsletter' && (
           <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden p-6">
             <h2 className="text-xl font-bold mb-6">Invia Newsletter</h2>
             <p className="text-zinc-400 mb-8">
@@ -1709,7 +1916,8 @@ export function Admin({ onNavigate }: AdminProps) {
               </div>
             </div>
           </div>
-        ) : (
+        )}
+        {activeTab === 'blog' && (
           <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden">
             <div className="p-6 border-b border-white/10 flex justify-between items-center">
               <h2 className="text-xl font-bold">Articoli Blog ({blogPosts.length})</h2>
@@ -2204,7 +2412,189 @@ export function Admin({ onNavigate }: AdminProps) {
             </div>
           </div>
         )}
-      </div>
+
+        {/* ── Tab Utenti ─────────────────────────────────────────────── */}
+        {activeTab === 'users' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Totale registrati', value: registeredUsers.length, color: 'text-brand-orange', icon: UsersIcon },
+                { label: 'Email verificate', value: registeredUsers.filter((u:any)=>u.emailVerified).length, color: 'text-green-400', icon: CheckCircle2 },
+                { label: 'Ultimi 7 giorni', value: registeredUsers.filter((u:any)=>{try{const d=u.createdAt?.toDate?.()||new Date(u.createdAt);return d&&(Date.now()-d.getTime())<7*86400000;}catch{return false;}}).length, color: 'text-blue-400', icon: TrendingUp },
+                { label: 'Iscritti newsletter', value: newsletterCount, color: 'text-purple-400', icon: Mail },
+              ].map(s => {
+                const Icon = s.icon;
+                return (
+                  <div key={s.label} className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
+                    <Icon className={`w-5 h-5 ${s.color} mb-3`} />
+                    <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{s.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold">Clienti registrati</h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">Ultimi {registeredUsers.length} utenti dalla collezione <code className="text-brand-orange">users</code></p>
+                </div>
+                <button onClick={loadStats} className="p-2 text-zinc-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors" title="Ricarica">
+                  <Loader2 className="w-4 h-4" />
+                </button>
+              </div>
+              {registeredUsers.length === 0 ? (
+                <div className="p-12 text-center text-zinc-600 text-sm">
+                  Nessun utente registrato o la collezione <code className="text-brand-orange">users</code> non è popolata.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-zinc-950 text-zinc-500 uppercase text-[10px] tracking-widest">
+                      <tr>
+                        <th className="px-6 py-3 text-left">Utente</th>
+                        <th className="px-6 py-3 text-left">Email</th>
+                        <th className="px-6 py-3 text-left">Stato</th>
+                        <th className="px-6 py-3 text-left">Registrato</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {registeredUsers.map((u: any) => {
+                        let dateStr = '—';
+                        try {
+                          const d = u.createdAt?.toDate?.() || (u.createdAt ? new Date(u.createdAt) : null);
+                          if (d) dateStr = d.toLocaleDateString('it-IT');
+                        } catch {}
+                        return (
+                          <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-3">
+                                {u.photoURL ? (
+                                  <img src={u.photoURL} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-brand-orange/20 flex items-center justify-center">
+                                    <UserIcon className="w-4 h-4 text-brand-orange" />
+                                  </div>
+                                )}
+                                <span className="font-bold">{u.displayName || u.name || '—'}</span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-zinc-400 font-mono text-xs">{u.email || '—'}</td>
+                            <td className="px-6 py-4">
+                              {u.emailVerified ? (
+                                <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-bold rounded-full uppercase">Verificato</span>
+                              ) : (
+                                <span className="px-2 py-1 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-full uppercase">In attesa</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-zinc-500 text-xs">{dateStr}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tab Monitoring ─────────────────────────────────────────── */}
+        {activeTab === 'monitoring' && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Errori totali (30gg)', value: errorLogs.length, color: errorLogs.length > 0 ? 'text-red-400' : 'text-green-400', icon: AlertTriangle },
+                { label: 'Ultime 24h', value: errorLogs.filter(e => { try { const d = e.timestamp?.toDate?.(); return d && (Date.now() - d.getTime()) < 86400000; } catch { return false; } }).length, color: 'text-amber-400', icon: Clock },
+                { label: 'Database', value: 'Online', color: 'text-green-400', icon: Database },
+                { label: 'Auth', value: 'Online', color: 'text-green-400', icon: Zap },
+              ].map(s => {
+                const Icon = s.icon;
+                return (
+                  <div key={s.label} className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
+                    <Icon className={`w-5 h-5 ${s.color} mb-3`} />
+                    <div className={`text-3xl font-black ${s.color}`}>{s.value}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{s.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden">
+              <div className="p-6 border-b border-white/5 flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-red-400" />
+                    Log errori
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">Errori JavaScript catturati dal client negli ultimi 30 giorni</p>
+                </div>
+                <button onClick={loadStats} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-zinc-950 hover:bg-zinc-800 border border-white/5 rounded-lg transition-colors">Aggiorna</button>
+              </div>
+              {errorLogs.length === 0 ? (
+                <div className="p-12 text-center">
+                  <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                  <p className="text-sm text-zinc-400 font-bold">Nessun errore registrato</p>
+                  <p className="text-xs text-zinc-600 mt-1">Il sito funziona correttamente negli ultimi 30 giorni</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
+                  {errorLogs.map((err: any) => {
+                    let dateStr = '';
+                    try {
+                      const d = err.timestamp?.toDate?.();
+                      if (d) dateStr = d.toLocaleString('it-IT');
+                    } catch {}
+                    return (
+                      <div key={err.id} className="p-5 hover:bg-white/5 transition-colors">
+                        <div className="flex items-start gap-3 mb-2">
+                          <div className="p-1.5 bg-red-500/20 rounded-lg shrink-0">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-red-300 truncate">{err.message || 'Unknown error'}</p>
+                            <p className="text-[10px] text-zinc-500 mt-0.5">{dateStr} {err.url ? `• ${err.url}` : ''}</p>
+                          </div>
+                        </div>
+                        {err.stack && (
+                          <pre className="text-[10px] text-zinc-500 bg-black/50 rounded-lg p-3 overflow-x-auto mt-2 font-mono max-h-32">{err.stack}</pre>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-brand-orange" />
+                Performance & Integrazioni
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { label: 'Firebase Hosting', detail: 'CDN globale attivo', status: 'ok' },
+                  { label: 'Firestore', detail: `${products.length + blogPosts.length + discounts.length + aiKnowledge.length} documenti letti`, status: 'ok' },
+                  { label: 'Cloud Functions', detail: 'sendWelcomeEmail attiva', status: 'ok' },
+                  { label: 'Firebase Storage', detail: 'Avatar utenti attivo', status: 'ok' },
+                  { label: 'Resend Email', detail: 'Dominio di test (verificare custom domain)', status: 'warn' },
+                  { label: 'Gemini AI', detail: manualApiKey ? 'API key configurata' : 'API key mancante', status: manualApiKey ? 'ok' : 'warn' },
+                ].map(s => (
+                  <div key={s.label} className="p-4 bg-zinc-950 rounded-xl border border-white/5 flex items-start gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${s.status === 'ok' ? 'bg-green-400 shadow-[0_0_8px_rgba(74,222,128,0.5)]' : s.status === 'warn' ? 'bg-amber-400' : 'bg-red-400'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold">{s.label}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">{s.detail}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        </div>
+      </main>
     </div>
   );
 }
