@@ -350,7 +350,7 @@ export function Home({ onNavigate }: HomeProps) {
             {[
               { id: 'cat1', type: 'controller' as const, fallbackTitle: "Console & Mixer", fallbackDesc: "Sistemi professionali per performance digitali", fallbackImg: "https://assets.alphatheta.com/page-assets/djm-v5/assets/djmv5-product-specification-image-01.webp", isCover: false },
               { id: 'cat2', type: 'speaker' as const, fallbackTitle: "Impianti PA", fallbackDesc: "Sistemi di diffusione ad alta pressione", fallbackImg: "https://www.rcf.it/documents/20124/26930472/woofer-background.jpg/01e81bcc-d8c8-33d0-515f-1625abce4e8f?t=1733310296162&download=true", isCover: true },
-              { id: 'cat3', type: 'mixer' as const, fallbackTitle: "Cuffie Pro", fallbackDesc: "Monitoraggio critico e isolamento", fallbackImg: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=500&auto=format&fit=crop", isCover: true },
+              { id: 'cat3', type: 'mixer' as const, fallbackTitle: "Cuffie Pro", fallbackDesc: "Monitoraggio critico e isolamento", fallbackImg: "https://images.unsplash.com/photo-1484704849700-f032a568e944?q=80&w=500&auto=format&fit=crop", isCover: true },
               { id: 'cat4', type: 'accessories' as const, fallbackTitle: "Microfoni & Studio", fallbackDesc: "Trasduzione ad alta fedeltà", fallbackImg: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=500&auto=format&fit=crop", isCover: true }
             ].map((cat, idx) => (
               <motion.div 
