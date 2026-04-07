@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
+import { CookieBanner } from './components/CookieBanner';
 
 // Sync current page with Builder Context
 function BuilderPageSync({ currentPage }: { currentPage: string }) {
@@ -34,6 +35,8 @@ const AboutUs = lazy(() => import('./pages/AboutUs').then(m => ({ default: m.Abo
 const Contact = lazy(() => import('./pages/Contact').then(m => ({ default: m.Contact })));
 const Terms = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
+const CookiePolicy = lazy(() => import('./pages/CookiePolicy').then(m => ({ default: m.CookiePolicy })));
+const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Profile })));
 const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })));
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
@@ -255,10 +258,12 @@ export default function App() {
               {currentPage === 'blog' && <Blog onNavigate={handleNavigate} showToast={showToast} />}
               {currentPage === 'blog-post' && <BlogPost postId={selectedProductId} onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'quiz' && <Quiz onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
+              {currentPage === 'profile' && <Profile onNavigate={handleNavigate} />}
               {currentPage === 'about' && <AboutUs />}
               {currentPage === 'contact' && <Contact />}
               {currentPage === 'terms' && <Terms />}
               {currentPage === 'privacy' && <Privacy />}
+              {currentPage === 'cookie-policy' && <CookiePolicy />}
             </motion.div>
           </AnimatePresence>
         </Suspense>
@@ -267,6 +272,7 @@ export default function App() {
       {!isAdminPage && <Footer onNavigate={handleNavigate} />}
       {!isAdminPage && <Chatbot />}
       {!isAdminPage && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onNavigate={handleNavigate} />}
+      {!isAdminPage && <CookieBanner onNavigate={handleNavigate} />}
       </div>
     </BuilderProvider>
   );
