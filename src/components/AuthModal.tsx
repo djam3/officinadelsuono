@@ -13,6 +13,7 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
+  signOut,
 } from 'firebase/auth';
 
 
@@ -21,7 +22,7 @@ interface AuthModalProps {
   onClose: () => void;
 }
 
-type Mode = 'login' | 'signup' | 'reset';
+type Mode = 'login' | 'signup' | 'reset' | 'verify-pending';
 
 // Italian-friendly error mapping for Firebase Auth
 function mapAuthError(code: string | undefined, fallback: string): string {
@@ -88,7 +89,16 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
 
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
+        const cred = await signInWithEmailAndPassword(auth, email, password);
+        if (!cred.user.emailVerified) {
+          // Re-invia il link di verifica e blocca l'accesso
+          try { await sendEmailVerification(cred.user); } catch {}
+          await signOut(auth);
+          setMode('verify-pending');
+          setInfo(`Per accedere devi prima verificare la tua email. Ti abbiamo appena rinviato il link a ${cred.user.email}.`);
+          setLoading(false);
+          return;
+        }
         onClose();
       } else if (mode === 'signup') {
         if (!acceptTerms) {
@@ -111,7 +121,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         } catch (verifyErr) {
           console.warn('Email verification failed (non-blocking):', verifyErr);
         }
-        // Invia email di benvenuto custom (silenzioso)
+        // Invia email di benvenuto custom (silenzioso, fallisce in prod statica)
         try {
           await fetch('/api/emails/welcome', {
             method: 'POST',
@@ -121,7 +131,13 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         } catch (emailErr) {
           console.warn('Welcome email failed (non-blocking):', emailErr);
         }
-        onClose();
+        // Blocca l'accesso finché non verifica l'email
+        const newUserEmail = userCredential.user.email;
+        await signOut(auth);
+        setMode('verify-pending');
+        setInfo(`Account creato! Ti abbiamo inviato un link di verifica a ${newUserEmail}. Conferma l'email per accedere.`);
+        setLoading(false);
+        return;
       } else if (mode === 'reset') {
         await sendPasswordResetEmail(auth, email);
         setInfo('Ti abbiamo inviato un link per reimpostare la password. Controlla la tua casella email (anche lo spam).');
@@ -152,6 +168,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   const isLogin = mode === 'login';
   const isSignup = mode === 'signup';
   const isReset = mode === 'reset';
+  const isVerifyPending = mode === 'verify-pending';
 
   return createPortal(
     <AnimatePresence>
@@ -201,17 +218,21 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
 
             <div className="mb-8 text-center md:text-left">
               <div className="w-16 h-16 bg-gradient-to-br from-brand-orange to-orange-600 rounded-2xl mb-6 flex items-center justify-center shadow-lg shadow-brand-orange/20 mx-auto md:mx-0">
-                {isReset ? <Lock className="w-8 h-8 text-white" /> : <User className="w-8 h-8 text-white" />}
+                {isReset && <Lock className="w-8 h-8 text-white" />}
+                {isVerifyPending && <Mail className="w-8 h-8 text-white" />}
+                {!isReset && !isVerifyPending && <User className="w-8 h-8 text-white" />}
               </div>
               <h2 className="text-3xl font-black tracking-tight text-white mb-2">
                 {isLogin && 'Bentornato'}
                 {isSignup && 'Crea Account'}
                 {isReset && 'Recupera Password'}
+                {isVerifyPending && 'Verifica la tua email'}
               </h2>
               <p className="text-zinc-400 text-sm">
                 {isLogin && 'Accedi per continuare i tuoi acquisti'}
                 {isSignup && 'Unisciti a noi per un\'esperienza audio premium'}
                 {isReset && 'Inserisci la tua email e ti invieremo un link sicuro per reimpostare la password.'}
+                {isVerifyPending && 'Apri il link che ti abbiamo inviato per attivare il tuo account, poi torna qui per accedere.'}
               </p>
             </div>
 
@@ -228,7 +249,36 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {isVerifyPending && (
+              <div className="space-y-5">
+                <div className="p-5 bg-zinc-900/50 border border-white/10 rounded-xl text-sm text-zinc-300 leading-relaxed">
+                  <p className="mb-3"><strong className="text-white">Cosa fare ora:</strong></p>
+                  <ol className="list-decimal list-inside space-y-1.5 text-zinc-400">
+                    <li>Apri la tua casella email</li>
+                    <li>Clicca sul link "Verifica indirizzo email"</li>
+                    <li>Torna qui e accedi normalmente</li>
+                  </ol>
+                  <p className="mt-3 text-xs text-zinc-500">Non trovi l'email? Controlla anche la cartella spam o promozioni.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="w-full py-4 bg-gradient-to-r from-brand-orange to-orange-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-orange-500 transition-all shadow-lg shadow-brand-orange/20"
+                >
+                  Ho verificato, accedi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="w-full flex items-center justify-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Torna all'accesso
+                </button>
+              </div>
+            )}
+
+            {!isVerifyPending && <form onSubmit={handleSubmit} className="space-y-5">
               {isSignup && (
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2 ml-1">Nome completo</label>
@@ -380,9 +430,9 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   Torna all'accesso
                 </button>
               )}
-            </form>
+            </form>}
 
-            {!isReset && (
+            {!isReset && !isVerifyPending && (
               <>
                 <div className="mt-8 relative">
                   <div className="absolute inset-0 flex items-center">

@@ -21,9 +21,12 @@ jobs:
       - name: Install dependencies
         run: rm -f package-lock.json && npm install --include=optional
 
+      - name: Install function dependencies
+        run: cd functions && npm install
+
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting --project officinadelsuono-87986 --token "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
+      - name: Deploy to Firebase (Hosting + Functions)
+        run: npx firebase-tools deploy --only hosting,functions --project officinadelsuono-87986 --token "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}"
         if: github.ref == 'refs/heads/main'
