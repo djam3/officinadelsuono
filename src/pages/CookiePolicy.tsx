@@ -120,7 +120,7 @@ export function CookiePolicy() {
                 <strong className="text-white">Officinadelsuono di Amerigo De Cristofaro</strong><br />
                 Strada Provinciale 30, 83020 Forino (AV), Italia<br />
                 P.IVA: 03243690645 — PEC: amerigodecristofaro@pec.it<br />
-                Per richieste relative ai cookie: <a href="mailto:officinadelsuono99@gmail.com" className="text-brand-orange hover:underline">officinadelsuono99@gmail.com</a>
+                Per richieste relative ai cookie: <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:underline">info@officina-del-suono.it</a>
               </p>
             </section>
 

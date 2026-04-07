@@ -104,8 +104,8 @@ export function Contact() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Email Supporto</h3>
-                    <a href="mailto:officinadelsuono99@gmail.com" className="text-brand-orange hover:text-white transition-colors">
-                      officinadelsuono99@gmail.com
+                    <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:text-white transition-colors">
+                      info@officina-del-suono.it
                     </a>
                   </div>
                 </div>

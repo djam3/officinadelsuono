@@ -32,7 +32,7 @@ export function Privacy() {
                 Sede legale: Strada Provinciale 30, 83020 Forino (AV), Italia<br />
                 P.IVA: 03243690645 — REA: AV - 314125<br />
                 PEC: amerigodecristofaro@pec.it<br />
-                Email: officinadelsuono99@gmail.com
+                Email: info@officina-del-suono.it
               </p>
             </section>
 
@@ -123,7 +123,7 @@ export function Privacy() {
                 <li><strong className="text-white">Reclamo all'Autorità Garante</strong> (Garante per la Protezione dei Dati Personali, <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:underline">www.garanteprivacy.it</a>).</li>
               </ul>
               <p className="text-zinc-300 leading-relaxed mt-4">
-                Per esercitare i tuoi diritti puoi scrivere a <a href="mailto:officinadelsuono99@gmail.com" className="text-brand-orange hover:underline">officinadelsuono99@gmail.com</a>. Risponderemo entro 30 giorni dalla ricezione della richiesta.
+                Per esercitare i tuoi diritti puoi scrivere a <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:underline">info@officina-del-suono.it</a>. Risponderemo entro 30 giorni dalla ricezione della richiesta.
               </p>
             </section>
 

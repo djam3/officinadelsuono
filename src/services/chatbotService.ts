@@ -180,7 +180,7 @@ class ChatbotService {
     if (builtinResponse) return builtinResponse;
 
     // 6. Fallback WhatsApp
-    return `Non ho trovato una risposta precisa per questa domanda. 🤔\n\nContatta **Amerigo** direttamente per una consulenza personalizzata:\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **officinadelsuono99@gmail.com**`;
+    return `Non ho trovato una risposta precisa per questa domanda. 🤔\n\nContatta **Amerigo** direttamente per una consulenza personalizzata:\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **info@officina-del-suono.it**`;
   }
 
   // ── Ricerca knowledge base admin ─────────────────────────────────────────
@@ -350,7 +350,7 @@ class ChatbotService {
 
     // Contatti / WhatsApp
     if (/contatt|whatsapp|telefon|email|dove siete|orari/.test(q)) {
-      return `📞 **Contatti Officinadelsuono:**\n\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **officinadelsuono99@gmail.com**\n📍 Sede: Forino (AV), Campania\n\nAmerigo risponde personalmente — solitamente entro poche ore! 🎛️`;
+      return `📞 **Contatti Officinadelsuono:**\n\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **info@officina-del-suono.it**\n📍 Sede: Forino (AV), Campania\n\nAmerigo risponde personalmente — solitamente entro poche ore! 🎛️`;
     }
 
     // Consiglio / aiuto scelta

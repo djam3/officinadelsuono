@@ -75,7 +75,7 @@ export function Footer({ onNavigate }: FooterProps) {
               <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Garanzia</button></li>
               <li className="pt-2">
                 <a href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Ti%20scrivo%20dal%20sito%20Officinadelsuono." target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:text-white transition-colors block">WA: +39 347 739 7016</a>
-                <a href="mailto:officinadelsuono99@gmail.com" className="text-brand-orange hover:text-white transition-colors block mt-1">officinadelsuono99@gmail.com</a>
+                <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:text-white transition-colors block mt-1">info@officina-del-suono.it</a>
               </li>
             </ul>
           </div>

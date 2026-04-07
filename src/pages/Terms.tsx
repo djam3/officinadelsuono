@@ -32,7 +32,7 @@ export function Terms() {
                 P.IVA: 03243690645 — REA: AV - 314125<br />
                 Codice ATECO: 47.69.12<br />
                 PEC: amerigodecristofaro@pec.it<br />
-                Email: officinadelsuono99@gmail.com
+                Email: info@officina-del-suono.it
               </p>
             </section>
 
@@ -77,7 +77,7 @@ export function Terms() {
                 <strong className="text-white">Come esercitare il recesso:</strong>
               </p>
               <ol className="list-decimal list-inside space-y-2 text-zinc-300 ml-2 mb-3">
-                <li>Inviare comunicazione esplicita via email a <a href="mailto:officinadelsuono99@gmail.com" className="text-brand-orange hover:underline">officinadelsuono99@gmail.com</a> o via PEC, indicando numero d'ordine, prodotto e dati personali;</li>
+                <li>Inviare comunicazione esplicita via email a <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:underline">info@officina-del-suono.it</a> o via PEC, indicando numero d'ordine, prodotto e dati personali;</li>
                 <li>Restituire il prodotto integro, nella confezione originale, completo di tutti gli accessori e documentazione, entro 14 giorni dalla comunicazione di recesso;</li>
                 <li>Le spese di restituzione sono a carico del cliente, salvo diverso accordo;</li>
                 <li>Il rimborso avverrà entro 14 giorni dalla ricezione della merce o dalla prova di avvenuta spedizione, con lo stesso metodo di pagamento utilizzato per l'acquisto.</li>
