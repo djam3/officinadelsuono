@@ -106,7 +106,14 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                 </button>
                 <div className="absolute right-0 mt-2 w-48 bg-zinc-900 border border-white/10 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                   <div className="p-2">
-                    <button 
+                    <button
+                      onClick={() => onNavigate('profile')}
+                      className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" />
+                      Il mio profilo
+                    </button>
+                    <button
                       onClick={handleLogout}
                       className="w-full text-left px-4 py-2 text-sm text-zinc-300 hover:text-white hover:bg-white/5 rounded-lg flex items-center gap-2"
                     >
@@ -176,8 +183,14 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                     )}
                     <span className="font-bold">{user.displayName || user.email?.split('@')[0]}</span>
                   </div>
-                  <button 
-                    onClick={() => { handleLogout(); setIsMenuOpen(false); }} 
+                  <button
+                    onClick={() => { onNavigate('profile'); setIsMenuOpen(false); }}
+                    className="block w-full text-left px-4 py-4 text-base font-bold text-zinc-300 hover:text-brand-orange uppercase tracking-wider"
+                  >
+                    Il mio profilo
+                  </button>
+                  <button
+                    onClick={() => { handleLogout(); setIsMenuOpen(false); }}
                     className="block w-full text-left px-4 py-4 text-base font-bold text-zinc-500 hover:text-white uppercase tracking-wider"
                   >
                     Esci
