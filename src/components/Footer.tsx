@@ -104,6 +104,7 @@ export function Footer({ onNavigate }: FooterProps) {
           <div className="flex flex-wrap justify-center lg:justify-end items-center gap-x-6 gap-y-3 text-[10px] text-zinc-500 uppercase font-bold tracking-widest">
             <button onClick={() => onNavigate?.('privacy')} className="hover:text-white transition-colors">Privacy Policy</button>
             <button onClick={() => onNavigate?.('terms')} className="hover:text-white transition-colors">Termini e Condizioni</button>
+            <button onClick={() => onNavigate?.('cookie-policy')} className="hover:text-white transition-colors">Cookie Policy</button>
             <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-center">Risoluzione Controversie (ODR)</a>
           </div>
         </div>
