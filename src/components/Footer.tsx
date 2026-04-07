@@ -1,4 +1,4 @@
-import { Lock, Truck, ShieldCheck, MessageCircle, Award } from 'lucide-react';
+import { Truck, ShieldCheck, MessageCircle, Award } from 'lucide-react';
 import { PaymentLogos } from './PaymentLogos';
 import { Logo } from './Logo';
 
@@ -85,15 +85,6 @@ export function Footer({ onNavigate }: FooterProps) {
           <div className="flex flex-col gap-6 items-center lg:items-start w-full lg:w-auto">
             <div className="flex flex-col items-center lg:items-start gap-3 w-full">
               <PaymentLogos />
-              {onNavigate && (
-                <button 
-                  onClick={() => onNavigate('admin')}
-                  className="flex items-center gap-1 text-zinc-700 hover:text-brand-orange transition-colors text-xs uppercase font-bold tracking-tighter"
-                  title="Area Riservata"
-                >
-                  <Lock className="w-3 h-3" /> Admin
-                </button>
-              )}
             </div>
             <div className="text-[10px] text-zinc-600 space-y-1 text-center lg:text-left uppercase tracking-tighter">
               <p>&copy; {new Date().getFullYear()} Officinadelsuono di Amerigo De Cristofaro - Ditta Individuale - Sede a Forino (AV).</p>

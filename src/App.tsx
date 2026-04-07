@@ -15,6 +15,10 @@ import { MessageCircle, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-rea
 import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
+import { installErrorLogger } from './utils/errorLogger';
+
+// Install global error logger once at module load
+installErrorLogger();
 
 // Sync current page with Builder Context
 function BuilderPageSync({ currentPage }: { currentPage: string }) {
