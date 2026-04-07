@@ -385,7 +385,7 @@ export function Home({ onNavigate }: HomeProps) {
                       </div>
                       <div className="flex items-center gap-4 text-brand-orange text-xs font-black uppercase tracking-[0.3em] overflow-hidden">
                         <span className="w-10 h-[2px] bg-brand-orange -translate-x-full group-hover:translate-x-0 transition-transform duration-500 origin-left" />
-                        <span className="translate-x-[-45px] group-hover:translate-x-0 transition-transform duration-500">Discover</span>
+                        <span className="translate-x-[-45px] group-hover:translate-x-0 transition-transform duration-500">Scopri</span>
                       </div>
                     </div>
                   </div>
