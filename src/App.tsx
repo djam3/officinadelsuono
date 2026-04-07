@@ -113,6 +113,11 @@ export default function App() {
       // Remove query params to clean up URL
       window.history.replaceState(null, '', window.location.pathname);
     }
+    const pageParam = query.get('page');
+    if (pageParam) {
+      setCurrentPage(pageParam);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
   }, []);
 
   const handleNavigate = (page: string, productId?: string) => {
