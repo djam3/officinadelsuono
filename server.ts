@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from "express";
 import cors from "cors";
 import { createServer as createViteServer } from "vite";
@@ -75,106 +76,160 @@ async function startServer() {
         return res.json({ success: true, simulated: true });
       }
 
+      const { name } = req.body;
+      const firstName = (name && typeof name === 'string') ? name.split(' ')[0] : null;
+      const blogUrl = 'https://officinadelsuono-87986.web.app/?page=blog';
+      const shopUrl = 'https://officinadelsuono-87986.web.app/?page=shop';
+      const siteUrl = 'https://officinadelsuono-87986.web.app';
+
       const { data, error } = await getResend().emails.send({
-        from: 'onboarding@resend.dev', // Fallback for testing. In production, use your verified domain.
+        from: 'Officina del Suono <onboarding@resend.dev>',
         to: email,
-        subject: '🎧 Sei dentro! Benvenuto nell\'Officina del Suono',
-        html: `
-<!DOCTYPE html>
-<html>
+        subject: 'Benvenuto in Officina del Suono — alza il volume',
+        html: `<!DOCTYPE html>
+<html lang="it">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
   <title>Benvenuto in Officina del Suono</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0a0a0a; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #ffffff;">
-  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #0a0a0a; width: 100%;">
+<body style="margin:0;padding:0;background:#050505;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#fafafa;-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Il tuo posto in prima fila tra recensioni, guide e offerte per chi vive di musica.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#050505;">
     <tr>
-      <td align="center" style="padding: 40px 10px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #141414; border-radius: 16px; overflow: hidden; max-width: 600px; width: 100%; border: 1px solid #333333;">
-          <!-- Header Image -->
+      <td align="center" style="padding:48px 16px;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#0d0d0d;border-radius:20px;overflow:hidden;border:1px solid #1f1f1f;box-shadow:0 30px 80px rgba(0,0,0,0.6);">
+
+          <!-- Brand bar -->
           <tr>
-            <td>
-              <img src="https://images.unsplash.com/photo-1516280440502-65f67524650b?q=80&w=1200&auto=format&fit=crop" alt="DJ Controller" width="600" style="display: block; width: 100%; max-width: 600px; height: auto;" />
-            </td>
-          </tr>
-          
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px 30px;">
-              <h1 style="color: #F27D26; font-size: 28px; margin-top: 0; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">Sei dentro. Benvenuto nel Club.</h1>
-              
-              <p style="font-size: 16px; line-height: 1.6; color: #e5e5e5; margin-bottom: 20px;">
-                Ciao! Hai appena fatto il primo passo per portare il tuo sound al livello successivo. In <strong>Officina del Suono</strong> non ci limitiamo a parlare di attrezzatura; viviamo e respiriamo musica elettronica, djing e produzione.
-              </p>
-              
-              <p style="font-size: 16px; line-height: 1.6; color: #e5e5e5; margin-bottom: 30px;">
-                Ecco cosa puoi aspettarti di ricevere direttamente nella tua casella di posta:
-              </p>
-              
-              <!-- Features List -->
-              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 30px;">
-                <tr>
-                  <td width="30" valign="top" style="padding-bottom: 15px;"><span style="font-size: 20px;">🔥</span></td>
-                  <td style="padding-bottom: 15px;">
-                    <strong style="color: #ffffff; font-size: 16px;">Recensioni Senza Filtri:</strong><br>
-                    <span style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">Testiamo i controller, i synth e i monitor da studio fino allo sfinimento per dirti cosa vale davvero i tuoi soldi.</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td width="30" valign="top" style="padding-bottom: 15px;"><span style="font-size: 20px;">💡</span></td>
-                  <td style="padding-bottom: 15px;">
-                    <strong style="color: #ffffff; font-size: 16px;">Tips & Tricks Esclusivi:</strong><br>
-                    <span style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">Segreti di produzione, tecniche di mixaggio e guide step-by-step che fanno la differenza in pista e in studio.</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td width="30" valign="top"><span style="font-size: 20px;">🎁</span></td>
-                  <td>
-                    <strong style="color: #ffffff; font-size: 16px;">Offerte & Novità in Anteprima:</strong><br>
-                    <span style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">Sarai il primo a sapere quando pubblichiamo nuovi contenuti o quando ci sono sconti imperdibili sull'attrezzatura.</span>
-                  </td>
-                </tr>
-              </table>
-              
-              <!-- Secondary Image -->
-              <img src="https://images.unsplash.com/photo-1598653222000-6b7b7a552625?q=80&w=800&auto=format&fit=crop" alt="Music Studio" width="540" style="display: block; width: 100%; max-width: 540px; height: auto; border-radius: 8px; margin-bottom: 30px;" />
-              
-              <p style="font-size: 16px; line-height: 1.6; color: #e5e5e5; margin-bottom: 30px; text-align: center;">
-                Non vediamo l'ora di condividere con te la nostra passione. Nel frattempo, perché non dai un'occhiata ai nostri ultimi articoli?
-              </p>
-              
-              <!-- CTA Button -->
+            <td style="padding:28px 36px;background:linear-gradient(135deg,#0d0d0d 0%,#161616 100%);border-bottom:1px solid #1f1f1f;">
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
-                  <td align="center">
-                    <a href="https://officinadelsuono.it/blog" style="display: inline-block; background-color: #F27D26; color: #ffffff; font-size: 16px; font-weight: bold; text-decoration: none; padding: 16px 32px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px;">Leggi il Blog</a>
+                  <td style="font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#F27D26;">
+                    Officina del Suono
+                  </td>
+                  <td align="right" style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#52525b;">
+                    Est. 2025
                   </td>
                 </tr>
               </table>
-              
             </td>
           </tr>
-          
+
+          <!-- Hero -->
+          <tr>
+            <td style="position:relative;">
+              <img src="https://images.unsplash.com/photo-1571266028243-3716f02d7d31?q=80&w=1600&auto=format&fit=crop" alt="" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;" />
+            </td>
+          </tr>
+
+          <!-- Headline -->
+          <tr>
+            <td style="padding:48px 40px 8px 40px;">
+              <p style="margin:0 0 12px 0;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:#F27D26;font-weight:700;">— Benvenuto a bordo</p>
+              <h1 style="margin:0 0 20px 0;font-size:34px;line-height:1.15;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">
+                ${firstName ? `Ciao ${firstName},` : 'Ciao,'}<br>il tuo sound è appena salito di livello.
+              </h1>
+              <p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;color:#d4d4d8;">
+                La tua registrazione è confermata. Da oggi fai parte di una community di DJ, producer e appassionati che non si accontenta del solito hype: testiamo, smontiamo e raccontiamo solo l'attrezzatura che merita davvero di stare nel tuo setup.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:32px 40px 0 40px;">
+              <div style="height:1px;background:linear-gradient(90deg,transparent,#2a2a2a,transparent);"></div>
+            </td>
+          </tr>
+
+          <!-- Features -->
+          <tr>
+            <td style="padding:32px 40px 8px 40px;">
+              <p style="margin:0 0 24px 0;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:#71717a;font-weight:600;">Cosa trovi dentro</p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td width="56" valign="top" style="padding-bottom:24px;">
+                    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#F27D26,#FB923C);text-align:center;line-height:44px;font-size:20px;">★</div>
+                  </td>
+                  <td valign="top" style="padding:4px 0 24px 4px;">
+                    <div style="font-size:16px;font-weight:700;color:#ffffff;margin-bottom:4px;">Recensioni senza filtri</div>
+                    <div style="font-size:14px;line-height:1.6;color:#a1a1aa;">Controller, synth, monitor da studio: testati a fondo per dirti cosa vale davvero i tuoi soldi.</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="56" valign="top" style="padding-bottom:24px;">
+                    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#F27D26,#FB923C);text-align:center;line-height:44px;font-size:20px;">♪</div>
+                  </td>
+                  <td valign="top" style="padding:4px 0 24px 4px;">
+                    <div style="font-size:16px;font-weight:700;color:#ffffff;margin-bottom:4px;">Tips & guide esclusive</div>
+                    <div style="font-size:14px;line-height:1.6;color:#a1a1aa;">Tecniche di mixaggio, segreti di produzione e workflow professionali per studio e cabina.</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td width="56" valign="top">
+                    <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#F27D26,#FB923C);text-align:center;line-height:44px;font-size:20px;">%</div>
+                  </td>
+                  <td valign="top" style="padding:4px 0 0 4px;">
+                    <div style="font-size:16px;font-weight:700;color:#ffffff;margin-bottom:4px;">Offerte in anteprima</div>
+                    <div style="font-size:14px;line-height:1.6;color:#a1a1aa;">Sconti, novità e drop dell'industria audio prima che arrivino a tutti gli altri.</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td style="padding:40px 40px 16px 40px;" align="center">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-radius:12px;background:linear-gradient(135deg,#F27D26,#FB923C);box-shadow:0 12px 30px rgba(242,125,38,0.35);">
+                    <a href="${blogUrl}" style="display:inline-block;padding:18px 44px;font-size:14px;font-weight:700;color:#0a0a0a;text-decoration:none;text-transform:uppercase;letter-spacing:2px;border-radius:12px;">
+                      Esplora il blog →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:18px 0 0 0;font-size:13px;color:#71717a;">
+                oppure <a href="${shopUrl}" style="color:#F27D26;text-decoration:none;font-weight:600;">visita lo shop</a>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Quote -->
+          <tr>
+            <td style="padding:32px 40px 40px 40px;">
+              <div style="background:#141414;border-left:3px solid #F27D26;padding:20px 24px;border-radius:0 12px 12px 0;">
+                <p style="margin:0;font-size:15px;line-height:1.6;color:#d4d4d8;font-style:italic;">
+                  "Senza musica, la vita sarebbe un errore."
+                </p>
+                <p style="margin:8px 0 0 0;font-size:12px;color:#71717a;letter-spacing:1px;text-transform:uppercase;">— Friedrich Nietzsche</p>
+              </div>
+            </td>
+          </tr>
+
           <!-- Footer -->
           <tr>
-            <td style="background-color: #0a0a0a; padding: 30px; text-align: center; border-top: 1px solid #333333;">
-              <p style="margin: 0; color: #71717a; font-size: 14px;">
-                Alza il volume.<br>
-                <strong style="color: #ffffff;">Il team di Officina del Suono</strong>
-              </p>
-              <p style="margin: 20px 0 0 0; color: #52525b; font-size: 12px;">
-                Hai ricevuto questa email perché ti sei iscritto alla newsletter di Officina del Suono.
+            <td style="background:#070707;padding:32px 40px;text-align:center;border-top:1px solid #1f1f1f;">
+              <p style="margin:0 0 6px 0;font-size:13px;color:#a1a1aa;">Alza il volume.</p>
+              <p style="margin:0 0 20px 0;font-size:14px;color:#ffffff;font-weight:700;letter-spacing:0.5px;">Il team di Officina del Suono</p>
+              <p style="margin:0;font-size:11px;color:#52525b;line-height:1.6;">
+                Hai ricevuto questa email perché ti sei registrato su <a href="${siteUrl}" style="color:#71717a;text-decoration:underline;">officinadelsuono.it</a>.<br>
+                Se non riconosci questa registrazione, ignora pure questo messaggio.
               </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
   </table>
 </body>
-</html>
-        `
+</html>`
       });
 
       if (error) {
