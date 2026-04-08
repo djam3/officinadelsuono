@@ -77,7 +77,36 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
 
     setIsCheckingOut(true);
     try {
-      // Handle all payments as Manual Orders
+      // Klarna: crea sessione e reindirizza
+      if (paymentMethod === 'klarna') {
+        const response = await fetch('/api/create-klarna-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            items: items.map(item => ({
+              id: item.id,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity
+            })),
+            total,
+            customerEmail: 'cliente@esempio.it', // In a real app, we'd collect this
+          }),
+        });
+
+        if (!response.ok) throw new Error('Errore nella creazione della sessione Klarna');
+
+        const data = await response.json();
+        setOrderId(data.orderId);
+        clearCart();
+        // Reindirizza a Klarna
+        window.location.href = data.redirectUrl;
+        return;
+      }
+
+      // Handle all other payments as Manual Orders
       const response = await fetch('/api/create-manual-order', {
         method: 'POST',
         headers: {
@@ -97,7 +126,7 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
       });
 
       if (!response.ok) throw new Error('Errore nella creazione dell\'ordine');
-      
+
       const data = await response.json();
       setOrderId(data.orderId);
       setStep('success');

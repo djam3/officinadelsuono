@@ -131,3 +131,166 @@ exports.sendWelcomeEmail = functions
     }
     return null;
   });
+
+/**
+ * Klarna: crea una sessione di pagamento e salva ordine preliminare in Firestore
+ */
+exports.createKlarnaSession = functions
+  .runWith({ secrets: ['KLARNA_MERCHANT_ID', 'KLARNA_API_KEY'] })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.status(200).send('');
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.status(400).json({ error: 'POST only' });
+      return;
+    }
+
+    const { items, total, customerEmail } = req.body;
+
+    if (!items || !total || !customerEmail) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    try {
+      const admin = require('firebase-admin');
+      if (!admin.apps.length) admin.initializeApp();
+
+      // Salva ordine preliminare in Firestore
+      const ordersRef = admin.firestore().collection('orders');
+      const newOrderRef = ordersRef.doc();
+
+      const orderData = {
+        id: newOrderRef.id,
+        items,
+        total,
+        customerEmail,
+        paymentMethod: 'Klarna',
+        status: 'pending_payment',
+        klarnaSessionId: null,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await newOrderRef.set(orderData);
+
+      // Crea sessione Klarna
+      const klarnaUrl = 'https://api.klarna.com/checkout/v3/orders';
+      const auth = Buffer.from(`${process.env.KLARNA_MERCHANT_ID}:${process.env.KLARNA_API_KEY}`).toString('base64');
+
+      const klarnaPayload = {
+        purchase_country: 'IT',
+        purchase_currency: 'EUR',
+        locale: 'it-IT',
+        order_amount: Math.round(total * 100), // centesimi
+        order_lines: items.map(item => ({
+          type: 'physical',
+          reference: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          quantity_unit: 'pcs',
+          unit_price: Math.round(item.price * 100),
+          total_amount: Math.round(item.price * item.quantity * 100),
+          total_tax_amount: 0,
+        })),
+        merchant_urls: {
+          success: 'https://officinadelsuono-87986.web.app/?page=shop&payment=success',
+          cancel: 'https://officinadelsuono-87986.web.app/?page=shop&payment=canceled',
+          failure: 'https://officinadelsuono-87986.web.app/?page=shop&payment=failed',
+          notification: 'https://us-central1-officinadelsuono-87986.cloudfunctions.net/klarnaWebhook',
+        },
+      };
+
+      const klarnaResponse = await fetch(klarnaUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(klarnaPayload),
+      });
+
+      if (!klarnaResponse.ok) {
+        throw new Error(`Klarna API error: ${klarnaResponse.statusText}`);
+      }
+
+      const klarnaSession = await klarnaResponse.json();
+
+      // Aggiorna ordine con session ID Klarna
+      await newOrderRef.update({
+        klarnaSessionId: klarnaSession.order_id,
+      });
+
+      res.json({
+        orderId: newOrderRef.id,
+        redirectUrl: klarnaSession.redirect_url,
+      });
+    } catch (error) {
+      console.error('Klarna session error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+/**
+ * Klarna Webhook: riceve conferma pagamento e aggiorna ordine
+ */
+exports.klarnaWebhook = functions
+  .https.onRequest(async (req, res) => {
+    if (req.method !== 'POST') {
+      res.status(400).send('POST only');
+      return;
+    }
+
+    try {
+      const admin = require('firebase-admin');
+      if (!admin.apps.length) admin.initializeApp();
+
+      const { order_id, status } = req.body;
+
+      if (!order_id) {
+        res.status(400).json({ error: 'Missing order_id' });
+        return;
+      }
+
+      // Trova ordine per klarnaSessionId
+      const snapshot = await admin.firestore()
+        .collection('orders')
+        .where('klarnaSessionId', '==', order_id)
+        .limit(1)
+        .get();
+
+      if (snapshot.empty) {
+        console.warn(`No order found for Klarna session ${order_id}`);
+        res.status(200).json({ received: true });
+        return;
+      }
+
+      const orderDoc = snapshot.docs[0];
+      let orderStatus = 'pending_payment';
+
+      if (status === 'AUTHORIZED' || status === 'CAPTURED') {
+        orderStatus = 'paid';
+      } else if (status === 'CANCELLED' || status === 'EXPIRED') {
+        orderStatus = 'canceled';
+      }
+
+      await orderDoc.ref.update({
+        status: orderStatus,
+        klarnaStatus: status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`Order ${orderDoc.id} updated to ${orderStatus}`);
+      res.status(200).json({ received: true });
+    } catch (error) {
+      console.error('Klarna webhook error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
