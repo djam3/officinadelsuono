@@ -109,6 +109,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // Social Media posts — solo admin
+    match /social_posts/{postId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Social AI suggestions — solo admin
+    match /social_suggestions/{sugId} {
+      allow read, write: if isAdmin();
+    }
+
     // AI features change log — solo admin legge/cancella, admin scrive
     match /logs/ai_features_changes/entries/{entryId} {
       allow read, delete: if isAdmin();
