@@ -1,8 +1,18 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { doc, onSnapshot, setDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { doc, onSnapshot, setDoc, getDoc, serverTimestamp, addDoc, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 
+export interface AICosts {
+  total_eur: number;
+  month: string;
+  by_feature: Record<string, number>;
+  calls_total: number;
+  last_updated?: any;
+}
+
 export interface AIFeatureConfig {
+  // Provider
+  provider?: 'claude' | 'gemini-free';
   // Consulente AM3
   systemPrompt?: string;
   model?: string;
@@ -66,6 +76,9 @@ interface AIFeaturesContextType {
   toggleFeature: (featureKey: keyof Omit<AIFeatures, 'last_updated' | 'updated_by'>, adminEmail: string) => Promise<void>;
   updateConfig: (featureKey: keyof Omit<AIFeatures, 'last_updated' | 'updated_by'>, config: Partial<AIFeatureConfig>, adminEmail: string) => Promise<void>;
   togglingKey: string | null;
+  costs: AICosts | null;
+  costsLoading: boolean;
+  refreshCosts: () => Promise<void>;
 }
 
 const AIFeaturesContext = createContext<AIFeaturesContextType>({
@@ -74,12 +87,17 @@ const AIFeaturesContext = createContext<AIFeaturesContextType>({
   toggleFeature: async () => {},
   updateConfig: async () => {},
   togglingKey: null,
+  costs: null,
+  costsLoading: false,
+  refreshCosts: async () => {},
 });
 
 export function AIFeaturesProvider({ children }: { children: ReactNode }) {
   const [features, setFeatures] = useState<AIFeatures>(DEFAULT_FEATURES);
   const [loading, setLoading] = useState(true);
   const [togglingKey, setTogglingKey] = useState<string | null>(null);
+  const [costs, setCosts] = useState<AICosts | null>(null);
+  const [costsLoading, setCostsLoading] = useState(false);
 
   useEffect(() => {
     const ref = doc(db, 'settings', 'ai_features');
@@ -139,6 +157,30 @@ export function AIFeaturesProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const refreshCosts = useCallback(async () => {
+    setCostsLoading(true);
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'ai_costs'));
+      if (snap.exists()) {
+        setCosts(snap.data() as AICosts);
+      } else {
+        const empty: AICosts = {
+          total_eur: 0,
+          month: new Date().toISOString().slice(0, 7),
+          by_feature: {},
+          calls_total: 0,
+        };
+        setCosts(empty);
+      }
+    } finally {
+      setCostsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCosts();
+  }, [refreshCosts]);
+
   const updateConfig = async (
     featureKey: keyof Omit<AIFeatures, 'last_updated' | 'updated_by'>,
     config: Partial<AIFeatureConfig>,
@@ -158,7 +200,7 @@ export function AIFeaturesProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AIFeaturesContext.Provider value={{ features, loading, toggleFeature, updateConfig, togglingKey }}>
+    <AIFeaturesContext.Provider value={{ features, loading, toggleFeature, updateConfig, togglingKey, costs, costsLoading, refreshCosts }}>
       {children}
     </AIFeaturesContext.Provider>
   );

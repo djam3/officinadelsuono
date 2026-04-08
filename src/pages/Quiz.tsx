@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Headphones, Speaker, Mic, Music, Settings, ArrowRight, ShoppingCart, Check, MessageCircle } from 'lucide-react';
 import { getDirectDriveUrl } from '../utils/drive';
+import { useAIFeatures } from '../contexts/AIFeaturesContext';
 
 interface QuizProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -15,6 +16,7 @@ type Environment = 'Home Studio' | 'Club' | 'Live/Eventi' | '';
 type Budget = 'Entry' | 'Mid' | 'High' | '';
 
 export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
+  const { features, loading: featuresLoading } = useAIFeatures();
   const [step, setStep] = useState(0);
   const [level, setLevel] = useState<Level>('');
   const [genre, setGenre] = useState<Genre>('');
@@ -71,6 +73,22 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
   };
 
   const recommendation = getRecommendation();
+
+  // Feature disattivata dall'admin
+  if (!featuresLoading && !features.quiz_trova_setup?.enabled) {
+    return (
+      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-black mb-3">Quiz temporaneamente non disponibile</h2>
+          <p className="text-zinc-500 mb-6">Il Quiz AI è momentaneamente disattivato. Torna a trovarci presto!</p>
+          <button onClick={() => onNavigate('home')} className="px-6 py-3 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-bold transition-colors">
+            Torna alla Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24 relative overflow-hidden">

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit, where, Timestamp } from 'firebase/firestore';
-import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2, BrainCircuit, Target, Star, AtSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2, BrainCircuit, Target, Star, AtSign, ToggleLeft, ToggleRight, RefreshCw, Euro } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -63,7 +63,7 @@ interface AdminProps {
 
 export function Admin({ onNavigate }: AdminProps) {
   const { isBuilderMode, activateBuilderMode, deactivateBuilderMode } = useBuilder();
-  const { features, toggleFeature, updateConfig, togglingKey } = useAIFeatures();
+  const { features, toggleFeature, updateConfig, togglingKey, costs, costsLoading, refreshCosts } = useAIFeatures();
   const [configModalFeature, setConfigModalFeature] = useState<keyof Omit<AIFeatures, 'last_updated' | 'updated_by'> | null>(null);
   const [configDraft, setConfigDraft] = useState<Partial<AIFeatureConfig>>({});
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -2662,10 +2662,11 @@ export function Admin({ onNavigate }: AdminProps) {
           ];
 
           const handleToggle = async (key: typeof AI_FEATURE_DEFS[number]['key']) => {
+            const wasEnabled = features[key]?.enabled ?? false;
             try {
               await toggleFeature(key, currentUser?.email || ADMIN_EMAIL);
-              const newState = !features[key].enabled;
-              setToggleToast(`${AI_FEATURE_DEFS.find(f => f.key === key)?.name} ${newState ? 'attivata' : 'disattivata'}`);
+              const newState = !wasEnabled;
+              setToggleToast(`${AI_FEATURE_DEFS.find(f => f.key === key)?.name} ${newState ? 'attivata ✓' : 'disattivata'}`);
               setTimeout(() => setToggleToast(null), 3000);
             } catch {
               setToggleToast('Errore salvataggio. Riprova.');
@@ -2678,14 +2679,17 @@ export function Admin({ onNavigate }: AdminProps) {
             setConfigDraft({ ...features[key].config });
           };
 
+          const activeFeatureKeys = AI_FEATURE_DEFS.filter(f => features[f.key]?.enabled);
+
           return (
             <div className="space-y-6">
               {/* Header KPIs */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  { label: 'Feature attive', value: Object.values(features).filter((f: any) => f?.enabled).length, color: 'text-green-400' },
+                  { label: 'Feature attive', value: activeFeatureKeys.length, color: 'text-green-400' },
                   { label: 'Feature disponibili', value: AI_FEATURE_DEFS.length, color: 'text-brand-orange' },
-                  { label: 'Budget mensile stimato', value: Object.values(features).filter((f: any) => f?.enabled).length > 0 ? '~€' + (Object.values(features).filter((f: any) => f?.enabled).length * 15).toFixed(0) : '€0', color: 'text-zinc-300' },
+                  { label: 'Costo mese corrente', value: costs ? `€${costs.total_eur.toFixed(4)}` : '—', color: 'text-zinc-300' },
+                  { label: 'Chiamate AI totali', value: costs ? costs.calls_total : '—', color: 'text-zinc-300' },
                 ].map(k => (
                   <div key={k.label} className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
                     <p className={`text-3xl font-black ${k.color}`}>{k.value}</p>
@@ -2694,12 +2698,72 @@ export function Admin({ onNavigate }: AdminProps) {
                 ))}
               </div>
 
+              {/* Cost counter card */}
+              <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-brand-orange/10 rounded-xl">
+                      <Euro className="w-5 h-5 text-brand-orange" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-base">Costi AI — {costs?.month ?? new Date().toISOString().slice(0, 7)}</h3>
+                      <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Spesa API effettiva questo mese</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={refreshCosts}
+                    disabled={costsLoading}
+                    className="flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 border border-white/5 rounded-xl text-xs font-bold text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${costsLoading ? 'animate-spin' : ''}`} />
+                    Aggiorna
+                  </button>
+                </div>
+
+                {costsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-zinc-500">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Caricamento costi...
+                  </div>
+                ) : costs ? (
+                  <div className="space-y-3">
+                    <div className="flex items-end gap-3">
+                      <span className="text-4xl font-black text-white">€{costs.total_eur.toFixed(4)}</span>
+                      <span className="text-sm text-zinc-500 mb-1">/ {costs.calls_total} chiamate</span>
+                    </div>
+                    {Object.keys(costs.by_feature).length > 0 ? (
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+                        {AI_FEATURE_DEFS.map(f => {
+                          const featureCost = costs.by_feature[f.key] ?? 0;
+                          const provider = features[f.key]?.config?.provider ?? 'claude';
+                          return (
+                            <div key={f.key} className="bg-zinc-800/50 rounded-xl p-3">
+                              <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate">{f.name}</p>
+                              <p className={`text-lg font-black mt-1 ${provider === 'gemini-free' ? 'text-green-400' : 'text-zinc-200'}`}>
+                                {provider === 'gemini-free' ? 'Gratuito' : `€${featureCost.toFixed(4)}`}
+                              </p>
+                              <p className="text-[10px] text-zinc-600 mt-0.5">{provider === 'gemini-free' ? 'Gemini Flash' : 'Claude API'}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-zinc-600 mt-2">Nessuna chiamata AI registrata questo mese.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-zinc-600">Dati non disponibili.</p>
+                )}
+              </div>
+
               {/* Feature cards */}
               <div className="space-y-4">
                 {AI_FEATURE_DEFS.map(f => {
                   const Icon = f.icon;
                   const isEnabled = features[f.key]?.enabled ?? false;
                   const isToggling = togglingKey === f.key;
+
+                  const provider = features[f.key]?.config?.provider ?? 'claude';
+                  const displayCost = provider === 'gemini-free' ? 'Gratuito (Gemini Flash)' : f.costApi;
 
                   return (
                     <motion.div
@@ -2736,8 +2800,8 @@ export function Admin({ onNavigate }: AdminProps) {
                               <p className="text-sm text-zinc-400 leading-relaxed mb-4 max-w-2xl">{f.description}</p>
                               <div className="flex flex-wrap gap-4 text-xs">
                                 <span className="flex items-center gap-1.5 text-zinc-500">
-                                  <Zap className="w-3 h-3 text-brand-orange" />
-                                  Costo API: <span className="text-zinc-300 font-bold">{f.costApi}</span>
+                                  <Zap className={`w-3 h-3 ${provider === 'gemini-free' ? 'text-green-400' : 'text-brand-orange'}`} />
+                                  Costo API: <span className={`font-bold ${provider === 'gemini-free' ? 'text-green-400' : 'text-zinc-300'}`}>{displayCost}</span>
                                 </span>
                                 <span className="flex items-center gap-1.5 text-zinc-500">
                                   <TrendingUp className="w-3 h-3 text-green-400" />
@@ -2826,6 +2890,26 @@ export function Admin({ onNavigate }: AdminProps) {
                         {/* Campi config dinamici per feature */}
                         {configModalFeature === 'consulente_am3' && (
                           <>
+                            {/* Provider selector */}
+                            <div>
+                              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Provider AI</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {[
+                                  { value: 'claude', label: 'Claude (Anthropic)', sublabel: '~€0,01-0,02 / conv.', color: 'border-brand-orange/50 bg-brand-orange/5' },
+                                  { value: 'gemini-free', label: 'Gemini Flash', sublabel: 'Gratuito (quota Google)', color: 'border-green-500/50 bg-green-500/5' },
+                                ].map(opt => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as any, model: opt.value === 'gemini-free' ? 'gemini-2.0-flash-exp' : 'claude-haiku-4-5-20251001' }))}
+                                    className={`p-3 rounded-xl border text-left transition-all ${(configDraft.provider ?? 'claude') === opt.value ? opt.color + ' border-opacity-100' : 'border-white/5 bg-zinc-800 hover:bg-zinc-700'}`}
+                                  >
+                                    <p className="text-sm font-bold text-white">{opt.label}</p>
+                                    <p className="text-[10px] text-zinc-400 mt-0.5">{opt.sublabel}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <div>
                               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">System Prompt</label>
                               <textarea
@@ -2838,14 +2922,25 @@ export function Admin({ onNavigate }: AdminProps) {
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Modello AI</label>
-                              <select
-                                value={(configDraft.model as string) || 'claude-haiku-4-5-20251001'}
-                                onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))}
-                                className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
-                              >
-                                <option value="claude-sonnet-4-6">claude-sonnet-4-6 (migliore)</option>
-                                <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (economico)</option>
-                              </select>
+                              {(configDraft.provider ?? 'claude') === 'gemini-free' ? (
+                                <select
+                                  value={(configDraft.model as string) || 'gemini-2.0-flash-exp'}
+                                  onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))}
+                                  className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500"
+                                >
+                                  <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (gratuito)</option>
+                                  <option value="gemini-1.5-flash">gemini-1.5-flash (gratuito)</option>
+                                </select>
+                              ) : (
+                                <select
+                                  value={(configDraft.model as string) || 'claude-haiku-4-5-20251001'}
+                                  onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))}
+                                  className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                                >
+                                  <option value="claude-sonnet-4-6">claude-sonnet-4-6 (migliore)</option>
+                                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (economico)</option>
+                                </select>
+                              )}
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Temperatura: {configDraft.temperature ?? 0.7}</label>
@@ -2864,6 +2959,25 @@ export function Admin({ onNavigate }: AdminProps) {
 
                         {configModalFeature === 'quiz_trova_setup' && (
                           <>
+                            <div>
+                              <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Provider AI</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                {[
+                                  { value: 'claude', label: 'Claude (Anthropic)', sublabel: '~€0,005-0,01 / quiz', color: 'border-brand-orange/50 bg-brand-orange/5' },
+                                  { value: 'gemini-free', label: 'Gemini Flash', sublabel: 'Gratuito (quota Google)', color: 'border-green-500/50 bg-green-500/5' },
+                                ].map(opt => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as any }))}
+                                    className={`p-3 rounded-xl border text-left transition-all ${(configDraft.provider ?? 'claude') === opt.value ? opt.color + ' border-opacity-100' : 'border-white/5 bg-zinc-800 hover:bg-zinc-700'}`}
+                                  >
+                                    <p className="text-sm font-bold text-white">{opt.label}</p>
+                                    <p className="text-[10px] text-zinc-400 mt-0.5">{opt.sublabel}</p>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
                             <div>
                               <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Numero domande (max 6)</label>
                               <input type="number" min={2} max={6} value={(configDraft.numQuestions as number) || 4} onChange={e => setConfigDraft(p => ({ ...p, numQuestions: parseInt(e.target.value) }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange" />

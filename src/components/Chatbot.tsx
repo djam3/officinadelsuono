@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatbotService } from '../services/chatbotService';
+import { useAIFeatures } from '../contexts/AIFeaturesContext';
 
 interface Message {
   id: string;
@@ -36,6 +37,8 @@ function renderInline(text: string) {
 }
 
 export function Chatbot() {
+  const { features, loading: featuresLoading } = useAIFeatures();
+  const chatbotEnabled = features.consulente_am3?.enabled ?? false;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -103,6 +106,9 @@ export function Chatbot() {
   const prodCount = chatbotService.getProductCount();
   const knowCount = chatbotService.getKnowledgeCount();
   const blogCount = chatbotService.getBlogCount();
+
+  // Nasconde il chatbot se la feature è disattivata dall'admin
+  if (!featuresLoading && !chatbotEnabled) return null;
 
   return (
     <>
