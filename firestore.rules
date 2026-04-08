@@ -102,11 +102,18 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      // Anyone can read settings
+      // Anyone can read settings (needed for real-time AI feature flags)
       allow read: if true;
       // Only admins can write to settings
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // AI features change log — solo admin legge/cancella, admin scrive
+    match /logs/ai_features_changes/entries/{entryId} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false;
     }
 
     match /newsletter_subscriptions/{subscriptionId} {

@@ -16,6 +16,7 @@ import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
+import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 
 // Install global error logger once at module load
 installErrorLogger();
@@ -136,6 +137,7 @@ export default function App() {
   const isAdminPage = currentPage === 'admin';
 
   return (
+    <AIFeaturesProvider>
     <BuilderProvider>
       <div className="min-h-screen flex flex-col font-sans relative bg-zinc-950">
         <BuilderPageSync currentPage={currentPage} />
@@ -279,6 +281,7 @@ export default function App() {
       {!isAdminPage && <CookieBanner onNavigate={handleNavigate} />}
       </div>
     </BuilderProvider>
+    </AIFeaturesProvider>
   );
 }
 
