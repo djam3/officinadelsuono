@@ -13,6 +13,7 @@ import { CustomCursor } from './components/CustomCursor';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
+import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
@@ -136,6 +137,7 @@ export default function App() {
   const isAdminPage = currentPage === 'admin';
 
   return (
+    <AIFeaturesProvider>
     <BuilderProvider>
       <div className="min-h-screen flex flex-col font-sans relative bg-zinc-950">
         <BuilderPageSync currentPage={currentPage} />
@@ -279,6 +281,7 @@ export default function App() {
       {!isAdminPage && <CookieBanner onNavigate={handleNavigate} />}
       </div>
     </BuilderProvider>
+    </AIFeaturesProvider>
   );
 }
 

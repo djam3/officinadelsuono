@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatbotService } from '../services/chatbotService';
+import { useAIFeatures } from '../contexts/AIFeaturesContext';
 
 interface Message {
   id: string;
@@ -36,6 +37,9 @@ function renderInline(text: string) {
 }
 
 export function Chatbot() {
+  const { features, loading: featuresLoading } = useAIFeatures();
+  const chatbotEnabled = features.consulente_am3?.enabled ?? true;
+
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -54,9 +58,22 @@ export function Chatbot() {
     chatbotService.initialize().then(() => setIsInit(true));
   }, []);
 
+  // Wire admin AI config to chatbot service
+  useEffect(() => {
+    const cfg = features.consulente_am3?.config;
+    chatbotService.configureAI({
+      enabled: chatbotEnabled,
+      model: cfg?.model || 'gemini-2.0-flash',
+      systemPrompt: cfg?.systemPrompt || '',
+    });
+  }, [chatbotEnabled, features.consulente_am3?.config]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isOpen]);
+
+  // Hide if admin disabled this feature (AFTER all hooks)
+  if (!featuresLoading && !chatbotEnabled) return null;
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;

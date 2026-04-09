@@ -8,6 +8,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { useBuilder } from '../contexts/BuilderContext';
+import { generateSEOContent, generateEmailContent } from '../services/aiService';
 import { Pencil } from 'lucide-react';
 import { Logo } from '../components/Logo';
 
@@ -97,6 +98,17 @@ export function Admin({ onNavigate }: AdminProps) {
   const [aiForm, setAiForm] = useState({ question: '', answer: '', keywords: '' });
   const [isSavingAi, setIsSavingAi] = useState(false);
   
+  // SEO generation state
+  const [seoModal, setSeoModal] = useState<null | { product: any; result: any }>(null);
+  const [isGeneratingSEO, setIsGeneratingSEO] = useState(false);
+  const [isSavingSEO, setIsSavingSEO] = useState(false);
+
+  // Email AI state
+  const [emailAiSegment, setEmailAiSegment] = useState<'tutti'|'principianti'|'intermedi'|'pro'|'clienti_recenti'>('tutti');
+  const [emailAiResult, setEmailAiResult] = useState<null | { subject: string; preheader: string; bodyHtml: string; bodyText: string }>(null);
+  const [isGeneratingEmail, setIsGeneratingEmail] = useState(false);
+  const [emailPreviewMode, setEmailPreviewMode] = useState<'html'|'text'>('html');
+
   // Newsletter state
   const [newsletterForm, setNewsletterForm] = useState({ title: '', excerpt: '', url: '' });
   const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
@@ -938,6 +950,59 @@ export function Admin({ onNavigate }: AdminProps) {
       } catch (error) {
         console.error("Error deleting product:", error);
       }
+    }
+  };
+
+  const handleGenerateSEO = async (product: any) => {
+    setIsGeneratingSEO(true);
+    setSeoModal(null);
+    try {
+      const result = await generateSEOContent(
+        { name: product.name, category: product.category, price: product.price, brand: product.brand, specs: product.specs },
+        { includeFaq: false }
+      );
+      setSeoModal({ product, result });
+    } catch (err: any) {
+      alert('Errore generazione SEO: ' + (err.message || 'Verifica la chiave API Gemini nelle impostazioni.'));
+    } finally {
+      setIsGeneratingSEO(false);
+    }
+  };
+
+  const handleSaveSEO = async () => {
+    if (!seoModal) return;
+    setIsSavingSEO(true);
+    try {
+      await updateDoc(doc(db, 'products', seoModal.product.id), {
+        seoTitle: seoModal.result.seoTitle,
+        metaDescription: seoModal.result.metaDescription,
+        description: seoModal.result.description,
+        bullets: seoModal.result.bullets,
+      });
+      setSeoModal(null);
+      alert('Contenuto SEO salvato!');
+    } catch {
+      alert('Errore durante il salvataggio.');
+    } finally {
+      setIsSavingSEO(false);
+    }
+  };
+
+  const handleGenerateEmailAI = async () => {
+    setIsGeneratingEmail(true);
+    setEmailAiResult(null);
+    try {
+      const featured = products.slice(0, 3).map(p => ({
+        name: p.name, price: p.price, description: p.description, category: p.category
+      }));
+      const result = await generateEmailContent(emailAiSegment, featured, {
+        signature: 'Amerigo — Officina del Suono'
+      });
+      setEmailAiResult(result);
+    } catch (err: any) {
+      alert('Errore generazione email: ' + (err.message || 'Verifica la chiave API Gemini.'));
+    } finally {
+      setIsGeneratingEmail(false);
     }
   };
 
@@ -1784,7 +1849,14 @@ export function Admin({ onNavigate }: AdminProps) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button 
+                        <button
+                          title="Genera SEO con AI"
+                          onClick={() => handleGenerateSEO(product)}
+                          className="p-2 text-brand-orange hover:text-white hover:bg-brand-orange/20 rounded transition-colors"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                        <button
                           onClick={() => {
                             setIsEditing(product.id);
                             setIsAdding(false);
@@ -1794,7 +1866,7 @@ export function Admin({ onNavigate }: AdminProps) {
                         >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button 
+                        <button
                           onClick={() => handleDelete(product.id)}
                           className="p-2 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
                         >
@@ -1913,6 +1985,97 @@ export function Admin({ onNavigate }: AdminProps) {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+
+            {/* Email AI section */}
+            <div className="mt-8 pt-8 border-t border-white/10 max-w-2xl">
+              <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-brand-orange" />
+                Genera Email con AI
+              </h3>
+              <p className="text-zinc-400 text-sm mb-6">
+                Gemini analizza il tuo catalogo e crea un'email di marketing personalizzata per il segmento scelto.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-zinc-400 mb-2">Segmento destinatari</label>
+                  <select
+                    value={emailAiSegment}
+                    onChange={e => setEmailAiSegment(e.target.value as any)}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange"
+                  >
+                    <option value="tutti">Tutti gli iscritti</option>
+                    <option value="principianti">DJ Principianti</option>
+                    <option value="intermedi">DJ Intermedi</option>
+                    <option value="pro">DJ Professionisti</option>
+                    <option value="clienti_recenti">Clienti recenti</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={handleGenerateEmailAI}
+                  disabled={isGeneratingEmail}
+                  className="w-full py-3 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                >
+                  {isGeneratingEmail ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Generazione in corso...</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Genera Email AI</>
+                  )}
+                </button>
+
+                {emailAiResult && (
+                  <div className="mt-4 bg-zinc-950 border border-brand-orange/30 rounded-xl p-5 space-y-4">
+                    <div className="flex gap-2 mb-2">
+                      <button
+                        onClick={() => setEmailPreviewMode('html')}
+                        className={`px-3 py-1 rounded-lg text-sm font-bold transition-colors ${emailPreviewMode === 'html' ? 'bg-brand-orange text-white' : 'bg-zinc-800 text-zinc-400'}`}
+                      >HTML</button>
+                      <button
+                        onClick={() => setEmailPreviewMode('text')}
+                        className={`px-3 py-1 rounded-lg text-sm font-bold transition-colors ${emailPreviewMode === 'text' ? 'bg-brand-orange text-white' : 'bg-zinc-800 text-zinc-400'}`}
+                      >Testo</button>
+                    </div>
+
+                    <div>
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Oggetto</p>
+                      <p className="text-white font-bold">{emailAiResult.subject}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Preheader</p>
+                      <p className="text-zinc-300 text-sm">{emailAiResult.preheader}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-2">Corpo email</p>
+                      {emailPreviewMode === 'html' ? (
+                        <div
+                          className="prose prose-invert prose-sm max-w-none bg-white/5 rounded-lg p-4 text-sm"
+                          dangerouslySetInnerHTML={{ __html: emailAiResult.bodyHtml }}
+                        />
+                      ) : (
+                        <pre className="text-sm text-zinc-300 whitespace-pre-wrap bg-white/5 rounded-lg p-4 font-mono">
+                          {emailAiResult.bodyText}
+                        </pre>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setNewsletterForm({
+                          title: emailAiResult.subject,
+                          excerpt: emailAiResult.preheader,
+                          url: ''
+                        });
+                        setEmailAiResult(null);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
+                    >
+                      Usa come Newsletter
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -2595,6 +2758,110 @@ export function Admin({ onNavigate }: AdminProps) {
         )}
         </div>
       </main>
+
+      {/* SEO Generation Modal */}
+      <AnimatePresence>
+        {(seoModal || isGeneratingSEO) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9998] flex items-center justify-center p-4"
+            onClick={() => { if (!isGeneratingSEO) setSeoModal(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              {isGeneratingSEO ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-4">
+                  <div className="relative w-16 h-16">
+                    <div className="absolute inset-0 border-4 border-zinc-800 rounded-full"></div>
+                    <div className="absolute inset-0 border-4 border-brand-orange rounded-full border-t-transparent animate-spin"></div>
+                    <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-brand-orange animate-pulse" />
+                  </div>
+                  <p className="text-zinc-400 font-medium">Generazione contenuto SEO...</p>
+                </div>
+              ) : seoModal && (
+                <>
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-bold">Contenuto SEO Generato</h3>
+                      <p className="text-sm text-zinc-400">{seoModal.product.name}</p>
+                    </div>
+                    <button onClick={() => setSeoModal(null)} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">SEO Title</label>
+                      <input
+                        value={seoModal.result.seoTitle}
+                        onChange={e => setSeoModal(m => m ? { ...m, result: { ...m.result, seoTitle: e.target.value } } : null)}
+                        className="w-full mt-1 bg-zinc-950 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-orange"
+                      />
+                      <p className="text-xs text-zinc-600 mt-1">{seoModal.result.seoTitle.length}/60 caratteri</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Meta Description</label>
+                      <textarea
+                        value={seoModal.result.metaDescription}
+                        onChange={e => setSeoModal(m => m ? { ...m, result: { ...m.result, metaDescription: e.target.value } } : null)}
+                        rows={2}
+                        className="w-full mt-1 bg-zinc-950 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-orange resize-none"
+                      />
+                      <p className="text-xs text-zinc-600 mt-1">{seoModal.result.metaDescription.length}/155 caratteri</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Descrizione</label>
+                      <textarea
+                        value={seoModal.result.description}
+                        onChange={e => setSeoModal(m => m ? { ...m, result: { ...m.result, description: e.target.value } } : null)}
+                        rows={5}
+                        className="w-full mt-1 bg-zinc-950 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-orange resize-none"
+                      />
+                    </div>
+                    {seoModal.result.bullets?.length > 0 && (
+                      <div>
+                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Bullet Points</label>
+                        <ul className="mt-2 space-y-1">
+                          {seoModal.result.bullets.map((b: string, i: number) => (
+                            <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
+                              <span className="text-brand-orange mt-0.5">•</span> {b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={handleSaveSEO}
+                      disabled={isSavingSEO}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-orange hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl font-bold transition-colors"
+                    >
+                      {isSavingSEO ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      Salva sul Prodotto
+                    </button>
+                    <button
+                      onClick={() => handleGenerateSEO(seoModal.product)}
+                      className="px-4 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-colors flex items-center gap-2"
+                    >
+                      <Sparkles className="w-4 h-4" /> Rigenera
+                    </button>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
