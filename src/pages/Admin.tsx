@@ -3269,7 +3269,21 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
                   </h3>
                   <p className="text-xs text-zinc-500 mt-0.5">Errori JavaScript catturati dal client negli ultimi 30 giorni</p>
                 </div>
-                <button onClick={loadStats} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-zinc-950 hover:bg-zinc-800 border border-white/5 rounded-lg transition-colors">Aggiorna</button>
+                <div className="flex items-center gap-2">
+                  {errorLogs.length > 0 && (
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Cancellare tutti i ${errorLogs.length} errori?`)) return;
+                        await Promise.all(errorLogs.map(e => deleteDoc(doc(db, 'error_logs', e.id))));
+                        setErrorLogs([]);
+                      }}
+                      className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg transition-colors"
+                    >
+                      Cancella tutti
+                    </button>
+                  )}
+                  <button onClick={loadStats} className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest bg-zinc-950 hover:bg-zinc-800 border border-white/5 rounded-lg transition-colors">Aggiorna</button>
+                </div>
               </div>
               {errorLogs.length === 0 ? (
                 <div className="p-12 text-center">
@@ -3295,6 +3309,17 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
                             <p className="text-sm font-bold text-red-300 truncate">{err.message || 'Unknown error'}</p>
                             <p className="text-[10px] text-zinc-500 mt-0.5">{dateStr} {err.url ? `• ${err.url}` : ''}</p>
                           </div>
+                          <button
+                            onClick={async () => {
+                              await deleteDoc(doc(db, 'error_logs', err.id));
+                              setErrorLogs(prev => prev.filter(e => e.id !== err.id));
+                            }}
+                            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest bg-green-500/10 hover:bg-green-500/20 text-green-400 border border-green-500/20 rounded-lg transition-colors"
+                            title="Segna come risolto e rimuovi"
+                          >
+                            <Check className="w-3 h-3" />
+                            Risolto
+                          </button>
                         </div>
                         {err.stack && (
                           <pre className="text-[10px] text-zinc-500 bg-black/50 rounded-lg p-3 overflow-x-auto mt-2 font-mono max-h-32">{err.stack}</pre>
