@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Headphones, Speaker, Mic, Music, Settings, ArrowRight, ShoppingCart, Check, MessageCircle } from 'lucide-react';
 import { getDirectDriveUrl } from '../utils/drive';
 import { useAIFeatures } from '../contexts/AIFeaturesContext';
+import { generateQuizRecommendation } from '../services/aiService';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 interface QuizProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -17,20 +20,49 @@ type Budget = 'Entry' | 'Mid' | 'High' | '';
 
 export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
   const { features, loading: featuresLoading } = useAIFeatures();
+  const quizEnabled = features.quiz_trova_setup?.enabled ?? true;
+
   const [step, setStep] = useState(0);
   const [level, setLevel] = useState<Level>('');
   const [genre, setGenre] = useState<Genre>('');
   const [environment, setEnvironment] = useState<Environment>('');
   const [budget, setBudget] = useState<Budget>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiRecommendation, setAiRecommendation] = useState<{
+    name: string; description: string; tags: string[];
+    rationale: string; budgetRange: string; productId?: string | null;
+    image?: string; price?: number;
+  } | null>(null);
 
   const handleNext = () => {
     if (step === 3) {
       setIsAnalyzing(true);
-      setTimeout(() => {
+      setAiRecommendation(null);
+      (async () => {
+        try {
+          // Load products for AI context
+          const snap = await getDocs(collection(db, 'products'));
+          const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+          const rec = await generateQuizRecommendation(
+            { level, genre, environment, budget },
+            products
+          );
+          // Try to find matching product image/price
+          const matched = products.find((p: any) => p.id === rec.productId);
+          setAiRecommendation({
+            ...rec,
+            image: matched?.image && matched.image !== 'USE_IMAGES_ARRAY'
+              ? matched.image
+              : matched?.images?.[0] || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80',
+            price: matched?.price,
+          });
+        } catch {
+          // Fallback to static recommendation
+          setAiRecommendation(null);
+        }
         setIsAnalyzing(false);
         setStep(4);
-      }, 2500);
+      })();
     } else {
       setStep(prev => prev + 1);
     }
@@ -72,19 +104,38 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
     }
   };
 
-  const recommendation = getRecommendation();
+  const staticRec = getRecommendation();
+  // Use AI recommendation if available, otherwise fall back to static
+  const recommendation = aiRecommendation
+    ? {
+        name: aiRecommendation.name,
+        description: aiRecommendation.description,
+        price: aiRecommendation.price ?? staticRec.price,
+        image: aiRecommendation.image ?? staticRec.image,
+        id: aiRecommendation.productId ?? staticRec.id,
+        tags: aiRecommendation.tags,
+      }
+    : staticRec;
 
-  // Feature disattivata dall'admin
-  if (!featuresLoading && !features.quiz_trova_setup?.enabled) {
+  // Show unavailable screen if feature is disabled
+  if (!featuresLoading && !quizEnabled) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <Sparkles className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
+      <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24 flex items-center justify-center">
+        <div className="text-center max-w-md px-6">
+          <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-8 h-8 text-zinc-600" />
+          </div>
           <h2 className="text-2xl font-black mb-3">Quiz temporaneamente non disponibile</h2>
-          <p className="text-zinc-500 mb-6">Il Quiz AI è momentaneamente disattivato. Torna a trovarci presto!</p>
-          <button onClick={() => onNavigate('home')} className="px-6 py-3 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-bold transition-colors">
-            Torna alla Home
-          </button>
+          <p className="text-zinc-400 mb-8">Il quiz AI è attualmente disabilitato. Contatta il nostro team per una consulenza personalizzata.</p>
+          <a
+            href="https://wa.me/393477397016"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-xl font-bold"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Parla con Amerigo
+          </a>
         </div>
       </div>
     );

@@ -1,12 +1,14 @@
-import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useCartStore } from '../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import React from 'react';
 import { getDirectDriveUrl } from '../utils/drive';
 import { DJ_KNOWLEDGE_BASE } from '../data/djKnowledgeBase';
+import { useAIFeatures } from '../contexts/AIFeaturesContext';
+import { generateReviewSummary } from '../services/aiService';
 
 
 interface ProductProps {
@@ -27,6 +29,9 @@ interface Review {
 }
 
 export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: ProductProps) {
+  const { features } = useAIFeatures();
+  const reviewsFeatureEnabled = features.recensioni_aggregate?.enabled ?? false;
+
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +45,10 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [reviewSummary, setReviewSummary] = useState<{
+    summary: string; pros: string[]; cons: string[]; verdict: string; disclaimer?: string;
+  } | null>(null);
+  const [isLoadingReviewSummary, setIsLoadingReviewSummary] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const activeProductId = productId || 'bundle-start-dj-pro';
@@ -144,6 +153,33 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const averageRating = reviews.length > 0
     ? reviews.reduce((acc, curr) => acc + curr.rating, 0) / reviews.length
     : 0;
+
+  // Load or generate AI review summary when feature enabled + reviews exist
+  useEffect(() => {
+    if (!reviewsFeatureEnabled || reviews.length < 3) {
+      setReviewSummary(null);
+      return;
+    }
+    // Use cached summary from product doc if available
+    if (product?.reviewSummary) {
+      setReviewSummary(product.reviewSummary);
+      return;
+    }
+    // Generate on the fly
+    let cancelled = false;
+    setIsLoadingReviewSummary(true);
+    generateReviewSummary(
+      { name: product?.name || 'Prodotto', category: product?.category },
+      reviews.map(r => ({ rating: r.rating, text: r.text, userName: r.userName }))
+    ).then(summary => {
+      if (!cancelled) setReviewSummary(summary);
+    }).catch(() => {
+      if (!cancelled) setReviewSummary(null);
+    }).finally(() => {
+      if (!cancelled) setIsLoadingReviewSummary(false);
+    });
+    return () => { cancelled = true; };
+  }, [reviewsFeatureEnabled, reviews.length, product?.id]);
 
   const displayProduct = product || {
     name: "Bundle Start DJ Pro",
@@ -452,6 +488,74 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
         {/* Reviews Section */}
         <div className="mt-16 pt-16 border-t border-white/10" style={{ contentVisibility: 'auto' }}>
           <h2 className="text-3xl font-black uppercase tracking-tight mb-12">Recensioni Clienti</h2>
+
+          {/* AI Review Summary */}
+          {reviewsFeatureEnabled && reviews.length >= 3 && (
+            <div className="mb-10">
+              {isLoadingReviewSummary ? (
+                <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6 flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-brand-orange shrink-0"></div>
+                  <span className="text-zinc-400 text-sm">Analisi recensioni in corso...</span>
+                </div>
+              ) : reviewSummary && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-brand-orange/10 to-zinc-900/80 border border-brand-orange/20 rounded-2xl p-6"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <Sparkles className="w-5 h-5 text-brand-orange" />
+                    <h3 className="font-bold text-brand-orange text-sm uppercase tracking-wider">Sintesi AI delle Recensioni</h3>
+                  </div>
+                  <p className="text-zinc-300 leading-relaxed mb-4">{reviewSummary.summary}</p>
+
+                  {(reviewSummary.pros.length > 0 || reviewSummary.cons.length > 0) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {reviewSummary.pros.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <ThumbsUp className="w-4 h-4 text-green-500" />
+                            <span className="text-xs font-bold text-green-500 uppercase tracking-wider">Punti di forza</span>
+                          </div>
+                          <ul className="space-y-1">
+                            {reviewSummary.pros.map((p, i) => (
+                              <li key={i} className="text-sm text-zinc-300 flex items-start gap-2">
+                                <Check className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" /> {p}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      {reviewSummary.cons.length > 0 && (
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Minus className="w-4 h-4 text-zinc-400" />
+                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Da considerare</span>
+                          </div>
+                          <ul className="space-y-1">
+                            {reviewSummary.cons.map((c, i) => (
+                              <li key={i} className="text-sm text-zinc-400 flex items-start gap-2">
+                                <X className="w-3.5 h-3.5 text-zinc-500 mt-0.5 shrink-0" /> {c}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {reviewSummary.verdict && (
+                    <p className="text-sm font-bold text-white border-t border-white/10 pt-3 mt-3">
+                      Verdetto: {reviewSummary.verdict}
+                    </p>
+                  )}
+                  {reviewSummary.disclaimer && (
+                    <p className="text-xs text-zinc-600 mt-2">{reviewSummary.disclaimer}</p>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Reviews List */}

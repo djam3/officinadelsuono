@@ -5,6 +5,7 @@ import {
 } from 'firebase/firestore';
 import Fuse from 'fuse.js';
 import { DJ_KNOWLEDGE_BASE } from '../data/djKnowledgeBase';
+import { callGeminiChat } from './aiService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +60,38 @@ class ChatbotService {
   private unsubscribeProducts: (() => void) | null = null;
   private unsubscribeKnowledge: (() => void) | null = null;
   private unsubscribeBlog: (() => void) | null = null;
+
+  // ── AI config ─────────────────────────────────────────────────────────────
+  private aiEnabled = false;
+  private aiModel = 'gemini-2.0-flash';
+  private aiSystemPrompt = '';
+  private conversationHistory: Array<{ role: 'user' | 'model'; text: string }> = [];
+
+  configureAI(config: { enabled?: boolean; model?: string; systemPrompt?: string }) {
+    this.aiEnabled = config.enabled ?? false;
+    this.aiModel = config.model || 'gemini-2.0-flash';
+    this.aiSystemPrompt = config.systemPrompt || '';
+    this.conversationHistory = [];
+  }
+
+  clearHistory() {
+    this.conversationHistory = [];
+  }
+
+  private buildSystemPrompt(): string {
+    const base = this.aiSystemPrompt ||
+      'Sei il consulente AI di Officina del Suono, un negozio specializzato in attrezzatura DJ e audio professionale. ' +
+      'Rispondi in italiano, in modo preciso, appassionato e professionale. ' +
+      'Aiuta i clienti a scegliere l\'attrezzatura giusta per le loro esigenze.';
+
+    const catalog = this.products.slice(0, 20).map(p =>
+      `- ${p.name}${p.price ? ' (€' + p.price.toFixed(2) + ')' : ''}${p.category ? ' [' + p.category + ']' : ''}`
+    ).join('\n');
+
+    return catalog
+      ? `${base}\n\nCATALOGO PRODOTTI DISPONIBILI:\n${catalog}`
+      : base;
+  }
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -179,8 +212,29 @@ class ChatbotService {
     const builtinResponse = this.searchBuiltin(q);
     if (builtinResponse) return builtinResponse;
 
-    // 6. Fallback WhatsApp
-    return `Non ho trovato una risposta precisa per questa domanda. 🤔\n\nContatta **Amerigo** direttamente per una consulenza personalizzata:\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **info@officina-del-suono.it**`;
+    // 6. Gemini AI fallback (if enabled)
+    if (this.aiEnabled) {
+      try {
+        // Add user message to history
+        this.conversationHistory.push({ role: 'user', text: userMessage });
+        // Keep last 20 messages
+        if (this.conversationHistory.length > 20) {
+          this.conversationHistory = this.conversationHistory.slice(-20);
+        }
+        const aiResponse = await callGeminiChat(
+          this.conversationHistory,
+          { model: this.aiModel, systemInstruction: this.buildSystemPrompt() }
+        );
+        // Add AI response to history
+        this.conversationHistory.push({ role: 'model', text: aiResponse });
+        return aiResponse;
+      } catch (err) {
+        console.error('Gemini fallback error:', err);
+      }
+    }
+
+    // 7. Fallback WhatsApp
+    return `Non ho trovato una risposta precisa per questa domanda. 🤔\n\nContatta **Amerigo** direttamente per una consulenza personalizzata:\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **officinadelsuono99@gmail.com**`;
   }
 
   // ── Ricerca knowledge base admin ─────────────────────────────────────────
@@ -350,7 +404,7 @@ class ChatbotService {
 
     // Contatti / WhatsApp
     if (/contatt|whatsapp|telefon|email|dove siete|orari/.test(q)) {
-      return `📞 **Contatti Officinadelsuono:**\n\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **info@officina-del-suono.it**\n📍 Sede: Forino (AV), Campania\n\nAmerigo risponde personalmente — solitamente entro poche ore! 🎛️`;
+      return `📞 **Contatti Officinadelsuono:**\n\n📱 WhatsApp: **+39 347 739 7016**\n📧 Email: **officinadelsuono99@gmail.com**\n📍 Sede: Forino (AV), Campania\n\nAmerigo risponde personalmente — solitamente entro poche ore! 🎛️`;
     }
 
     // Consiglio / aiuto scelta

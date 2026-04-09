@@ -13,6 +13,7 @@ import { CustomCursor } from './components/CustomCursor';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
+import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
