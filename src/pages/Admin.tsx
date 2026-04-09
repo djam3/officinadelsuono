@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Logo } from '../components/Logo';

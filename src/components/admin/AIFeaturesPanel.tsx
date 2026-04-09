@@ -290,7 +290,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                           { value: 'gemini-free', label: 'Gemini Flash', sublabel: 'Gratuito (quota Google)', color: 'border-green-500/50 bg-green-500/5' },
                         ].map(opt => (
                           <button key={opt.value} type="button"
-                            onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as any }))}
+                            onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as 'claude' | 'gemini-free' }))}
                             className={`p-3 rounded-xl border text-left transition-all ${(configDraft.provider ?? 'claude') === opt.value ? `${opt.color}` : 'border-white/5 bg-zinc-800 hover:bg-zinc-700'}`}
                           >
                             <p className="text-sm font-bold text-white">{opt.label}</p>

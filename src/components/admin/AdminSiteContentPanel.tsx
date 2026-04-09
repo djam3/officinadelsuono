@@ -78,23 +78,23 @@ export function AdminSiteContentPanel() {
               </div>
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Titolo principale</label>
-                <input type="text" value={siteContent.hero_title} onChange={e => setSiteContent((p: any) => ({ ...p, hero_title: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.hero_title} onChange={e => setSiteContent((p) => ({ ...p, hero_title: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Sottotitolo (arancione)</label>
-                <input type="text" value={siteContent.hero_subtitle} onChange={e => setSiteContent((p: any) => ({ ...p, hero_subtitle: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.hero_subtitle} onChange={e => setSiteContent((p) => ({ ...p, hero_subtitle: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
               <div className="md:col-span-2">
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Testo descrittivo</label>
-                <textarea value={siteContent.hero_body} onChange={e => setSiteContent((p: any) => ({ ...p, hero_body: e.target.value }))} rows={3} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange resize-none" />
+                <textarea value={siteContent.hero_body} onChange={e => setSiteContent((p) => ({ ...p, hero_body: e.target.value }))} rows={3} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange resize-none" />
               </div>
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Pulsante 1 (arancione)</label>
-                <input type="text" value={siteContent.hero_cta1} onChange={e => setSiteContent((p: any) => ({ ...p, hero_cta1: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.hero_cta1} onChange={e => setSiteContent((p) => ({ ...p, hero_cta1: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Pulsante 2 (WhatsApp)</label>
-                <input type="text" value={siteContent.hero_cta2} onChange={e => setSiteContent((p: any) => ({ ...p, hero_cta2: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.hero_cta2} onChange={e => setSiteContent((p) => ({ ...p, hero_cta2: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
             </div>
           </div>
@@ -105,11 +105,11 @@ export function AdminSiteContentPanel() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Titolo sezione</label>
-                <input type="text" value={siteContent.features_title} onChange={e => setSiteContent((p: any) => ({ ...p, features_title: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.features_title} onChange={e => setSiteContent((p) => ({ ...p, features_title: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
               <div>
                 <label className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1 block">Sottotitolo sezione</label>
-                <input type="text" value={siteContent.features_subtitle} onChange={e => setSiteContent((p: any) => ({ ...p, features_subtitle: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
+                <input type="text" value={siteContent.features_subtitle} onChange={e => setSiteContent((p) => ({ ...p, features_subtitle: e.target.value }))} className="w-full bg-zinc-900 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange" />
               </div>
               {[['feat1', 'Card 1'], ['feat2', 'Card 2'], ['feat3', 'Card 3']].map(([key, label]) => (
                 <div key={key} className="bg-zinc-900 rounded-xl p-4 border border-white/5">

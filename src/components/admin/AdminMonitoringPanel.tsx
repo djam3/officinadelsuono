@@ -1,3 +1,4 @@
+import React from 'react';
 import { db } from '../../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { AlertTriangle, Clock, Database, Zap, CheckCircle2, Check, TrendingUp } from 'lucide-react';

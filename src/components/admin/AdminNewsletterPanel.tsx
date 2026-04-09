@@ -228,7 +228,7 @@ export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
             <label className="block text-sm font-bold text-zinc-400 mb-2">Segmento destinatari</label>
             <select
               value={emailAiSegment}
-              onChange={e => setEmailAiSegment(e.target.value as any)}
+              onChange={e => setEmailAiSegment(e.target.value as 'tutti' | 'principianti' | 'intermedi' | 'pro' | 'clienti_recenti')}
               className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange"
             >
               <option value="tutti">Tutti gli iscritti</option>

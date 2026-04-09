@@ -34,7 +34,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
   const [desiredProfit, setDesiredProfit] = useState<number | ''>('');
 
   // SEO modal states
-  const [seoModal, setSeoModal] = useState<{ product: Product; result: any } | null>(null);
+  const [seoModal, setSeoModal] = useState<{ product: Product; result: { seoTitle: string; metaDescription: string; description: string; bullets: string[] } } | null>(null);
   const [isGeneratingSEO, setIsGeneratingSEO] = useState(false);
   const [isSavingSEO, setIsSavingSEO] = useState(false);
 

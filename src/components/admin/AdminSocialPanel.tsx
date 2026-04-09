@@ -103,7 +103,7 @@ export function AdminSocialPanel({
         const errMsg = Object.values(data.errors || {}).join(' | ');
         showSocialToast(`Errore pubblicazione: ${errMsg || 'Account non configurati'}`, 'error');
       }
-    } catch (e: any) {
+    } catch (e) {
       showSocialToast('Errore: ' + (e as Error).message, 'error');
     } finally {
       setIsPublishing(false);
