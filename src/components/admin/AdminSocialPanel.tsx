@@ -8,14 +8,15 @@ import {
   ImagePlus, Loader2, CalendarDays, Heart, MessageSquare, Eye, 
   ThumbsUp, ThumbsDown, X 
 } from 'lucide-react';
+import { SocialPost, SocialSuggestion, SocialConnection, SocialStats, Product } from '../../types/admin';
 
 interface AdminSocialPanelProps {
-  socialPosts: any[];
-  socialSuggestions: any[];
-  socialConnections: any;
-  socialStats: any;
+  socialPosts: SocialPost[];
+  socialSuggestions: SocialSuggestion[];
+  socialConnections: Record<string, SocialConnection>;
+  socialStats: SocialStats;
   manualApiKey: string | null;
-  products: any[];
+  products: Product[];
   loadSocialData: () => void;
 }
 
@@ -103,13 +104,13 @@ export function AdminSocialPanel({
         showSocialToast(`Errore pubblicazione: ${errMsg || 'Account non configurati'}`, 'error');
       }
     } catch (e: any) {
-      showSocialToast('Errore: ' + e.message, 'error');
+      showSocialToast('Errore: ' + (e as Error).message, 'error');
     } finally {
       setIsPublishing(false);
     }
   };
 
-  const publishSuggestion = async (sug: any) => {
+  const publishSuggestion = async (sug: SocialSuggestion) => {
     setPostDraft({ text: `${sug.caption}\n\n${(sug.hashtags || []).map((h: string) => `#${h}`).join(' ')}`, imageUrl: '' });
     setPostPlatforms(sug.platforms || ['instagram', 'facebook']);
     await updateDoc(doc(db, 'social_suggestions', sug.id), { status: 'approved' });
@@ -164,8 +165,8 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
       }
       loadSocialData();
       showSocialToast(`${suggestions.length} suggerimenti AI generati ✓`);
-    } catch (e: any) {
-      showSocialToast('Errore generazione AI: ' + e.message, 'error');
+    } catch (e) {
+      showSocialToast('Errore generazione AI: ' + (e as Error).message, 'error');
     } finally {
       setIsGeneratingSuggestions(false);
     }

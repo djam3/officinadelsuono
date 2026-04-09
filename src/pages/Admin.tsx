@@ -1,18 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit, where, Timestamp, serverTimestamp } from 'firebase/firestore';
-import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2, BrainCircuit, Target, Star, AtSign, ToggleLeft, ToggleRight, RefreshCw, Euro, Share2, Heart, Eye, Send, Wand2, ThumbsUp, ThumbsDown, Link, Hash, Users, BarChart3, CalendarDays, Wifi, WifiOff, ImagePlus, Check } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
-import { GoogleGenAI, Type } from "@google/genai";
+import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getDirectDriveUrl } from '../utils/drive';
 import { useBuilder } from '../contexts/BuilderContext';
-import { generateSEOContent, generateEmailContent } from '../services/aiService';
-import { Pencil } from 'lucide-react';
 import { Logo } from '../components/Logo';
-import { useAIFeatures, AIFeatureConfig } from '../contexts/AIFeaturesContext';
-import { AIFeaturesPanel, AI_FEATURE_DEFS } from '../components/admin/AIFeaturesPanel';
+import { AIFeaturesPanel } from '../components/admin/AIFeaturesPanel';
 import { AdminNewsletterPanel } from '../components/admin/AdminNewsletterPanel';
 import { AdminBlogPanel } from '../components/admin/AdminBlogPanel';
 import { AdminDiscountsPanel } from '../components/admin/AdminDiscountsPanel';
@@ -22,6 +16,11 @@ import { AdminUsersPanel } from '../components/admin/AdminUsersPanel';
 import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
 import { AdminAIChatbotPanel } from '../components/admin/AdminAIChatbotPanel';
+import { 
+  Product, AdminUser, ErrorLog, BlogPost, DiscountCode, 
+  AIKnowledge, AILog, SocialPost, SocialSuggestion, 
+  SocialConnection, SocialStats 
+} from '../types/admin';
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
@@ -48,26 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
 ];
 
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  description?: string;
-  image?: string; // Legacy single image
-  images?: string[]; // New multiple images
-  badge?: string;
-  draft?: boolean;
-  createdAt?: string;
-  specs?: {
-    watt?: string;
-    frequency?: string;
-    inputs?: string;
-    outputs?: string;
-    dimensions?: string;
-    weight?: string;
-  };
-}
+// Use imported Product interface
 
 interface AdminProps {
   onNavigate?: (page: string) => void;
@@ -85,25 +65,25 @@ export function Admin({ onNavigate }: AdminProps) {
 
   // Dashboard stats
   const [newsletterCount, setNewsletterCount] = useState(0);
-  const [errorLogs, setErrorLogs] = useState<any[]>([]);
-  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
+  const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]);
+  const [registeredUsers, setRegisteredUsers] = useState<AdminUser[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Blog state
-  const [blogPosts, setBlogPosts] = useState<any[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
 
   // Discount codes state
-  const [discounts, setDiscounts] = useState<any[]>([]);
+  const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
 
   // AI Chatbot state
-  const [aiKnowledge, setAiKnowledge] = useState<any[]>([]);
-  const [aiLogs, setAiLogs] = useState<any[]>([]);
+  const [aiKnowledge, setAiKnowledge] = useState<AIKnowledge[]>([]);
+  const [aiLogs, setAiLogs] = useState<AILog[]>([]);
 
   // Social state
-  const [socialPosts, setSocialPosts] = useState<any[]>([]);
-  const [socialSuggestions, setSocialSuggestions] = useState<any[]>([]);
-  const [socialConnections, setSocialConnections] = useState<any>({});
-  const [socialStats, setSocialStats] = useState<any>(null);
+  const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
+  const [socialSuggestions, setSocialSuggestions] = useState<SocialSuggestion[]>([]);
+  const [socialConnections, setSocialConnections] = useState<Record<string, SocialConnection>>({});
+  const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [manualApiKey, setManualApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
@@ -134,10 +114,10 @@ export function Admin({ onNavigate }: AdminProps) {
 
     const errorQ = query(collection(db, 'error_logs'), orderBy('timestamp', 'desc'), limit(50));
     const errorSnap = await getDocs(errorQ);
-    setErrorLogs(errorSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setErrorLogs(errorSnap.docs.map(d => ({ id: d.id, ...d.data() } as ErrorLog)));
 
     const usersSnap = await getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100)));
-    setRegisteredUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setRegisteredUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as AdminUser)));
     
     loadProducts();
     loadBlogPosts();
@@ -162,26 +142,26 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const loadBlogPosts = () => {
     return onSnapshot(query(collection(db, 'blog_posts'), orderBy('date', 'desc')), (snapshot) => {
-      setBlogPosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      setBlogPosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost)));
     });
   };
 
   const loadDiscounts = () => {
-    return onSnapshot(collection(db, 'discounts'), (snapshot) => {
-      setDiscounts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    return onSnapshot(collection(db, 'discount_codes'), (snapshot) => {
+      setDiscounts(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as DiscountCode)));
     });
   };
 
   const loadAiData = () => {
-    onSnapshot(collection(db, 'chatbot_knowledge'), s => setAiKnowledge(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-    onSnapshot(query(collection(db, 'chatbot_logs'), orderBy('timestamp', 'desc'), limit(50)), s => setAiLogs(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    onSnapshot(collection(db, 'chatbot_knowledge'), s => setAiKnowledge(s.docs.map(d => ({ id: d.id, ...d.data() } as AIKnowledge))));
+    onSnapshot(query(collection(db, 'chatbot_logs'), orderBy('timestamp', 'desc'), limit(50)), s => setAiLogs(s.docs.map(d => ({ id: d.id, ...d.data() } as AILog))));
   };
 
   const loadSocialData = () => {
-    onSnapshot(query(collection(db, 'social_posts'), orderBy('createdAt', 'desc'), limit(20)), s => setSocialPosts(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-    onSnapshot(query(collection(db, 'social_suggestions'), orderBy('createdAt', 'desc'), limit(10)), s => setSocialSuggestions(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-    getDoc(doc(db, 'settings', 'social_connections')).then(s => s.exists() && setSocialConnections(s.data()));
-    getDoc(doc(db, 'settings', 'social_stats')).then(s => s.exists() && setSocialStats(s.data()));
+    onSnapshot(query(collection(db, 'social_posts'), orderBy('createdAt', 'desc'), limit(20)), s => setSocialPosts(s.docs.map(d => ({ id: d.id, ...d.data() } as SocialPost))));
+    onSnapshot(query(collection(db, 'social_suggestions'), orderBy('createdAt', 'desc'), limit(10)), s => setSocialSuggestions(s.docs.map(d => ({ id: d.id, ...d.data() } as SocialSuggestion))));
+    getDoc(doc(db, 'settings', 'social_connections')).then(s => s.exists() && setSocialConnections(s.data() as Record<string, SocialConnection>));
+    getDoc(doc(db, 'settings', 'social_stats')).then(s => s.exists() && setSocialStats(s.data() as SocialStats));
   };
 
   const handleGoogleLogin = async () => {

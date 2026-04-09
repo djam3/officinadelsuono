@@ -2,14 +2,16 @@ import { db } from '../../firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { AlertTriangle, Clock, Database, Zap, CheckCircle2, Check, TrendingUp } from 'lucide-react';
 
+import { ErrorLog, Product, BlogPost, DiscountCode, AIKnowledge } from '../../types/admin';
+
 interface AdminMonitoringPanelProps {
-  errorLogs: any[];
-  setErrorLogs: React.Dispatch<React.SetStateAction<any[]>>;
+  errorLogs: ErrorLog[];
+  setErrorLogs: React.Dispatch<React.SetStateAction<ErrorLog[]>>;
   loadStats: () => void;
-  products: any[];
-  blogPosts: any[];
-  discounts: any[];
-  aiKnowledge: any[];
+  products: Product[];
+  blogPosts: BlogPost[];
+  discounts: DiscountCode[];
+  aiKnowledge: AIKnowledge[];
   manualApiKey: string | null;
 }
 
@@ -76,10 +78,10 @@ export function AdminMonitoringPanel({
           </div>
         ) : (
           <div className="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
-            {errorLogs.map((err: any) => {
+            {errorLogs.map((err) => {
               let dateStr = '';
               try {
-                const d = err.timestamp?.toDate?.();
+                const d = err.timestamp?.toDate?.() || (err.timestamp ? new Date(err.timestamp) : null);
                 if (d) dateStr = d.toLocaleString('it-IT');
               } catch { }
               return (

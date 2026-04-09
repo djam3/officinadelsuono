@@ -4,8 +4,10 @@ import { collection, getDocs } from 'firebase/firestore';
 import { Loader2, Sparkles, Mail } from 'lucide-react';
 import { generateEmailContent } from '../../services/aiService';
 
+import { Product } from '../../types/admin';
+
 interface AdminNewsletterPanelProps {
-  products: any[];
+  products: Product[];
 }
 
 export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
@@ -105,7 +107,7 @@ export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
         signature: 'Amerigo — Officina del Suono'
       });
       setEmailAiResult(result);
-    } catch (err: any) {
+    } catch (err) {
       alert('Errore generazione email: ' + (err.message || 'Verifica la chiave API Gemini.'));
     } finally {
       setIsGeneratingEmail(false);

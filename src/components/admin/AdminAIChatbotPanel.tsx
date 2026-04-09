@@ -3,10 +3,12 @@ import { db } from '../../firebase';
 import { collection, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { Save, Trash2, Loader2 } from 'lucide-react';
 
+import { AIKnowledge, AILog, Product } from '../../types/admin';
+
 interface AdminAIChatbotPanelProps {
-  aiKnowledge: any[];
-  aiLogs: any[];
-  products: any[];
+  aiKnowledge: AIKnowledge[];
+  aiLogs: AILog[];
+  products: Product[];
 }
 
 export function AdminAIChatbotPanel({ aiKnowledge, aiLogs, products }: AdminAIChatbotPanelProps) {

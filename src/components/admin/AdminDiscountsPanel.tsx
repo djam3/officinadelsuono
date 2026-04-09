@@ -4,8 +4,10 @@ import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestor
 import { Plus, Save, X, Trash2, Tag, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { DiscountCode } from '../../types/admin';
+
 interface AdminDiscountsPanelProps {
-  discounts: any[];
+  discounts: DiscountCode[];
 }
 
 export function AdminDiscountsPanel({ discounts }: AdminDiscountsPanelProps) {
@@ -164,7 +166,7 @@ export function AdminDiscountsPanel({ discounts }: AdminDiscountsPanelProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {discounts.map((d: any) => (
+                {discounts.map((d) => (
                   <tr key={d.id} className="hover:bg-white/5 transition-colors">
                     <td className="py-3 pr-4 font-mono font-bold text-brand-orange">{d.code}</td>
                     <td className="py-3 pr-4">{d.type === 'percent' ? `${d.value}%` : `€${d.value}`}</td>

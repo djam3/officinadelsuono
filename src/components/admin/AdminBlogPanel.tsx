@@ -3,14 +3,16 @@ import { db } from '../../firebase';
 import { addDoc, updateDoc, deleteDoc, doc, collection } from 'firebase/firestore';
 import { Plus, Save, X, Edit2, Trash2 } from 'lucide-react';
 
+import { BlogPost } from '../../types/admin';
+
 interface AdminBlogPanelProps {
-  blogPosts: any[];
+  blogPosts: BlogPost[];
 }
 
 export function AdminBlogPanel({ blogPosts }: AdminBlogPanelProps) {
   const [isEditingBlog, setIsEditingBlog] = useState<string | null>(null);
   const [isAddingBlog, setIsAddingBlog] = useState(false);
-  const [blogForm, setBlogForm] = useState<any>({
+  const [blogForm, setBlogForm] = useState<Partial<BlogPost>>({
     title: '',
     excerpt: '',
     category: 'Guide Tecniche',

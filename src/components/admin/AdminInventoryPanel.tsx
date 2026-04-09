@@ -11,27 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../../utils/drive';
 import { generateSEOContent } from '../../services/aiService';
 
-export interface Product {
-  id?: string;
-  name: string;
-  category: string;
-  price: number;
-  description?: string;
-  image?: string;
-  images?: string[];
-  badge?: string;
-  draft?: boolean;
-  createdAt?: string;
-  brand?: string;
-  specs?: {
-    watt?: string;
-    frequency?: string;
-    inputs?: string;
-    outputs?: string;
-    dimensions?: string;
-    weight?: string;
-  };
-}
+import { Product } from '../../types/admin';
 
 interface AdminInventoryPanelProps {
   products: Product[];
@@ -83,8 +63,8 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
         images: [...(prev.images || []), ...urls],
         image: prev.image || (urls.length > 0 ? urls[0] : '')
       }));
-    } catch (error: any) {
-      alert(error.message || "Errore durante il caricamento delle immagini.");
+    } catch (error) {
+      alert((error as Error).message || "Errore durante il caricamento delle immagini.");
     } finally {
       setIsUploading(false);
     }
@@ -178,8 +158,8 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
         description: details.description || prev.description,
         specs: { ...(prev.specs || {}), ...(details.specs || {}) }
       }));
-    } catch (error: any) {
-      alert("Errore generazione AI: " + (error.message || "Riprova."));
+    } catch (error) {
+      alert("Errore generazione AI: " + ((error as Error).message || "Riprova."));
     } finally {
       setIsGenerating(false);
     }
@@ -204,8 +184,8 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
       // In a real environment, this might return image data or search results.
       // Based on previous Admin.tsx logic, it was using groundingMetadata or inlineData.
       alert("Funzionalità di generazione immagine tramite Flash Image richiede configurazione specifica. Vedi logs.");
-    } catch (e: any) {
-      alert("Errore AI Foto: " + e.message);
+    } catch (e) {
+      alert("Errore AI Foto: " + (e as Error).message);
     } finally {
       setIsGeneratingImage(false);
     }
@@ -273,12 +253,12 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
     setSeoModal(null);
     try {
       const result = await generateSEOContent(
-        { name: product.name, category: product.category, price: product.price, specs: product.specs as any },
+        { name: product.name, category: product.category, price: product.price, specs: product.specs },
         { includeFaq: false }
       );
       setSeoModal({ product, result });
-    } catch (err: any) {
-      alert('Errore generazione SEO: ' + err.message);
+    } catch (err) {
+      alert('Errore generazione SEO: ' + (err as Error).message);
     } finally {
       setIsGeneratingSEO(false);
     }

@@ -1,7 +1,8 @@
 import { Users as UsersIcon, CheckCircle2, TrendingUp, Mail, Loader2, User as UserIcon } from 'lucide-react';
+import { AdminUser } from '../../types/admin';
 
 interface AdminUsersPanelProps {
-  registeredUsers: any[];
+  registeredUsers: AdminUser[];
   newsletterCount: number;
   loadStats: () => void;
 }
@@ -12,8 +13,8 @@ export function AdminUsersPanel({ registeredUsers, newsletterCount, loadStats }:
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Totale registrati', value: registeredUsers.length, color: 'text-brand-orange', icon: UsersIcon },
-          { label: 'Email verificate', value: registeredUsers.filter((u: any) => u.emailVerified).length, color: 'text-green-400', icon: CheckCircle2 },
-          { label: 'Ultimi 7 giorni', value: registeredUsers.filter((u: any) => { try { const d = u.createdAt?.toDate?.() || new Date(u.createdAt); return d && (Date.now() - d.getTime()) < 7 * 86400000; } catch { return false; } }).length, color: 'text-blue-400', icon: TrendingUp },
+          { label: 'Email verificate', value: registeredUsers.filter(u => u.emailVerified).length, color: 'text-green-400', icon: CheckCircle2 },
+          { label: 'Ultimi 7 giorni', value: registeredUsers.filter(u => { try { const d = u.createdAt?.toDate?.() || new Date(u.createdAt); return d && (Date.now() - d.getTime()) < 7 * 86400000; } catch { return false; } }).length, color: 'text-blue-400', icon: TrendingUp },
           { label: 'Iscritti newsletter', value: newsletterCount, color: 'text-purple-400', icon: Mail },
         ].map(s => {
           const Icon = s.icon;
@@ -53,7 +54,7 @@ export function AdminUsersPanel({ registeredUsers, newsletterCount, loadStats }:
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {registeredUsers.map((u: any) => {
+                {registeredUsers.map((u) => {
                   let dateStr = '—';
                   try {
                     const d = u.createdAt?.toDate?.() || (u.createdAt ? new Date(u.createdAt) : null);
