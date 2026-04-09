@@ -239,7 +239,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                           { value: 'gemini-free', label: 'Gemini Flash', sublabel: 'Gratuito (quota Google)', color: 'border-green-500/50 bg-green-500/5' },
                         ].map(opt => (
                           <button key={opt.value} type="button"
-                            onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as any, model: opt.value === 'gemini-free' ? 'gemini-2.0-flash-exp' : 'claude-haiku-4-5-20251001' }))}
+                            onClick={() => setConfigDraft(p => ({ ...p, provider: opt.value as 'claude' | 'gemini-free', model: opt.value === 'gemini-free' ? 'gemini-2.0-flash-exp' : 'claude-haiku-4-5-20251001' }))}
                             className={`p-3 rounded-xl border text-left transition-all ${(configDraft.provider ?? 'claude') === opt.value ? `${opt.color}` : 'border-white/5 bg-zinc-800 hover:bg-zinc-700'}`}
                           >
                             <p className="text-sm font-bold text-white">{opt.label}</p>
@@ -328,7 +328,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Lunghezza descrizione</label>
-                      <select value={(configDraft.descLength as string) || 'media'} onChange={e => setConfigDraft(p => ({ ...p, descLength: e.target.value as any }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
+                      <select value={(configDraft.descLength as string) || 'media'} onChange={e => setConfigDraft(p => ({ ...p, descLength: e.target.value as 'breve' | 'media' | 'lunga' }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
                         <option value="breve">Breve</option><option value="media">Media</option><option value="lunga">Lunga</option>
                       </select>
                     </div>
@@ -342,7 +342,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                   <>
                     <div>
                       <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Frequenza aggiornamento</label>
-                      <select value={(configDraft.updateFrequency as string) || 'trimestrale'} onChange={e => setConfigDraft(p => ({ ...p, updateFrequency: e.target.value as any }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
+                      <select value={(configDraft.updateFrequency as string) || 'trimestrale'} onChange={e => setConfigDraft(p => ({ ...p, updateFrequency: e.target.value as 'mensile' | 'trimestrale' | 'semestrale' }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
                         <option value="mensile">Mensile</option><option value="trimestrale">Trimestrale</option><option value="semestrale">Semestrale</option>
                       </select>
                     </div>
@@ -366,7 +366,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                   <>
                     <div>
                       <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Frequenza invio</label>
-                      <select value={(configDraft.sendFrequency as string) || 'settimanale'} onChange={e => setConfigDraft(p => ({ ...p, sendFrequency: e.target.value as any }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
+                      <select value={(configDraft.sendFrequency as string) || 'settimanale'} onChange={e => setConfigDraft(p => ({ ...p, sendFrequency: e.target.value as 'settimanale' | 'bisettimanale' | 'mensile' }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
                         <option value="settimanale">Settimanale</option><option value="bisettimanale">Bisettimanale</option><option value="mensile">Mensile</option>
                       </select>
                     </div>

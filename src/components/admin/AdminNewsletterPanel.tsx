@@ -39,9 +39,9 @@ export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
 
       alert("Email di test inviata con successo!");
       setTestEmailMessage('');
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending test email:", error);
-      alert(`Errore: ${error.message}`);
+      alert(`Errore: ${(error as Error).message}`);
     } finally {
       setIsSendingTest(false);
     }
@@ -88,9 +88,9 @@ export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
 
       alert(`Newsletter inviata con successo a ${emails.length} iscritti!`);
       setNewsletterForm({ title: '', excerpt: '', url: '' });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error sending newsletter:", error);
-      alert(`Errore: ${error.message}`);
+      alert(`Errore: ${(error as Error).message}`);
     } finally {
       setIsSendingNewsletter(false);
     }
@@ -108,7 +108,7 @@ export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
       });
       setEmailAiResult(result);
     } catch (err) {
-      alert('Errore generazione email: ' + (err.message || 'Verifica la chiave API Gemini.'));
+      alert('Errore generazione email: ' + ((err as Error).message || 'Verifica la chiave API Gemini.'));
     } finally {
       setIsGeneratingEmail(false);
     }

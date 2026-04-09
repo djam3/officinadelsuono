@@ -30,7 +30,7 @@ interface NavItem {
   id: AdminTab;
   label: string;
   description: string;
-  icon: any;
+  icon: React.ElementType;
 }
 
 const NAV_ITEMS: NavItem[] = [
