@@ -7,9 +7,10 @@ import { BlogPost } from '../../types/admin';
 
 interface AdminBlogPanelProps {
   blogPosts: BlogPost[];
+  manualApiKey: string;
 }
 
-export function AdminBlogPanel({ blogPosts }: AdminBlogPanelProps) {
+export function AdminBlogPanel({ blogPosts, manualApiKey }: AdminBlogPanelProps) {
   const [isEditingBlog, setIsEditingBlog] = useState<string | null>(null);
   const [isAddingBlog, setIsAddingBlog] = useState(false);
   const [blogForm, setBlogForm] = useState<Partial<BlogPost>>({

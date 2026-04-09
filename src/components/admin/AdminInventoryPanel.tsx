@@ -3,10 +3,10 @@ import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { 
   Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, 
-  Sparkles, Loader2, RefreshCw, ScrollText, Check 
+  Sparkles, Loader2, Check 
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../../utils/drive';
 import { generateSEOContent } from '../../services/aiService';
@@ -121,24 +121,24 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
 
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenAI(apiKey);
+      const ai = new GoogleGenerativeAI(apiKey);
       const model = ai.getGenerativeModel({
         model: "gemini-2.0-flash",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.OBJECT,
+            type: SchemaType.OBJECT,
             properties: {
-              description: { type: Type.STRING },
+              description: { type: SchemaType.STRING },
               specs: {
-                type: Type.OBJECT,
+                type: SchemaType.OBJECT,
                 properties: {
-                  watt: { type: Type.STRING },
-                  frequency: { type: Type.STRING },
-                  inputs: { type: Type.STRING },
-                  outputs: { type: Type.STRING },
-                  dimensions: { type: Type.STRING },
-                  weight: { type: Type.STRING }
+                  watt: { type: SchemaType.STRING },
+                  frequency: { type: SchemaType.STRING },
+                  inputs: { type: SchemaType.STRING },
+                  outputs: { type: SchemaType.STRING },
+                  dimensions: { type: SchemaType.STRING },
+                  weight: { type: SchemaType.STRING }
                 }
               }
             }
@@ -175,8 +175,8 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
 
     setIsGeneratingImage(true);
     try {
-      const ai = new GoogleGenAI(apiKey);
-      const model = ai.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
       
       const prompt = `Realistic professional product photo of ${editForm.name} on a clean white background. High resolution, 4k, sharp focus.`;
       const result = await model.generateContent(prompt);

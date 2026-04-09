@@ -30,7 +30,7 @@ interface NavItem {
   id: AdminTab;
   label: string;
   description: string;
-  icon: React.ElementType;
+  icon: any; // Using any temporarily to avoid lucide-react inference conflicts with AdminTab mapping
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -131,8 +131,8 @@ export function Admin({ onNavigate }: AdminProps) {
       const prods: Product[] = [];
       const cats = new Set<string>(['Kit Pronti', 'Console', 'Mixer', 'Cuffie', 'Monitor', 'Cavi', 'Accessori', 'Flight Case', 'Supporti']);
       snapshot.forEach(doc => {
-        const data = doc.data() as Product;
-        prods.push({ id: doc.id, ...data });
+        const data = doc.data() as Omit<Product, 'id'>;
+        prods.push({ ...data, id: doc.id } as Product);
         if (data.category) cats.add(data.category);
       });
       setProducts(prods);
@@ -142,7 +142,7 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const loadBlogPosts = () => {
     return onSnapshot(query(collection(db, 'blog_posts'), orderBy('date', 'desc')), (snapshot) => {
-      setBlogPosts(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost)));
+      setBlogPosts(snapshot.docs.map(d => ({ ...d.data(), id: d.id } as BlogPost)));
     });
   };
 
@@ -350,15 +350,14 @@ export function Admin({ onNavigate }: AdminProps) {
           )}
 
           {activeTab === 'products' && <AdminInventoryPanel products={products} categories={categories} manualApiKey={manualApiKey} />}
-          {activeTab === 'discounts' && <AdminDiscountsPanel discounts={discounts} />}
           {activeTab === 'content' && <AdminSiteContentPanel />}
           {activeTab === 'newsletter' && <AdminNewsletterPanel newsletterCount={newsletterCount} products={products} manualApiKey={manualApiKey} />}
           {activeTab === 'blog' && <AdminBlogPanel blogPosts={blogPosts} manualApiKey={manualApiKey} />}
           {activeTab === 'ai' && <AdminAIChatbotPanel aiKnowledge={aiKnowledge} aiLogs={aiLogs} products={products} />}
-          {activeTab === 'social' && <AdminSocialPanel socialPosts={socialPosts} socialSuggestions={socialSuggestions} socialConnections={socialConnections} socialStats={socialStats} manualApiKey={manualApiKey} products={products} loadSocialData={loadSocialData} />}
+          {activeTab === 'social' && <AdminSocialPanel socialPosts={socialPosts} socialSuggestions={socialSuggestions} socialConnections={socialConnections} socialStats={socialStats || { updatedAt: new Date().toISOString() }} manualApiKey={manualApiKey} products={products} loadSocialData={loadSocialData} />}
           {activeTab === 'users' && <AdminUsersPanel registeredUsers={registeredUsers} newsletterCount={newsletterCount} loadStats={loadStats} />}
           {activeTab === 'monitoring' && <AdminMonitoringPanel errorLogs={errorLogs} setErrorLogs={setErrorLogs} loadStats={loadStats} products={products} blogPosts={blogPosts} discounts={discounts} aiKnowledge={aiKnowledge} manualApiKey={manualApiKey} />}
-          {activeTab === 'ai_features' && <AIFeaturesPanel />}
+          {activeTab === 'ai_features' && <AIFeaturesPanel currentUser={currentUser} />}
         </div>
       </main>
 

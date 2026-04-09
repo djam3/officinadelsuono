@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBuilder } from '../../contexts/BuilderContext';
 import { Image as ImageIcon, Video, Check, X } from 'lucide-react';
 import ReactPlayer from 'react-player';
+const Player = ReactPlayer as any;
 
 interface EditableMediaProps {
   contentKey: string;
@@ -76,7 +77,7 @@ export function EditableMedia({ contentKey, fallbackRaw, fallbackType, className
       return (
         <div className={`w-full h-full pointer-events-none ${className}`}>
            {/* @ts-ignore */}
-           <ReactPlayer 
+           <Player 
              url={normalizedUrl}
              width="100%" 
              height="100%" 

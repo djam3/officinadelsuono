@@ -9,6 +9,7 @@ import { getDirectDriveUrl } from '../utils/drive';
 import { DJ_KNOWLEDGE_BASE } from '../data/djKnowledgeBase';
 import { useAIFeatures } from '../contexts/AIFeaturesContext';
 import { generateReviewSummary } from '../services/aiService';
+import { Product as ProductType } from '../types/admin';
 
 
 interface ProductProps {
@@ -33,7 +34,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const reviewsFeatureEnabled = features.recensioni_aggregate?.enabled ?? false;
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [product, setProduct] = useState<Record<string, unknown> | null>(null);
+  const [product, setProduct] = useState<ProductType | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReviewText, setNewReviewText] = useState('');
@@ -67,7 +68,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
         const docRef = doc(db, 'products', productId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setProduct({ id: docSnap.id, ...docSnap.data() });
+          setProduct({ id: docSnap.id, ...docSnap.data() } as ProductType);
         } else {
           setProduct(null);
         }
@@ -102,10 +103,10 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
 
   const handleAddToCart = (e: React.MouseEvent) => {
     const itemToAdd = product ? {
-      id: product.id,
+      id: product.id || activeProductId,
       name: product.name,
-      price: product.price,
-      image: product.image === 'USE_IMAGES_ARRAY' && product.images?.length > 0 
+      price: product.price || 0,
+      image: product.image === 'USE_IMAGES_ARRAY' && product.images && product.images.length > 0
         ? product.images[0] 
         : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80')
     } : {
@@ -181,13 +182,15 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
     return () => { cancelled = true; };
   }, [reviewsFeatureEnabled, reviews.length, product?.id]);
 
-  const displayProduct = product || {
+  const displayProduct: ProductType = product || {
+    id: "bundle-start-dj-pro",
     name: "Bundle Start DJ Pro",
     category: "Kit Pronti",
     price: 1749.00,
     image: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop",
     images: ["https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop"],
-    badge: "Best Seller"
+    badge: "Best Seller",
+    description: "Bundle completo per DJ"
   };
 
   useEffect(() => {

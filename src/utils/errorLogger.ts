@@ -43,7 +43,7 @@ export function installErrorLogger() {
   window.addEventListener('unhandledrejection', (event) => {
     const reason = event.reason as Error | string | null | undefined;
     const msg = typeof reason === 'string' ? reason : (reason?.message || 'Unhandled promise rejection');
-    const stack = reason?.stack;
+    const stack = (typeof reason === 'object' && reason !== null && 'stack' in reason) ? (reason as any).stack : undefined;
     void logError(msg, stack);
   });
 }

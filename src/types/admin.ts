@@ -1,12 +1,12 @@
 import { Timestamp } from 'firebase/firestore';
 
 export interface Product {
-  id?: string;
+  id: string;
   name: string;
   category: string;
   price: number;
   description?: string;
-  image?: string;
+  image: string;
   images?: string[];
   badge?: string;
   draft?: boolean;
@@ -23,6 +23,18 @@ export interface Product {
   seoTitle?: string;
   metaDescription?: string;
   bullets?: string[];
+  summary?: string;
+  pros?: string[];
+  cons?: string[];
+  verdict?: string;
+  disclaimer?: string;
+  reviewSummary?: {
+    summary: string;
+    pros: string[];
+    cons: string[];
+    verdict: string;
+    disclaimer?: string;
+  };
 }
 
 export interface AdminUser {

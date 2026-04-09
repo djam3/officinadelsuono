@@ -4,36 +4,22 @@ import { db } from '../firebase';
 import { ShoppingCart, Plus, X, Search, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCartStore } from '../store/cartStore';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getDirectDriveUrl } from '../utils/drive';
+import { Product as ProductType } from '../types/admin';
 
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  image: string;
-  description?: string;
-  specs?: {
-    watt?: string;
-    frequency?: string;
-    inputs?: string;
-    outputs?: string;
-    dimensions?: string;
-    weight?: string;
-  };
-}
+
 
 interface CompareProps {
   onNavigate: (page: string, productId?: string) => void;
-  initialProducts?: Product[];
+  initialProducts?: ProductType[];
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
   triggerFlyToCart: (image: string, startX: number, startY: number) => void;
 }
 
 export function Compare({ onNavigate, initialProducts = [], showToast, triggerFlyToCart }: CompareProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>(initialProducts);
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ProductType[]>(initialProducts);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
@@ -44,9 +30,9 @@ export function Compare({ onNavigate, initialProducts = [], showToast, triggerFl
     const fetchProducts = async () => {
       const q = query(collection(db, 'products'));
       const snapshot = await getDocs(q);
-      const prods: Product[] = [];
+      const prods: ProductType[] = [];
       snapshot.forEach((doc) => {
-        prods.push({ id: doc.id, ...doc.data() } as Product);
+        prods.push({ id: doc.id, ...doc.data() } as ProductType);
       });
       setProducts(prods);
     };
@@ -69,7 +55,8 @@ export function Compare({ onNavigate, initialProducts = [], showToast, triggerFl
           return;
         }
 
-        const ai = new GoogleGenAI({ apiKey });
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         
         const prompt = `Sei un esperto di attrezzature audio (DJ, PA, studio).
 Sto confrontando questi prodotti:
@@ -77,12 +64,8 @@ ${selectedProducts.map(p => `- ${p.name} (${p.category}): €${p.price}`).join('
 
 Dammi un breve consiglio (massimo 3-4 frasi) su quale scegliere in base alle esigenze comuni (es. budget, professionalità, portabilità). Sii diretto e utile, senza formattazioni complesse.`;
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: prompt,
-        });
-        
-        setAiAdvice(response.text);
+        const result = await model.generateContent(prompt);
+        setAiAdvice(result.response.text());
       } catch (error) {
         console.error("Errore Gemini:", error);
         setAiAdvice("Non è stato possibile generare un consiglio al momento.");
@@ -99,7 +82,7 @@ Dammi un breve consiglio (massimo 3-4 frasi) su quale scegliere in base alle esi
     !selectedProducts.find(sp => sp.id === p.id)
   );
 
-  const handleAddProduct = (product: Product) => {
+  const handleAddProduct = (product: ProductType) => {
     if (selectedProducts.length < 3) {
       setSelectedProducts([...selectedProducts, product]);
     }
@@ -111,7 +94,7 @@ Dammi un breve consiglio (massimo 3-4 frasi) su quale scegliere in base alle esi
     setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
   };
 
-  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+  const handleAddToCart = (e: React.MouseEvent, product: ProductType) => {
     const image = product.image === 'USE_IMAGES_ARRAY' && (product as any).images?.length > 0 
       ? (product as any).images[0] 
       : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80');

@@ -17,6 +17,7 @@ import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
+import { Product as ProductType } from './types/admin';
 
 // Install global error logger once at module load
 installErrorLogger();
@@ -71,7 +72,7 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'canceled' | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [compareList, setCompareList] = useState<Array<{ id: string; name: string; image: string; price: number; category?: string }>>([]);
+  const [compareList, setCompareList] = useState<ProductType[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
 
@@ -95,7 +96,7 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const toggleCompare = (product: { id: string; name: string; image: string; price: number; category?: string; [key: string]: unknown }) => {
+  const toggleCompare = (product: ProductType) => {
     setCompareList(prev => {
       if (prev.find(p => p.id === product.id)) {
         return prev.filter(p => p.id !== product.id);

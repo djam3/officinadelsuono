@@ -2,7 +2,7 @@
  * Shared AI service — Gemini calls, SEO generation, review summaries, email content.
  * API key is read from localStorage (set by admin), with Firestore as fallback.
  */
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -39,18 +39,14 @@ export async function callGemini(
   const apiKey = await getGeminiKey();
   if (!apiKey) throw new Error('Gemini API key non configurata');
 
-  const ai = new GoogleGenAI({ apiKey });
-  const model = options.model || 'gemini-2.0-flash';
-
-  const response = await ai.models.generateContent({
-    model,
-    contents: prompt,
-    ...(options.systemInstruction
-      ? { config: { systemInstruction: options.systemInstruction } }
-      : {}),
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: options.model || 'gemini-1.5-flash',
+    systemInstruction: options.systemInstruction 
   });
 
-  return response.text ?? '';
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }
 
 export async function callGeminiChat(
@@ -60,24 +56,21 @@ export async function callGeminiChat(
   const apiKey = await getGeminiKey();
   if (!apiKey) throw new Error('Gemini API key non configurata');
 
-  const ai = new GoogleGenAI({ apiKey });
-  const model = options.model || 'gemini-2.0-flash';
-
-  // Build contents array in Gemini format
-  const contents = messages.map(m => ({
-    role: m.role,
-    parts: [{ text: m.text }],
-  }));
-
-  const response = await ai.models.generateContent({
-    model,
-    contents,
-    ...(options.systemInstruction
-      ? { config: { systemInstruction: options.systemInstruction } }
-      : {}),
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ 
+    model: options.model || 'gemini-1.5-flash',
+    systemInstruction: options.systemInstruction 
   });
 
-  return response.text ?? '';
+  const chat = model.startChat({
+    history: messages.slice(0, -1).map(m => ({ 
+      role: m.role === 'user' ? 'user' : 'model', 
+      parts: [{ text: m.text }] 
+    }))
+  });
+
+  const result = await chat.sendMessage(messages[messages.length - 1].text);
+  return result.response.text();
 }
 
 // ─── SEO content generation ───────────────────────────────────────────────────

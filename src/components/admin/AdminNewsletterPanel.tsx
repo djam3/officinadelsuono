@@ -8,9 +8,11 @@ import { Product } from '../../types/admin';
 
 interface AdminNewsletterPanelProps {
   products: Product[];
+  newsletterCount: number;
+  manualApiKey: string;
 }
 
-export function AdminNewsletterPanel({ products }: AdminNewsletterPanelProps) {
+export function AdminNewsletterPanel({ products, newsletterCount, manualApiKey }: AdminNewsletterPanelProps) {
   // Email AI state
   const [emailAiSegment, setEmailAiSegment] = useState<'tutti'|'principianti'|'intermedi'|'pro'|'clienti_recenti'>('tutti');
   const [emailAiResult, setEmailAiResult] = useState<null | { subject: string; preheader: string; bodyHtml: string; bodyText: string }>(null);

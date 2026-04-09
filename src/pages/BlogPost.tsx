@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Clock, Share2, ChevronRight, ShoppingCart, Loader2
 import { MOCK_POSTS } from './Blog';
 import { collection, getDocs, query, limit, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { BlogPost as BlogPostType, Product } from '../types/admin';
 
 interface BlogPostProps {
   postId: string | null;
@@ -148,9 +149,9 @@ const BLOG_STYLES = `
 `;
 
 export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: BlogPostProps) {
-  const [post, setPost] = useState<Record<string, unknown> | null>(null);
+  const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [relatedProducts, setRelatedProducts] = useState<Array<Record<string, unknown>>>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [email, setEmail] = useState('');
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -175,7 +176,7 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     const fetchPost = async () => {
       try {
         const postDoc = await getDoc(doc(db, 'blog_posts', postId));
-        setPost(postDoc.exists() ? { id: postDoc.id, ...postDoc.data() } : MOCK_POSTS.find(p => p.id === postId) || null);
+        setPost(postDoc.exists() ? { id: postDoc.id, ...postDoc.data() } as BlogPostType : (MOCK_POSTS.find(p => p.id === postId) as unknown as BlogPostType) || null);
       } catch {
         setPost(MOCK_POSTS.find(p => p.id === postId) || null);
       } finally {
@@ -185,7 +186,7 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     const fetchProducts = async () => {
       try {
         const snap = await getDocs(query(collection(db, 'products'), limit(2)));
-        setRelatedProducts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setRelatedProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)));
       } catch {}
     };
     fetchPost();
@@ -222,16 +223,16 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     }
   };
 
-  const handleAddToCart = (e: React.MouseEvent, product: Record<string, unknown>) => {
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const item = cart.find((i: Record<string, unknown>) => i.id === product.id);
+    const item = cart.find((i: any) => i.id === product.id);
     if (item) item.quantity += 1; else cart.push({ ...product, quantity: 1 });
     localStorage.setItem('cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cartUpdated'));
     if (triggerFlyToCart) {
       const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      triggerFlyToCart(product.image, r.left, r.top);
+      triggerFlyToCart(product.image || '', r.left, r.top);
     }
     showToast?.(`${product.name} aggiunto al carrello`);
   };

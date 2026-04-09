@@ -7,18 +7,7 @@ import { useCartStore } from '../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { CATEGORIES_DATA } from '../constants';
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  image: string;
-  badge?: string;
-  badge?: string;
-  draft?: boolean;
-  images?: string[];
-}
+import { Product } from '../types/admin';
 
 interface Review {
   id: string;

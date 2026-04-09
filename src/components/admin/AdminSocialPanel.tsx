@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, WifiOff, BarChart3, RefreshCw, Send, Wand2, Sparkles, 
@@ -125,7 +125,7 @@ export function AdminSocialPanel({
     if (!manualApiKey) { showSocialToast('Imposta la chiave Gemini API nelle impostazioni AI', 'error'); return; }
     setIsGeneratingSuggestions(true);
     try {
-      const genAI = new GoogleGenAI(manualApiKey);
+      const genAI = new GoogleGenerativeAI(manualApiKey);
       const productList = products.slice(0, 15).map(p => `${p.name} — €${p.price} (${p.category})`).join('\n');
 
       const prompt = `Sei un esperto di social media marketing per "Officina del Suono", negozio DJ professionale italiano certificato MAT Academy.
@@ -149,7 +149,7 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
   }
 ]`;
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       const result = await model.generateContent(prompt);
       const rawText = result.response.text();
       const jsonMatch = rawText.match(/\[[\s\S]*\]/);
@@ -208,7 +208,7 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
       {/* Platform connections */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {PLATFORMS.map(p => {
-          const conn = socialConnections[p.key] || {};
+          const conn = (socialConnections[p.key] || { connected: false }) as SocialConnection;
           const isConnected = conn.connected === true;
           return (
             <div key={p.key} className={`bg-zinc-900 border ${p.border} rounded-2xl p-5`}>
