@@ -71,7 +71,7 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'canceled' | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [compareList, setCompareList] = useState<any[]>([]);
+  const [compareList, setCompareList] = useState<Array<{ id: string; name: string; image: string; price: number; category?: string }>>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
 
@@ -95,7 +95,7 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const toggleCompare = (product: any) => {
+  const toggleCompare = (product: { id: string; name: string; image: string; price: number; category?: string; [key: string]: unknown }) => {
     setCompareList(prev => {
       if (prev.find(p => p.id === product.id)) {
         return prev.filter(p => p.id !== product.id);

@@ -289,20 +289,25 @@ async function startServer() {
 
   app.post("/api/emails/test", async (req, res) => {
     try {
-      const { customMessage } = req.body;
-      
-      // Using the specific key provided by the user for this test endpoint
-      const testResend = new Resend('re_FE2LjN2u_AnG8fiSAbW64pEPYiydPj8ii');
+      const { customMessage, recipientEmail } = req.body;
 
-      const { data, error } = await testResend.emails.send({
+      if (!process.env.RESEND_API_KEY) {
+        console.log(`[Email Simulation] Test email would be sent to: ${recipientEmail || 'default recipient'}`);
+        return res.json({ success: true, simulated: true });
+      }
+
+      const recipient = recipientEmail || 'amerigodecristofaro8@gmail.com';
+
+      const { data, error } = await getResend().emails.send({
         from: 'onboarding@resend.dev',
-        to: 'amerigodecristofaro8@gmail.com',
-        subject: 'Hello World',
+        to: recipient,
+        subject: 'Test — Officina del Suono',
         html: `
-          <div style="font-family: sans-serif; padding: 20px;">
-            <p>Congrats on sending your <strong>first email</strong>!</p>
+          <div style="font-family: sans-serif; padding: 20px; background-color: #0a0a0a; color: #ffffff; border-radius: 10px;">
+            <h2 style="color: #F27D26;">Test Email</h2>
+            <p>Email di test inviata da Officina del Suono.</p>
             ${customMessage ? `
-            <div style="margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-left: 4px solid #F27D26; color: #333;">
+            <div style="margin-top: 20px; padding: 15px; background-color: #141414; border-left: 4px solid #F27D26; border-radius: 0 8px 8px 0;">
               <strong>Messaggio personalizzato:</strong><br/>
               ${customMessage}
             </div>` : ''}
@@ -316,9 +321,10 @@ async function startServer() {
       }
 
       res.json({ success: true, data });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Errore sconosciuto';
       console.error("Test email error:", error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: message });
     }
   });
 

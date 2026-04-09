@@ -25,7 +25,7 @@ interface Review {
   userName: string;
   rating: number;
   text: string;
-  createdAt: any;
+  createdAt: string | number;
 }
 
 export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: ProductProps) {
@@ -33,13 +33,13 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const reviewsFeatureEnabled = features.recensioni_aggregate?.enabled ?? false;
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReviewText, setNewReviewText] = useState('');
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<import('firebase/auth').User | null>(null);
   const [isFullScreenOpen, setIsFullScreenOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);

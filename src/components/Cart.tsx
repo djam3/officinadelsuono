@@ -131,9 +131,10 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
       setOrderId(data.orderId);
       setStep('success');
       clearCart();
-    } catch (error: any) {
-      console.error('Checkout error:', error);
-      alert(`Errore durante il checkout: ${error.message}`);
+    } catch (error: unknown) {
+      const e = error as Error;
+      console.error('Checkout error:', e);
+      alert(`Errore durante il checkout: ${e.message}`);
     } finally {
       setIsCheckingOut(false);
     }

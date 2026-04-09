@@ -77,8 +77,8 @@ export function Profile({ onNavigate }: ProfileProps) {
     try {
       await updateProfile(user, { displayName: displayName.trim() || null });
       setProfileMessage({ type: 'success', text: 'Profilo aggiornato con successo.' });
-    } catch (err: any) {
-      setProfileMessage({ type: 'error', text: err.message || 'Errore nel salvataggio.' });
+    } catch (err: unknown) {
+      setProfileMessage({ type: 'error', text: (err as Error).message || 'Errore nel salvataggio.' });
     } finally {
       setSavingProfile(false);
     }
@@ -106,9 +106,9 @@ export function Profile({ onNavigate }: ProfileProps) {
       const url = await getDownloadURL(ref);
       await updateProfile(user, { photoURL: url });
       setProfileMessage({ type: 'success', text: 'Immagine del profilo aggiornata.' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setProfileMessage({ type: 'error', text: err.message || 'Errore caricando l\'immagine.' });
+      setProfileMessage({ type: 'error', text: (err as Error).message || 'Errore caricando l\'immagine.' });
     } finally {
       setUploadingPhoto(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -129,8 +129,8 @@ export function Profile({ onNavigate }: ProfileProps) {
       } catch {}
       await updateProfile(user, { photoURL: null });
       setProfileMessage({ type: 'success', text: 'Immagine del profilo rimossa.' });
-    } catch (err: any) {
-      setProfileMessage({ type: 'error', text: err.message || 'Errore.' });
+    } catch (err: unknown) {
+      setProfileMessage({ type: 'error', text: (err as Error).message || 'Errore.' });
     } finally {
       setUploadingPhoto(false);
     }
@@ -159,8 +159,9 @@ export function Profile({ onNavigate }: ProfileProps) {
       setCurrentPwd('');
       setNewPwd('');
       setConfirmPwd('');
-    } catch (err: any) {
-      const code = err?.code;
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
+      const code = error?.code;
       let text = 'Errore aggiornando la password.';
       if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') text = 'Password attuale non corretta.';
       else if (code === 'auth/weak-password') text = 'La nuova password è troppo debole.';
@@ -176,8 +177,8 @@ export function Profile({ onNavigate }: ProfileProps) {
     try {
       await sendEmailVerification(user);
       setProfileMessage({ type: 'success', text: 'Email di verifica inviata. Controlla la casella.' });
-    } catch (err: any) {
-      setProfileMessage({ type: 'error', text: err.message });
+    } catch (err: unknown) {
+      setProfileMessage({ type: 'error', text: (err as Error).message });
     }
   };
 

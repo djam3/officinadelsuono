@@ -148,9 +148,9 @@ const BLOG_STYLES = `
 `;
 
 export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: BlogPostProps) {
-  const [post, setPost] = useState<any>(null);
+  const [post, setPost] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Array<Record<string, unknown>>>([]);
   const [email, setEmail] = useState('');
   const [privacyConsent, setPrivacyConsent] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -222,10 +222,10 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     }
   };
 
-  const handleAddToCart = (e: React.MouseEvent, product: any) => {
+  const handleAddToCart = (e: React.MouseEvent, product: Record<string, unknown>) => {
     e.stopPropagation();
     const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const item = cart.find((i: any) => i.id === product.id);
+    const item = cart.find((i: Record<string, unknown>) => i.id === product.id);
     if (item) item.quantity += 1; else cart.push({ ...product, quantity: 1 });
     localStorage.setItem('cart', JSON.stringify(cart));
     window.dispatchEvent(new Event('cartUpdated'));
@@ -414,12 +414,12 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
                       className="group flex gap-4 p-4 rounded-2xl bg-zinc-900 border border-white/5 hover:border-brand-orange/40 hover:-translate-y-0.5 transition-all cursor-pointer"
                     >
                       <div className="w-16 h-16 rounded-xl overflow-hidden bg-white shrink-0">
-                        <img src={product.image} alt={product.name} loading="lazy" className="w-full h-full object-contain p-2" />
+                        <img src={product.image as string} alt={product.name as string} loading="lazy" className="w-full h-full object-contain p-2" />
                       </div>
                       <div className="flex flex-col justify-between flex-1 min-w-0">
-                        <p className="font-bold text-white text-sm line-clamp-2 group-hover:text-brand-orange transition-colors">{product.name}</p>
+                        <p className="font-bold text-white text-sm line-clamp-2 group-hover:text-brand-orange transition-colors">{product.name as string}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-brand-orange font-black">€{product.price?.toFixed(2)}</span>
+                          <span className="text-brand-orange font-black">€{typeof product.price === 'number' ? product.price.toFixed(2) : product.price as string}</span>
                           <button
                             onClick={(e) => handleAddToCart(e, product)}
                             className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
