@@ -17,7 +17,6 @@ import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
-import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 
 // Install global error logger once at module load
 installErrorLogger();

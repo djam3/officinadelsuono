@@ -93,7 +93,7 @@ function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase/auth')
 
   const openConfig = (key: typeof AI_FEATURE_DEFS[number]['key']) => {
     setConfigModalFeature(key);
-    setConfigDraft({ ...(features[key]?.config ?? {}) });
+    setConfigDraft({ ...features[key] });
   };
 
   const activeCount = AI_FEATURE_DEFS.filter(f => features[f.key]?.enabled).length;
@@ -141,7 +141,7 @@ function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase/auth')
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
                 {AI_FEATURE_DEFS.map(f => {
                   const fc = costs.by_feature[f.key] ?? 0;
-                  const prov = features[f.key]?.config?.provider ?? 'claude';
+                  const prov = features[f.key]?.provider ?? 'claude';
                   return (
                     <div key={f.key} className="bg-zinc-800/50 rounded-xl p-3">
                       <p className="text-[10px] text-zinc-500 uppercase tracking-widest truncate">{f.name}</p>
@@ -166,7 +166,7 @@ function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase/auth')
           const Icon = f.icon;
           const isEnabled = features[f.key]?.enabled ?? false;
           const isToggling = togglingKey === f.key;
-          const prov = features[f.key]?.config?.provider ?? 'claude';
+          const prov = features[f.key]?.provider ?? 'claude';
           const displayCost = prov === 'gemini-free' ? 'Gratuito (Gemini Flash)' : f.costApi;
 
           return (

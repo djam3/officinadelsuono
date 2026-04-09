@@ -60,13 +60,13 @@ export function Chatbot() {
 
   // Wire admin AI config to chatbot service
   useEffect(() => {
-    const cfg = features.consulente_am3?.config;
+    const cfg = features.consulente_am3;
     chatbotService.configureAI({
       enabled: chatbotEnabled,
       model: cfg?.model || 'gemini-2.0-flash',
       systemPrompt: cfg?.systemPrompt || '',
     });
-  }, [chatbotEnabled, features.consulente_am3?.config]);
+  }, [chatbotEnabled, features.consulente_am3?.model, features.consulente_am3?.systemPrompt]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
