@@ -1,0 +1,23 @@
+{
+  "version": "2.35.0",
+  "phase": "IDLE",
+  "active_tasks": [],
+  "blocked_tasks": [],
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "metrics": {
+    "tokens_used": 0,
+    "tasks_completed": 0,
+    "tasks_failed": 0,
+    "session_start": null,
+    "last_activity": null
+  },
+  "circuit_breakers": {},
+  "agent_registry": {
+    "orchestrator": null,
+    "active_leads": [],
+    "active_specialists": []
+  },
+  "current_prd": null,
+  "session_id": null
+}
