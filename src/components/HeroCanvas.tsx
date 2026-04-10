@@ -125,6 +125,7 @@ function DriftingParticles({ count = 800 }) {
           count={count}
           array={points}
           itemSize={3}
+          args={[points, 3]}
         />
       </bufferGeometry>
       <PointMaterial

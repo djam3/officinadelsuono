@@ -6,3 +6,15 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Loki Mode runtime data (generated during autonomous operation)
+.loki/memory/episodic/*.json
+.loki/memory/semantic/*.json
+.loki/memory/skills/*.md
+!.loki/memory/*/.gitkeep
+.loki/metrics/efficiency/*.json
+.loki/metrics/rewards/*.json
+!.loki/metrics/*/.gitkeep
+
+# Benchmark results (generated per run)
+benchmarks/results/

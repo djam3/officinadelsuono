@@ -13,10 +13,11 @@ import { CustomCursor } from './components/CustomCursor';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircle, CheckCircle2, AlertCircle, X, Loader2 } from 'lucide-react';
 import { BuilderProvider, useBuilder } from './contexts/BuilderContext';
+import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
-import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
+import { Product as ProductType } from './types/admin';
 
 // Install global error logger once at module load
 installErrorLogger();
@@ -71,7 +72,7 @@ export default function App() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'canceled' | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [compareList, setCompareList] = useState<any[]>([]);
+  const [compareList, setCompareList] = useState<ProductType[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
 
@@ -95,7 +96,7 @@ export default function App() {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const toggleCompare = (product: any) => {
+  const toggleCompare = (product: ProductType) => {
     setCompareList(prev => {
       if (prev.find(p => p.id === product.id)) {
         return prev.filter(p => p.id !== product.id);

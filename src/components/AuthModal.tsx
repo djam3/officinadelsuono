@@ -142,9 +142,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         await sendPasswordResetEmail(auth, email);
         setInfo('Ti abbiamo inviato un link per reimpostare la password. Controlla la tua casella email (anche lo spam).');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
       console.error(err);
-      setError(mapAuthError(err?.code, err?.message || 'Si è verificato un errore.'));
+      setError(mapAuthError(error?.code, error?.message || 'Si è verificato un errore.'));
     } finally {
       setLoading(false);
     }
@@ -156,9 +157,10 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
       await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
       await signInWithPopup(auth, googleProvider);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const error = err as { code?: string; message?: string };
       console.error(err);
-      setError(mapAuthError(err?.code, err?.message || 'Errore con Google Sign In.'));
+      setError(mapAuthError(error?.code, error?.message || 'Errore con Google Sign In.'));
     }
   };
 

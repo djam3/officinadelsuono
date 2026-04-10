@@ -7,16 +7,7 @@ import { useCartStore } from '../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { CATEGORIES_DATA } from '../constants';
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  price: number;
-  image: string;
-  badge?: string;
-  draft?: boolean;
-}
+import { Product } from '../types/admin';
 
 interface Review {
   id: string;
@@ -26,8 +17,8 @@ interface Review {
 
 interface ShopProps {
   onNavigate: (page: string, productId?: string) => void;
-  compareList: any[];
-  toggleCompare: (product: any) => void;
+  compareList: Product[];
+  toggleCompare: (product: Product) => void;
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   triggerFlyToCart: (image: string, startX: number, startY: number) => void;
 }
@@ -149,8 +140,8 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
   }, [products, activeCategory, searchQuery, sortBy, reviews]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    const image = product.image === 'USE_IMAGES_ARRAY' && (product as any).images?.length > 0 
-      ? (product as any).images[0] 
+    const image = product.image === 'USE_IMAGES_ARRAY' && product.images && product.images.length > 0 
+      ? product.images[0] 
       : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80');
 
     addItem({

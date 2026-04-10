@@ -2,12 +2,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight } from 'lucide-react';
 import { EditableText } from './builder/EditableText';
+import { useAIFeatures } from '../contexts/AIFeaturesContext';
 
 interface AISetupBannerProps {
   onNavigate: (page: string) => void;
 }
 
 export function AISetupBanner({ onNavigate }: AISetupBannerProps) {
+  const { features, loading } = useAIFeatures();
+  if (!loading && !features.quiz_trova_setup?.enabled) return null;
+
   return (
     <section className="py-24 px-4 sm:px-6 lg:px-8 bg-black overflow-hidden relative">
       {/* Background Orbs */}
