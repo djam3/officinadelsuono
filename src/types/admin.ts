@@ -136,6 +136,26 @@ export interface DiscountCode {
   createdAt: string;
 }
 
+export interface Invoice {
+  id: string;
+  type: 'acquisto' | 'vendita';
+  number: string;
+  date: string;
+  dueDate: string;
+  counterparty: string;
+  vatNumber?: string;
+  description?: string;
+  amount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  status: 'pagata' | 'in_attesa' | 'scaduta' | 'annullata';
+  pdfUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SiteContent {
   hero_badge: string;
   hero_title: string;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Logo } from '../components/Logo';
@@ -16,15 +16,16 @@ import { AdminUsersPanel } from '../components/admin/AdminUsersPanel';
 import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
 import { AdminAIChatbotPanel } from '../components/admin/AdminAIChatbotPanel';
-import { 
-  Product, AdminUser, ErrorLog, BlogPost, DiscountCode, 
-  AIKnowledge, AILog, SocialPost, SocialSuggestion, 
-  SocialConnection, SocialStats 
+import { AdminInvoicesPanel } from '../components/admin/AdminInvoicesPanel';
+import {
+  Product, AdminUser, ErrorLog, BlogPost, DiscountCode,
+  AIKnowledge, AILog, SocialPost, SocialSuggestion,
+  SocialConnection, SocialStats, Invoice
 } from '../types/admin';
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social';
+type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture';
 
 interface NavItem {
   id: AdminTab;
@@ -43,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'ai', label: 'AI Chatbot', description: 'Addestra il chatbot', icon: Bot },
   { id: 'ai_features', label: 'Funzionalità AI', description: 'Attiva/disattiva AI features', icon: BrainCircuit },
   { id: 'social', label: 'Social Media', description: 'Pubblica e gestisci i social', icon: Share2 },
+  { id: 'fatture', label: 'Fatture', description: 'Gestione fatture acquisto e vendita', icon: Receipt },
   { id: 'users', label: 'Utenti', description: 'Clienti registrati', icon: UsersIcon },
   { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
 ];
@@ -78,6 +80,9 @@ export function Admin({ onNavigate }: AdminProps) {
   // AI Chatbot state
   const [aiKnowledge, setAiKnowledge] = useState<AIKnowledge[]>([]);
   const [aiLogs, setAiLogs] = useState<AILog[]>([]);
+
+  // Invoice state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   // Social state
   const [socialPosts, setSocialPosts] = useState<SocialPost[]>([]);
@@ -124,6 +129,7 @@ export function Admin({ onNavigate }: AdminProps) {
     loadDiscounts();
     loadAiData();
     loadSocialData();
+    loadInvoices();
   }, []);
 
   const loadProducts = () => {
@@ -155,6 +161,12 @@ export function Admin({ onNavigate }: AdminProps) {
   const loadAiData = () => {
     onSnapshot(collection(db, 'chatbot_knowledge'), s => setAiKnowledge(s.docs.map(d => ({ id: d.id, ...d.data() } as AIKnowledge))));
     onSnapshot(query(collection(db, 'chatbot_logs'), orderBy('timestamp', 'desc'), limit(50)), s => setAiLogs(s.docs.map(d => ({ id: d.id, ...d.data() } as AILog))));
+  };
+
+  const loadInvoices = () => {
+    return onSnapshot(query(collection(db, 'invoices'), orderBy('date', 'desc')), s => {
+      setInvoices(s.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+    });
   };
 
   const loadSocialData = () => {
@@ -358,6 +370,7 @@ export function Admin({ onNavigate }: AdminProps) {
           {activeTab === 'users' && <AdminUsersPanel registeredUsers={registeredUsers} newsletterCount={newsletterCount} loadStats={loadStats} />}
           {activeTab === 'monitoring' && <AdminMonitoringPanel errorLogs={errorLogs} setErrorLogs={setErrorLogs} loadStats={loadStats} products={products} blogPosts={blogPosts} discounts={discounts} aiKnowledge={aiKnowledge} manualApiKey={manualApiKey} />}
           {activeTab === 'ai_features' && <AIFeaturesPanel currentUser={currentUser} />}
+          {activeTab === 'fatture' && <AdminInvoicesPanel invoices={invoices} />}
         </div>
       </main>
 
