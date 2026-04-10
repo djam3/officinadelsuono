@@ -59,7 +59,7 @@ export const AI_FEATURE_DEFS = [
     name: 'Insider Trust AI',
     subtitle: 'Recensioni aggregate dal web',
     description: "L'AI scansiona YouTube, Reddit e i forum di settore per creare un riassunto onesto dei 'Pro e Contro' di ogni prodotto. Questo crea fiducia immediata perché l'utente trova un'opinione esperta e imparziale senza dover lasciare il tuo sito.",
-    benefit: 'Riduce l'abbandono delle pagine prodotto aumentando la fiducia.',
+    benefit: "Riduce l'abbandono delle pagine prodotto aumentando la fiducia.",
     costApi: 'Gratis con Gemini',
     impact: 'Trust & Retention',
     priority: 3,
