@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit, where, Timestamp } from 'firebase/firestore';
-import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2, BrainCircuit, Target, Star, AtSign, ToggleLeft, ToggleRight } from 'lucide-react';
+import { LogOut, Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, Sparkles, Loader2, Settings, User as UserIcon, Mail, Tag, Globe, ShieldAlert, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, TrendingUp, AlertTriangle, MessageSquare, Zap, Clock, Database, CheckCircle2, BrainCircuit, Target, Star, AtSign, ToggleLeft, ToggleRight, Receipt, FileText, Search, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { GoogleGenAI, Type } from "@google/genai";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,10 +11,12 @@ import { useBuilder } from '../contexts/BuilderContext';
 import { Pencil } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { useAIFeatures, AIFeatures, AIFeatureConfig } from '../contexts/AIFeaturesContext';
+import { AICostCounter } from '../components/AICostCounter';
+import { aiCostTracker } from '../services/aiCostTracker';
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features';
+type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'fatture';
 
 interface NavItem {
   id: AdminTab;
@@ -34,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'ai_features', label: 'Funzionalità AI', description: 'Attiva/disattiva AI features', icon: BrainCircuit },
   { id: 'users', label: 'Utenti', description: 'Clienti registrati', icon: UsersIcon },
   { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
+  { id: 'fatture', label: 'Fatture', description: 'Gestione fatture acquisto e vendita', icon: Receipt },
 ];
 
 interface Product {
@@ -55,6 +58,26 @@ interface Product {
     dimensions?: string;
     weight?: string;
   };
+}
+
+interface Invoice {
+  id: string;
+  type: 'acquisto' | 'vendita';
+  number: string;
+  date: string;
+  dueDate: string;
+  counterparty: string;
+  vatNumber?: string;
+  description?: string;
+  amount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+  status: 'pagata' | 'in_attesa' | 'scaduta' | 'annullata';
+  pdfUrl?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface AdminProps {
@@ -151,6 +174,33 @@ export function Admin({ onNavigate }: AdminProps) {
   });
   const [isSavingContent, setIsSavingContent] = useState(false);
 
+  // Fatture state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoiceFilter, setInvoiceFilter] = useState<'all' | 'acquisto' | 'vendita'>('all');
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState<'all' | 'pagata' | 'in_attesa' | 'scaduta' | 'annullata'>('all');
+  const [invoiceSearch, setInvoiceSearch] = useState('');
+  const [isAddingInvoice, setIsAddingInvoice] = useState(false);
+  const [isEditingInvoice, setIsEditingInvoice] = useState<string | null>(null);
+  const [isSavingInvoice, setIsSavingInvoice] = useState(false);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const emptyInvoiceForm = (): Partial<Invoice> => ({
+    type: 'acquisto',
+    number: '',
+    date: new Date().toISOString().split('T')[0],
+    dueDate: '',
+    counterparty: '',
+    vatNumber: '',
+    description: '',
+    amount: 0,
+    vatRate: 22,
+    vatAmount: 0,
+    totalAmount: 0,
+    status: 'in_attesa',
+    pdfUrl: '',
+    notes: '',
+  });
+  const [invoiceForm, setInvoiceForm] = useState<Partial<Invoice>>(emptyInvoiceForm());
+
   const handleSendTestEmail = async () => {
     setIsSendingTest(true);
     try {
@@ -209,6 +259,7 @@ export function Admin({ onNavigate }: AdminProps) {
         loadDiscounts();
         loadSiteContent();
         loadStats();
+        loadInvoices();
       } else {
         setIsAdmin(false);
       }
@@ -375,6 +426,120 @@ export function Admin({ onNavigate }: AdminProps) {
     if (window.confirm('Eliminare questa risposta appresa?')) {
       await deleteDoc(doc(db, 'chatbot_knowledge', id));
     }
+  };
+
+  // ── Fatture ──────────────────────────────────────────────────────────────
+
+  const loadInvoices = () => {
+    const q = query(collection(db, 'invoices'), orderBy('date', 'desc'));
+    const unsub = onSnapshot(q, (snap) => {
+      setInvoices(snap.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+    });
+    return unsub;
+  };
+
+  const calcInvoiceTotals = (amount: number, vatRate: number) => {
+    const vatAmount = parseFloat(((amount * vatRate) / 100).toFixed(2));
+    const totalAmount = parseFloat((amount + vatAmount).toFixed(2));
+    return { vatAmount, totalAmount };
+  };
+
+  const handleInvoiceAmountChange = (amount: number) => {
+    const vatRate = invoiceForm.vatRate ?? 22;
+    const { vatAmount, totalAmount } = calcInvoiceTotals(amount, vatRate);
+    setInvoiceForm(p => ({ ...p, amount, vatAmount, totalAmount }));
+  };
+
+  const handleInvoiceVatRateChange = (vatRate: number) => {
+    const amount = invoiceForm.amount ?? 0;
+    const { vatAmount, totalAmount } = calcInvoiceTotals(amount, vatRate);
+    setInvoiceForm(p => ({ ...p, vatRate, vatAmount, totalAmount }));
+  };
+
+  const handleUploadInvoicePdf = async (file: File) => {
+    setIsUploadingPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append('files', file);
+      const response = await fetch('/api/upload?folder=invoices', { method: 'POST', body: formData });
+      if (!response.ok) throw new Error('Upload failed');
+      const { urls } = await response.json();
+      setInvoiceForm(p => ({ ...p, pdfUrl: urls[0] }));
+    } catch (e: any) {
+      alert(e.message || 'Errore caricamento PDF');
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  };
+
+  const handleSaveInvoice = async () => {
+    if (!invoiceForm.number?.trim()) { alert('Numero fattura obbligatorio'); return; }
+    if (!invoiceForm.counterparty?.trim()) { alert('Fornitore/Cliente obbligatorio'); return; }
+    if (!invoiceForm.date) { alert('Data obbligatoria'); return; }
+    setIsSavingInvoice(true);
+    try {
+      const now = new Date().toISOString();
+      const data = {
+        type: invoiceForm.type || 'acquisto',
+        number: invoiceForm.number!.trim(),
+        date: invoiceForm.date!,
+        dueDate: invoiceForm.dueDate || '',
+        counterparty: invoiceForm.counterparty!.trim(),
+        vatNumber: invoiceForm.vatNumber?.trim() || '',
+        description: invoiceForm.description?.trim() || '',
+        amount: invoiceForm.amount || 0,
+        vatRate: invoiceForm.vatRate ?? 22,
+        vatAmount: invoiceForm.vatAmount || 0,
+        totalAmount: invoiceForm.totalAmount || 0,
+        status: invoiceForm.status || 'in_attesa',
+        pdfUrl: invoiceForm.pdfUrl || '',
+        notes: invoiceForm.notes?.trim() || '',
+        updatedAt: now,
+      };
+      if (isEditingInvoice) {
+        await updateDoc(doc(db, 'invoices', isEditingInvoice), data);
+      } else {
+        await addDoc(collection(db, 'invoices'), { ...data, createdAt: now });
+      }
+      setIsAddingInvoice(false);
+      setIsEditingInvoice(null);
+      setInvoiceForm(emptyInvoiceForm());
+    } catch (e: any) {
+      alert(e.message || 'Errore durante il salvataggio');
+    } finally {
+      setIsSavingInvoice(false);
+    }
+  };
+
+  const handleDeleteInvoice = async (id: string) => {
+    if (!window.confirm('Eliminare questa fattura?')) return;
+    await deleteDoc(doc(db, 'invoices', id));
+  };
+
+  const handleMarkInvoicePaid = async (id: string) => {
+    await updateDoc(doc(db, 'invoices', id), { status: 'pagata', updatedAt: new Date().toISOString() });
+  };
+
+  const filteredInvoices = invoices
+    .filter(inv => invoiceFilter === 'all' || inv.type === invoiceFilter)
+    .filter(inv => invoiceStatusFilter === 'all' || inv.status === invoiceStatusFilter)
+    .filter(inv => {
+      const q = invoiceSearch.toLowerCase();
+      return !q || inv.number.toLowerCase().includes(q) || inv.counterparty.toLowerCase().includes(q) || (inv.vatNumber || '').toLowerCase().includes(q);
+    });
+
+  const invoiceSummary = {
+    totalAcquisto: invoices.filter(i => i.type === 'acquisto').reduce((s, i) => s + (i.totalAmount || 0), 0),
+    totalVendita: invoices.filter(i => i.type === 'vendita').reduce((s, i) => s + (i.totalAmount || 0), 0),
+    daPagare: invoices.filter(i => i.status === 'in_attesa').reduce((s, i) => s + (i.totalAmount || 0), 0),
+    scadute: invoices.filter(i => i.status === 'scaduta').length,
+  };
+
+  const INVOICE_STATUS_LABELS: Record<Invoice['status'], { label: string; color: string; bg: string; border: string }> = {
+    pagata: { label: 'Pagata', color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+    in_attesa: { label: 'In attesa', color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+    scaduta: { label: 'Scaduta', color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
+    annullata: { label: 'Annullata', color: 'text-zinc-500', bg: 'bg-zinc-800/50', border: 'border-white/5' },
   };
 
   const handleGoogleLogin = async () => {
@@ -1260,6 +1425,9 @@ export function Admin({ onNavigate }: AdminProps) {
                 </div>
               </div>
 
+              {/* AI Cost Counter */}
+              <AICostCounter />
+
               {/* Activity & Health */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recent chatbot activity */}
@@ -1393,7 +1561,7 @@ export function Admin({ onNavigate }: AdminProps) {
         {/* AI Configuration Panel */}
         <AnimatePresence>
           {showAiSettings && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0, marginBottom: 0 }}
               animate={{ opacity: 1, height: 'auto', marginBottom: 32 }}
               exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -1404,29 +1572,34 @@ export function Admin({ onNavigate }: AdminProps) {
                   <div>
                     <h3 className="text-lg font-bold flex items-center gap-2">
                       <Sparkles className="w-5 h-5 text-brand-orange" />
-                      Configurazione AI Gemini
+                      Configurazione AI
                     </h3>
-                    <p className="text-sm text-zinc-400 mt-1">Configura l'accesso ai modelli Gemini per la generazione automatica di contenuti e immagini.</p>
+                    <p className="text-sm text-zinc-400 mt-1">Configura le API AI per la generazione automatica di contenuti. Disponibile anche opzione gratuita.</p>
                   </div>
                   <button onClick={() => setShowAiSettings(false)} className="text-zinc-500 hover:text-white">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Gemini Settings */}
                   <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500" />
+                      <h4 className="font-bold text-blue-400">Google Gemini (A pagamento)</h4>
+                    </div>
                     <label className="block">
                       <span className="text-xs font-bold uppercase tracking-widest text-zinc-500 mb-2 block">Chiave API Manuale</span>
                       <div className="relative">
-                        <input 
-                          type="password" 
+                        <input
+                          type="password"
                           placeholder="Inserisci la tua chiave API Gemini..."
                           value={manualApiKey}
                           onChange={(e) => setManualApiKey(e.target.value)}
                           className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand-orange transition-all"
                         />
                         {manualApiKey && (
-                          <button 
+                          <button
                             onClick={() => {
                               setManualApiKey('');
                               localStorage.removeItem('gemini_api_key');
@@ -1441,35 +1614,104 @@ export function Admin({ onNavigate }: AdminProps) {
                         La chiave viene salvata solo nel tuo browser. Puoi ottenerne una su <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:underline">Google AI Studio</a>.
                       </p>
                     </label>
-                  </div>
-
-                  <div className="bg-zinc-950/50 rounded-xl p-4 border border-white/5">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">Stato Connessione</h4>
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-500">Piattaforma AI Studio:</span>
-                        <span className={window.aistudio ? "text-green-500 font-bold" : "text-zinc-600"}>
-                          {window.aistudio ? "Disponibile" : "Non rilevata"}
-                        </span>
-                      </div>
-                      {window.aistudio && (
-                        <button 
-                          onClick={async () => {
-                            if (window.aistudio) await window.aistudio.openSelectKey();
-                          }}
-                          className="w-full py-2 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-brand-orange/20"
-                        >
-                          Collega tramite AI Studio
-                        </button>
-                      )}
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-zinc-500">Chiave Manuale:</span>
-                        <span className={manualApiKey ? "text-green-500 font-bold" : "text-zinc-600"}>
-                          {manualApiKey ? "Configurata" : "Mancante"}
-                        </span>
+                    <div className="bg-zinc-950/50 rounded-xl p-4 border border-white/5">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3">Stato Connessione Gemini</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-500">Piattaforma AI Studio:</span>
+                          <span className={window.aistudio ? "text-green-500 font-bold" : "text-zinc-600"}>
+                            {window.aistudio ? "Disponibile" : "Non rilevata"}
+                          </span>
+                        </div>
+                        {window.aistudio && (
+                          <button
+                            onClick={async () => {
+                              if (window.aistudio) await window.aistudio.openSelectKey();
+                            }}
+                            className="w-full py-2 bg-brand-orange/10 hover:bg-brand-orange/20 text-brand-orange rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-brand-orange/20"
+                          >
+                            Collega tramite AI Studio
+                          </button>
+                        )}
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-zinc-500">Chiave Manuale:</span>
+                          <span className={manualApiKey ? "text-green-500 font-bold" : "text-zinc-600"}>
+                            {manualApiKey ? "Configurata" : "Mancante"}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
+
+                  {/* Free AI Options */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <h4 className="font-bold text-green-400">AI Gratuita (Alternative)</h4>
+                    </div>
+
+                    {/* Ollama */}
+                    <div className="bg-zinc-950/50 rounded-xl p-4 border border-white/5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-xs font-bold text-green-400">Ollama Locale</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase">100% Gratis</span>
+                      </div>
+                      <p className="text-xs text-zinc-400 mb-3">
+                        Richiede Ollama installato in locale. Esegue modelli Llama, Mistral, Phi direttamente sul tuo computer.
+                      </p>
+                      <div className="flex gap-2">
+                        <a
+                          href="https://ollama.ai"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2 bg-green-500/10 hover:bg-green-500/20 text-green-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-green-500/20 text-center"
+                        >
+                          Scarica Ollama
+                        </a>
+                      </div>
+                      <p className="text-[10px] text-zinc-600 mt-2">
+                        Comandi: <code className="bg-zinc-900 px-1 rounded">ollama pull llama3.2</code>
+                      </p>
+                    </div>
+
+                    {/* HuggingFace */}
+                    <div className="bg-zinc-950/50 rounded-xl p-4 border border-white/5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <span className="text-xs font-bold text-purple-400">HuggingFace Free</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase">Free Tier</span>
+                      </div>
+                      <p className="text-xs text-zinc-400 mb-3">
+                        Usa i modelli gratuiti di HuggingFace. Richiede registrazione per aumentare i limiti.
+                      </p>
+                      <div className="flex gap-2">
+                        <a
+                          href="https://huggingface.co/join"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border border-purple-500/20 text-center"
+                        >
+                          Crea Account
+                        </a>
+                      </div>
+                      <p className="text-[10px] text-zinc-600 mt-2">
+                        Modelli: Mistral-7B, Llama-3-8B, Phi-3
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-xs text-blue-300">
+                    <strong className="font-bold">💡 Consiglio:</strong> Usa AI gratuita (Ollama/HuggingFace) per test e sviluppo.
+                    Passa a Gemini per la produzione quando serve massima qualità e affidabilità.
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -2996,6 +3238,366 @@ export function Admin({ onNavigate }: AdminProps) {
             </div>
           );
         })()}
+
+        {/* ── Tab Fatture ─────────────────────────────────────────────────── */}
+        {activeTab === 'fatture' && (
+          <div className="space-y-6">
+            {/* Summary cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { label: 'Acquisti (totale)', value: `€${invoiceSummary.totalAcquisto.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, icon: ArrowDownLeft, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+                { label: 'Vendite (totale)', value: `€${invoiceSummary.totalVendita.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, icon: ArrowUpRight, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20' },
+                { label: 'Da pagare', value: `€${invoiceSummary.daPagare.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, icon: Clock, color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+                { label: 'Fatture scadute', value: invoiceSummary.scadute, icon: AlertTriangle, color: invoiceSummary.scadute > 0 ? 'text-red-400' : 'text-zinc-500', bg: invoiceSummary.scadute > 0 ? 'bg-red-500/10' : 'bg-zinc-800/50', border: invoiceSummary.scadute > 0 ? 'border-red-500/20' : 'border-white/5' },
+              ].map(kpi => {
+                const Icon = kpi.icon;
+                return (
+                  <div key={kpi.label} className={`p-5 rounded-2xl border ${kpi.border} ${kpi.bg}`}>
+                    <Icon className={`w-5 h-5 ${kpi.color} mb-3`} />
+                    <div className={`text-2xl font-black ${kpi.color} truncate`}>{kpi.value}</div>
+                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{kpi.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <input
+                  value={invoiceSearch}
+                  onChange={e => setInvoiceSearch(e.target.value)}
+                  placeholder="Cerca per numero, fornitore/cliente, P.IVA..."
+                  className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-brand-orange"
+                />
+              </div>
+              <select value={invoiceFilter} onChange={e => setInvoiceFilter(e.target.value as any)} className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-orange">
+                <option value="all">Tutte le fatture</option>
+                <option value="acquisto">Solo acquisto</option>
+                <option value="vendita">Solo vendita</option>
+              </select>
+              <select value={invoiceStatusFilter} onChange={e => setInvoiceStatusFilter(e.target.value as any)} className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-brand-orange">
+                <option value="all">Tutti gli stati</option>
+                <option value="in_attesa">In attesa</option>
+                <option value="pagata">Pagate</option>
+                <option value="scaduta">Scadute</option>
+                <option value="annullata">Annullate</option>
+              </select>
+              <button
+                onClick={() => { setIsAddingInvoice(true); setIsEditingInvoice(null); setInvoiceForm(emptyInvoiceForm()); }}
+                className="flex items-center gap-2 px-4 py-2.5 bg-brand-orange hover:bg-orange-600 text-white rounded-xl text-sm font-bold transition-colors shrink-0"
+              >
+                <Plus className="w-4 h-4" /> Nuova fattura
+              </button>
+            </div>
+
+            {/* Invoice table */}
+            <div className="bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden">
+              {filteredInvoices.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-zinc-600">
+                  <Receipt className="w-12 h-12 mb-4 opacity-30" />
+                  <p className="text-sm font-bold uppercase tracking-widest">Nessuna fattura trovata</p>
+                  <p className="text-xs mt-1">Aggiungi la prima fattura con il pulsante qui sopra</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-white/5 text-[10px] uppercase tracking-widest text-zinc-500">
+                        <th className="text-left px-5 py-3 font-bold">Tipo</th>
+                        <th className="text-left px-5 py-3 font-bold">Numero</th>
+                        <th className="text-left px-5 py-3 font-bold">Data</th>
+                        <th className="text-left px-5 py-3 font-bold">Scadenza</th>
+                        <th className="text-left px-5 py-3 font-bold">Fornitore / Cliente</th>
+                        <th className="text-right px-5 py-3 font-bold">Imponibile</th>
+                        <th className="text-right px-5 py-3 font-bold">IVA</th>
+                        <th className="text-right px-5 py-3 font-bold">Totale</th>
+                        <th className="text-left px-5 py-3 font-bold">Stato</th>
+                        <th className="text-right px-5 py-3 font-bold">Azioni</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredInvoices.map((inv, i) => {
+                        const st = INVOICE_STATUS_LABELS[inv.status];
+                        return (
+                          <tr key={inv.id} className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${i % 2 === 0 ? '' : 'bg-white/[0.01]'}`}>
+                            <td className="px-5 py-3.5">
+                              {inv.type === 'acquisto' ? (
+                                <span className="flex items-center gap-1.5 text-blue-400 font-bold text-xs"><ArrowDownLeft className="w-3.5 h-3.5" /> Acquisto</span>
+                              ) : (
+                                <span className="flex items-center gap-1.5 text-green-400 font-bold text-xs"><ArrowUpRight className="w-3.5 h-3.5" /> Vendita</span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3.5 font-mono font-bold text-white">{inv.number}</td>
+                            <td className="px-5 py-3.5 text-zinc-400">{inv.date}</td>
+                            <td className="px-5 py-3.5 text-zinc-400">{inv.dueDate || '—'}</td>
+                            <td className="px-5 py-3.5">
+                              <div className="font-bold text-white truncate max-w-[180px]">{inv.counterparty}</div>
+                              {inv.vatNumber && <div className="text-[10px] text-zinc-500 font-mono">{inv.vatNumber}</div>}
+                            </td>
+                            <td className="px-5 py-3.5 text-right font-mono text-zinc-300">€{(inv.amount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-5 py-3.5 text-right font-mono text-zinc-400 text-xs">{inv.vatRate}% · €{(inv.vatAmount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-5 py-3.5 text-right font-mono font-black text-white">€{(inv.totalAmount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}</td>
+                            <td className="px-5 py-3.5">
+                              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${st.color} ${st.bg} ${st.border}`}>{st.label}</span>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center justify-end gap-1">
+                                {inv.pdfUrl && (
+                                  <a href={inv.pdfUrl} target="_blank" rel="noopener noreferrer" title="Apri PDF" className="p-1.5 text-zinc-500 hover:text-brand-orange rounded-lg hover:bg-brand-orange/10 transition-colors">
+                                    <FileText className="w-4 h-4" />
+                                  </a>
+                                )}
+                                {inv.status === 'in_attesa' && (
+                                  <button onClick={() => handleMarkInvoicePaid(inv.id)} title="Segna come pagata" className="p-1.5 text-zinc-500 hover:text-green-400 rounded-lg hover:bg-green-500/10 transition-colors">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                <button onClick={() => { setIsEditingInvoice(inv.id); setIsAddingInvoice(true); setInvoiceForm({ ...inv }); }} title="Modifica" className="p-1.5 text-zinc-500 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+                                  <Edit2 className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handleDeleteInvoice(inv.id)} title="Elimina" className="p-1.5 text-zinc-500 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="px-5 py-3 border-t border-white/5 text-[10px] text-zinc-600 uppercase tracking-widest">
+                {filteredInvoices.length} fatture mostrate · {invoices.length} totali
+              </div>
+            </div>
+
+            {/* Add/Edit Invoice Modal */}
+            <AnimatePresence>
+              {isAddingInvoice && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                  onClick={e => { if (e.target === e.currentTarget) { setIsAddingInvoice(false); setIsEditingInvoice(null); } }}
+                >
+                  <motion.div
+                    initial={{ opacity: 0, y: 20, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 20, scale: 0.97 }}
+                    className="bg-zinc-900 border border-white/10 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl"
+                  >
+                    <div className="p-6 border-b border-white/5 flex items-center justify-between sticky top-0 bg-zinc-900 z-10">
+                      <div className="flex items-center gap-3">
+                        <Receipt className="w-5 h-5 text-brand-orange" />
+                        <h3 className="text-lg font-black">{isEditingInvoice ? 'Modifica Fattura' : 'Nuova Fattura'}</h3>
+                      </div>
+                      <button onClick={() => { setIsAddingInvoice(false); setIsEditingInvoice(null); }} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="p-6 space-y-5">
+                      {/* Type + Status row */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Tipo fattura</label>
+                          <div className="flex gap-2">
+                            {(['acquisto', 'vendita'] as const).map(t => (
+                              <button
+                                key={t}
+                                onClick={() => setInvoiceForm(p => ({ ...p, type: t }))}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-bold border transition-all ${invoiceForm.type === t ? (t === 'acquisto' ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' : 'bg-green-500/20 border-green-500/50 text-green-400') : 'bg-zinc-800 border-white/10 text-zinc-400 hover:text-white'}`}
+                              >
+                                {t === 'acquisto' ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
+                                {t.charAt(0).toUpperCase() + t.slice(1)}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Stato</label>
+                          <select
+                            value={invoiceForm.status || 'in_attesa'}
+                            onChange={e => setInvoiceForm(p => ({ ...p, status: e.target.value as Invoice['status'] }))}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                          >
+                            <option value="in_attesa">In attesa</option>
+                            <option value="pagata">Pagata</option>
+                            <option value="scaduta">Scaduta</option>
+                            <option value="annullata">Annullata</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Number + Date + DueDate */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Numero fattura *</label>
+                          <input
+                            value={invoiceForm.number || ''}
+                            onChange={e => setInvoiceForm(p => ({ ...p, number: e.target.value }))}
+                            placeholder="es. 2024/001"
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Data emissione *</label>
+                          <input
+                            type="date"
+                            value={invoiceForm.date || ''}
+                            onChange={e => setInvoiceForm(p => ({ ...p, date: e.target.value }))}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Scadenza pagamento</label>
+                          <input
+                            type="date"
+                            value={invoiceForm.dueDate || ''}
+                            onChange={e => setInvoiceForm(p => ({ ...p, dueDate: e.target.value }))}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Counterparty + VAT */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
+                            {invoiceForm.type === 'acquisto' ? 'Fornitore *' : 'Cliente *'}
+                          </label>
+                          <input
+                            value={invoiceForm.counterparty || ''}
+                            onChange={e => setInvoiceForm(p => ({ ...p, counterparty: e.target.value }))}
+                            placeholder={invoiceForm.type === 'acquisto' ? 'Nome fornitore...' : 'Nome cliente...'}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">P.IVA / C.F.</label>
+                          <input
+                            value={invoiceForm.vatNumber || ''}
+                            onChange={e => setInvoiceForm(p => ({ ...p, vatNumber: e.target.value }))}
+                            placeholder="IT12345678901"
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Descrizione</label>
+                        <input
+                          value={invoiceForm.description || ''}
+                          onChange={e => setInvoiceForm(p => ({ ...p, description: e.target.value }))}
+                          placeholder="Oggetto della fattura..."
+                          className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                        />
+                      </div>
+
+                      {/* Amount + VAT */}
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Imponibile (€)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={invoiceForm.amount || 0}
+                            onChange={e => handleInvoiceAmountChange(parseFloat(e.target.value) || 0)}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Aliquota IVA (%)</label>
+                          <select
+                            value={invoiceForm.vatRate ?? 22}
+                            onChange={e => handleInvoiceVatRateChange(parseInt(e.target.value))}
+                            className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange"
+                          >
+                            <option value={22}>22%</option>
+                            <option value={10}>10%</option>
+                            <option value={5}>5%</option>
+                            <option value={4}>4%</option>
+                            <option value={0}>0% (esente)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Totale IVA inclusa</label>
+                          <div className="w-full bg-zinc-800/50 border border-white/5 rounded-lg px-3 py-2 text-sm font-black text-brand-orange font-mono">
+                            €{(invoiceForm.totalAmount || 0).toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* PDF Upload */}
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Allegato PDF</label>
+                        {invoiceForm.pdfUrl ? (
+                          <div className="flex items-center gap-3 p-3 bg-zinc-800 border border-white/10 rounded-lg">
+                            <FileText className="w-5 h-5 text-brand-orange shrink-0" />
+                            <a href={invoiceForm.pdfUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-sm text-brand-orange hover:underline truncate">Visualizza PDF</a>
+                            <button onClick={() => setInvoiceForm(p => ({ ...p, pdfUrl: '' }))} className="p-1 hover:bg-white/10 rounded text-zinc-400 hover:text-white transition-colors">
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${isUploadingPdf ? 'border-brand-orange/50 bg-brand-orange/5' : 'border-white/10 hover:border-brand-orange/50 hover:bg-brand-orange/5'}`}>
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              className="hidden"
+                              onChange={e => { const f = e.target.files?.[0]; if (f) handleUploadInvoicePdf(f); e.target.value = ''; }}
+                              disabled={isUploadingPdf}
+                            />
+                            {isUploadingPdf ? (
+                              <Loader2 className="w-6 h-6 text-brand-orange animate-spin" />
+                            ) : (
+                              <Upload className="w-6 h-6 text-zinc-500" />
+                            )}
+                            <span className="text-sm text-zinc-500">{isUploadingPdf ? 'Caricamento...' : 'Trascina o clicca per caricare PDF'}</span>
+                            <span className="text-xs text-zinc-600">Solo file .pdf</span>
+                          </label>
+                        )}
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Note interne</label>
+                        <textarea
+                          value={invoiceForm.notes || ''}
+                          onChange={e => setInvoiceForm(p => ({ ...p, notes: e.target.value }))}
+                          rows={2}
+                          placeholder="Annotazioni private sulla fattura..."
+                          className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white resize-none focus:outline-none focus:border-brand-orange"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="p-6 border-t border-white/5 flex justify-end gap-3 sticky bottom-0 bg-zinc-900">
+                      <button onClick={() => { setIsAddingInvoice(false); setIsEditingInvoice(null); }} className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">
+                        Annulla
+                      </button>
+                      <button
+                        onClick={handleSaveInvoice}
+                        disabled={isSavingInvoice || isUploadingPdf}
+                        className="flex items-center gap-2 px-5 py-2 bg-brand-orange hover:bg-orange-600 text-white rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                      >
+                        {isSavingInvoice ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {isEditingInvoice ? 'Salva modifiche' : 'Crea fattura'}
+                      </button>
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
         </div>
       </main>
     </div>

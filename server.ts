@@ -358,8 +358,9 @@ async function startServer() {
         // Continue anyway, it might be a permissions issue with exists()
       }
 
+      const folder = (req.query.folder as string) || 'products';
       const uploadPromises = files.map(async (file) => {
-        const destination = `products/${Date.now()}_${file.originalname}`;
+        const destination = `${folder}/${Date.now()}_${file.originalname}`;
         const blob = bucket.file(destination);
         
         console.log(`Uploading ${file.originalname} to ${destination}...`);
