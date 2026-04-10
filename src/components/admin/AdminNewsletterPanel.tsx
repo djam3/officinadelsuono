@@ -24,6 +24,9 @@ export function AdminNewsletterPanel({ products, newsletterCount, manualApiKey }
   const [isSendingNewsletter, setIsSendingNewsletter] = useState(false);
   const [testEmailMessage, setTestEmailMessage] = useState('');
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [isSendingAiEmail, setIsSendingAiEmail] = useState(false);
+
+  const OFFICIAL_SENDER = 'info@officinadelsuono.it';
 
   const handleSendTestEmail = async () => {
     setIsSendingTest(true);
@@ -116,9 +119,53 @@ export function AdminNewsletterPanel({ products, newsletterCount, manualApiKey }
     }
   };
 
+  const handleSendAiEmail = async () => {
+    if (!emailAiResult) return;
+    if (!window.confirm(`Sei sicuro di voler inviare l'email AI ("${emailAiResult.subject}") a TUTTI gli iscritti?`)) return;
+
+    setIsSendingAiEmail(true);
+    try {
+      // 1. Fetch all subscribers
+      const snapshot = await getDocs(collection(db, 'newsletter_subscriptions'));
+      const emails = snapshot.docs.map(doc => doc.data().email).filter(Boolean);
+
+      if (emails.length === 0) {
+        alert("Nessun iscritto trovato.");
+        return;
+      }
+
+      // 2. Send custom newsletter
+      const response = await fetch('/api/emails/newsletter-custom', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emails,
+          subject: emailAiResult.subject,
+          html: emailAiResult.bodyHtml,
+          text: emailAiResult.bodyText
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Errore invio");
+
+      alert(`Newsletter AI inviata con successo a ${emails.length} iscritti!`);
+      setEmailAiResult(null);
+    } catch (error) {
+      console.error("Error sending AI newsletter:", error);
+      alert(`Errore: ${(error as Error).message}`);
+    } finally {
+      setIsSendingAiEmail(false);
+    }
+  };
+
   return (
     <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden p-6">
-      <h2 className="text-xl font-bold mb-6">Invia Newsletter</h2>
+      <h2 className="text-xl font-bold mb-2">Invia Newsletter</h2>
+      <div className="flex items-center gap-2 mb-6 text-xs text-brand-orange bg-brand-orange/10 px-3 py-1.5 rounded-lg w-fit">
+        <Mail className="w-3.5 h-3.5" />
+        Email mittente ufficiale: <strong>{OFFICIAL_SENDER}</strong>
+      </div>
       <p className="text-zinc-400 mb-8">
         Compila i campi sottostanti per inviare un'email di notifica a tutti gli iscritti alla newsletter.
         Questa funzione è ideale per annunciare la pubblicazione di un nuovo articolo sul blog.
@@ -287,20 +334,32 @@ export function AdminNewsletterPanel({ products, newsletterCount, manualApiKey }
                   </pre>
                 )}
               </div>
-              <button
-                onClick={() => {
-                  setNewsletterForm({
-                    title: emailAiResult.subject,
-                    excerpt: emailAiResult.preheader,
-                    url: ''
-                  });
-                  setEmailAiResult(null);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
-              >
-                Usa come Newsletter
-              </button>
+                <button
+                  onClick={handleSendAiEmail}
+                  disabled={isSendingAiEmail}
+                  className="w-full py-3 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-orange/20"
+                >
+                  {isSendingAiEmail ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Invio a tutti...</>
+                  ) : (
+                    <><Mail className="w-4 h-4" /> Invia questa email ora</>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setNewsletterForm({
+                      title: emailAiResult.subject,
+                      excerpt: emailAiResult.preheader,
+                      url: ''
+                    });
+                    setEmailAiResult(null);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold text-sm transition-colors"
+                >
+                  Usa i testi nel form manuale
+                </button>
             </div>
           )}
         </div>

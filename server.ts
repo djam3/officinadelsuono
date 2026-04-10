@@ -40,6 +40,8 @@ try {
 }
 
 const upload = multer({ dest: os.tmpdir() });
+const OFFICIAL_EMAIL = 'info@officinadelsuono.it';
+const OFFICIAL_NAME = 'Officina del Suono';
 
 let resendClient: Resend | null = null;
 
@@ -83,7 +85,7 @@ async function startServer() {
       const siteUrl = 'https://officinadelsuono-87986.web.app';
 
       const { data, error } = await getResend().emails.send({
-        from: 'Officina del Suono <onboarding@resend.dev>',
+        from: `${OFFICIAL_NAME} <${OFFICIAL_EMAIL}>`,
         to: email,
         subject: 'Benvenuto in Officina del Suono — alza il volume',
         html: `<!DOCTYPE html>
@@ -259,7 +261,7 @@ async function startServer() {
       // Resend allows sending up to 50 emails per batch request
       // For simplicity, we'll send them in a loop or as a single batch if supported
       const { data, error } = await getResend().emails.send({
-        from: 'onboarding@resend.dev', // Fallback for testing. In production, use your verified domain.
+        from: `${OFFICIAL_NAME} <${OFFICIAL_EMAIL}>`,
         to: emails, // Bcc is better for privacy, but Resend handles arrays in 'to' by sending individual emails if using batch API, or we can use bcc.
         bcc: emails,
         subject: `Nuovo Articolo: ${postTitle}`,
@@ -299,7 +301,7 @@ async function startServer() {
       const recipient = recipientEmail || 'amerigodecristofaro8@gmail.com';
 
       const { data, error } = await getResend().emails.send({
-        from: 'onboarding@resend.dev',
+        from: `${OFFICIAL_NAME} <${OFFICIAL_EMAIL}>`,
         to: recipient,
         subject: 'Test — Officina del Suono',
         html: `
@@ -405,6 +407,40 @@ async function startServer() {
       res.json({ urls });
     } catch (error: any) {
       console.error("Upload error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Newsletter Custom HTML endpoint
+  app.post("/api/emails/newsletter-custom", async (req, res) => {
+    try {
+      const { emails, subject, html, text } = req.body;
+      if (!emails || !Array.isArray(emails) || emails.length === 0) {
+        return res.status(400).json({ error: "Emails array is required" });
+      }
+
+      if (!process.env.RESEND_API_KEY) {
+        console.log(`[Email Simulation] Custom Newsletter sent to ${emails.length} subscribers: ${subject}`);
+        return res.json({ success: true, simulated: true });
+      }
+
+      const { data, error } = await getResend().emails.send({
+        from: `${OFFICIAL_NAME} <${OFFICIAL_EMAIL}>`,
+        to: emails,
+        bcc: emails,
+        subject: subject,
+        html: html,
+        text: text
+      });
+
+      if (error) {
+        console.error("Newsletter email error from Resend:", error);
+        return res.status(400).json({ error: error.message || "Errore durante l'invio della newsletter" });
+      }
+
+      res.json({ success: true, data });
+    } catch (error: any) {
+      console.error("Newsletter custom error:", error);
       res.status(500).json({ error: error.message });
     }
   });
