@@ -1,5 +1,9 @@
 import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package } from 'lucide-react';
-import { calcolaSpedizioneProdotto, formatCostoSpedizione, mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA } from '../services/shippingService';
+import {
+  calcolaQuoteTuttiCorrieri, loadCorreriAttivi, loadShippingSettings,
+  mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA,
+} from '../services/shippingService';
+import type { Corriere, QuotaCorriere, ShippingSettings } from '../types/shipping';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -51,6 +55,9 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
     summary: string; pros: string[]; cons: string[]; verdict: string; disclaimer?: string;
   } | null>(null);
   const [isLoadingReviewSummary, setIsLoadingReviewSummary] = useState(false);
+  const [shippingQuotes, setShippingQuotes] = useState<QuotaCorriere[]>([]);
+  const [shippingSettings, setShippingSettings] = useState<ShippingSettings>({ sogliaGratuita: SOGLIA_SPEDIZIONE_GRATUITA, volumetricoDivisore: 5000, updatedAt: '' });
+  const [showAllQuotes, setShowAllQuotes] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   const activeProductId = productId || 'bundle-start-dj-pro';
@@ -184,6 +191,31 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
     });
     return () => { cancelled = true; };
   }, [reviewsFeatureEnabled, reviews.length, product?.id]);
+
+  // Carica quote spedizione da Firestore quando il prodotto è disponibile
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchQuotes() {
+      try {
+        const [corrieri, sett] = await Promise.all([loadCorreriAttivi(), loadShippingSettings()]);
+        if (cancelled) return;
+        setShippingSettings(sett);
+        if (product?.weightKg) {
+          const qs = calcolaQuoteTuttiCorrieri(
+            corrieri,
+            product.weightKg,
+            product.dimensionsCm,
+            product.price,
+            sett.sogliaGratuita,
+            sett.volumetricoDivisore
+          );
+          setShippingQuotes(qs);
+        }
+      } catch { /* silently ignore */ }
+    }
+    fetchQuotes();
+    return () => { cancelled = true; };
+  }, [product?.id, product?.weightKg, product?.price]);
 
   const displayProduct: ProductType = product || {
     id: "bundle-start-dj-pro",
@@ -455,43 +487,79 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                   <span>Imballaggio Professionale</span>
                 </div>
               </div>
-              {/* Shipping cost badge */}
-              {(() => {
-                const p = displayProduct;
-                if (!p.weightKg) {
-                  return (
-                    <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-white/5">
-                      <Truck className="w-5 h-5 text-brand-orange shrink-0" />
-                      <div>
-                        <p className="text-sm font-bold text-white">Spedizione Assicurata 24h</p>
-                        <p className="text-xs text-zinc-500">Gratuita sopra €{SOGLIA_SPEDIZIONE_GRATUITA} · BRT / GLS</p>
+              {/* Shipping widget multi-corriere */}
+              {shippingQuotes.length > 0 ? (
+                <div className="bg-zinc-900 rounded-xl border border-white/5 overflow-hidden">
+                  {/* Corriere più economico (sempre visibile) */}
+                  {(() => {
+                    const best = shippingQuotes[0];
+                    const manca = mancaAllaGratuita(displayProduct.price, shippingSettings.sogliaGratuita);
+                    return (
+                      <div className="p-3 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck className="w-5 h-5 text-brand-orange shrink-0" />
+                            <div>
+                              <p className="text-sm font-bold text-white">{best.corriere.nome}</p>
+                              <p className="text-xs text-zinc-500">{best.stimaConsegna}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${best.gratuita ? 'bg-green-500/10 text-green-400' : best.preventivo ? 'bg-yellow-500/10 text-yellow-400' : 'bg-brand-orange/10 text-brand-orange'}`}>
+                              {best.gratuita ? 'Gratuita' : best.preventivo ? 'Preventivo' : `€${best.costoTotale.toFixed(2)}`}
+                            </span>
+                            {!best.gratuita && manca > 0 && (
+                              <p className="text-[10px] text-yellow-500 mt-0.5">+€{manca.toFixed(2)} → Gratuita</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-zinc-500 pl-7">
+                          <span>Peso fatturato: {best.pesoFatturato} kg</span>
+                          {best.pesoVolumetrico > best.pesoReale && <span>· Volumetrico: {best.pesoVolumetrico} kg</span>}
+                        </div>
                       </div>
-                    </div>
-                  );
-                }
-                const result = calcolaSpedizioneProdotto(p.price, p.weightKg, p.dimensionsCm);
-                const manca = mancaAllaGratuita(p.price);
-                return (
-                  <div className="p-3 bg-zinc-900 rounded-xl border border-white/5 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Truck className="w-5 h-5 text-brand-orange shrink-0" />
-                        <p className="text-sm font-bold text-white">Spedizione 24h — {result.corriere}</p>
-                      </div>
-                      <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${result.gratuita ? 'bg-green-500/10 text-green-400' : 'bg-brand-orange/10 text-brand-orange'}`}>
-                        {formatCostoSpedizione(result)}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-xs text-zinc-500 pl-7">
-                      <span>Peso: {result.pesoFatturato} kg</span>
-                      {result.pesoVolumetrico > 0 && <span>Volumetrico: {result.pesoVolumetrico} kg</span>}
-                      {!result.gratuita && manca > 0 && (
-                        <span className="text-yellow-500">Aggiungi €{manca.toFixed(2)} per la spedizione gratuita</span>
+                    );
+                  })()}
+                  {/* Toggle altri corrieri */}
+                  {shippingQuotes.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setShowAllQuotes(v => !v)}
+                        className="w-full flex items-center justify-between px-3 py-2 border-t border-white/5 text-xs text-zinc-500 hover:text-zinc-300 hover:bg-white/5 transition-colors"
+                      >
+                        <span>{showAllQuotes ? 'Nascondi altri corrieri' : `Confronta altri ${shippingQuotes.length - 1} corrieri`}</span>
+                        <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showAllQuotes ? 'rotate-90' : ''}`} />
+                      </button>
+                      {showAllQuotes && (
+                        <div className="border-t border-white/5 divide-y divide-white/5">
+                          {shippingQuotes.slice(1).map(q => (
+                            <div key={q.corriere.id} className="flex items-center justify-between px-3 py-2.5">
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: q.corriere.colore }} />
+                                <div>
+                                  <p className="text-xs font-bold text-zinc-300">{q.corriere.nome}</p>
+                                  <p className="text-[10px] text-zinc-600">{q.stimaConsegna}</p>
+                                </div>
+                              </div>
+                              <span className={`text-xs font-bold ${q.gratuita ? 'text-green-400' : q.preventivo ? 'text-yellow-500' : 'text-zinc-300'}`}>
+                                {q.gratuita ? 'Gratuita' : q.preventivo ? 'Preventivo' : `€${q.costoTotale.toFixed(2)}`}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-white/5">
+                  <Truck className="w-5 h-5 text-brand-orange shrink-0" />
+                  <div>
+                    <p className="text-sm font-bold text-white">Spedizione Assicurata 24h</p>
+                    <p className="text-xs text-zinc-500">Gratuita sopra €{shippingSettings.sogliaGratuita}</p>
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
 
           </div>

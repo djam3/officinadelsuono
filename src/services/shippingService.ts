@@ -1,8 +1,19 @@
 /**
- * Servizio calcolo costi spedizione 24h in Italia
- * Tariffe basate su corrieri espresso (BRT/GLS/SDA)
- * Peso volumetrico: (L × W × H cm) / 5000
+ * Servizio spedizioni multi-corriere
+ * Gestisce tariffe, peso volumetrico, quote comparative e impostazioni globali
+ * I corrieri sono configurati in Firestore (shipping_couriers) dall'Admin
  */
+
+import { db } from '../firebase';
+import {
+  collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
+  setDoc, serverTimestamp, query, where
+} from 'firebase/firestore';
+import type { Corriere, QuotaCorriere, ShippingSettings, FasciaTariffaria } from '../types/shipping';
+import { CORRIERI_DEFAULT } from '../types/shipping';
+
+export type { Corriere, QuotaCorriere, ShippingSettings, FasciaTariffaria };
+export { CORRIERI_DEFAULT };
 
 export interface ProductDimensions {
   lunghezza: number; // cm
@@ -10,72 +21,180 @@ export interface ProductDimensions {
   altezza: number;   // cm
 }
 
+// ─── Peso volumetrico ──────────────────────────────────────────────────────────
+
+export function calcolaPesoVolumetrico(
+  dims: ProductDimensions,
+  divisore = 5000
+): number {
+  return (dims.lunghezza * dims.larghezza * dims.altezza) / divisore;
+}
+
+export function calcolaPesoFatturato(
+  pesoRealeKg: number,
+  dims?: ProductDimensions,
+  divisore = 5000
+): number {
+  if (!dims) return pesoRealeKg;
+  return Math.max(pesoRealeKg, calcolaPesoVolumetrico(dims, divisore));
+}
+
+// ─── Calcolo quota singolo corriere ───────────────────────────────────────────
+
+function tariffaCorriere(tariffe: FasciaTariffaria[], pesoKg: number): number {
+  const fascia = tariffe.find(t => pesoKg <= t.maxKg);
+  return fascia?.prezzo ?? -1;
+}
+
+export function calcolaQuotaCorriere(
+  corriere: Corriere,
+  pesoRealeKg: number,
+  dims: ProductDimensions | undefined,
+  totaleOrdine: number,
+  sogliaGratuita: number,
+  divisore = 5000
+): QuotaCorriere {
+  const pesoVolumetrico = dims ? calcolaPesoVolumetrico(dims, divisore) : 0;
+  const pesoFatturato = Math.max(pesoRealeKg, pesoVolumetrico);
+  const gratuita = totaleOrdine >= sogliaGratuita;
+  const costoBase = tariffaCorriere(corriere.tariffe, pesoFatturato);
+  const preventivo = costoBase === -1;
+
+  return {
+    corriere,
+    pesoFatturato:    Math.round(pesoFatturato * 100) / 100,
+    pesoVolumetrico:  Math.round(pesoVolumetrico * 100) / 100,
+    pesoReale:        pesoRealeKg,
+    costoBase:        gratuita ? 0 : (preventivo ? -1 : costoBase),
+    costoTotale:      gratuita ? 0 : (preventivo ? -1 : costoBase),
+    gratuita,
+    preventivo,
+    stimaConsegna:    corriere.stimaConsegna,
+  };
+}
+
+export function calcolaQuoteTuttiCorrieri(
+  corrieri: Corriere[],
+  pesoRealeKg: number,
+  dims: ProductDimensions | undefined,
+  totaleOrdine: number,
+  sogliaGratuita: number,
+  divisore = 5000
+): QuotaCorriere[] {
+  return corrieri
+    .filter(c => c.attivo)
+    .map(c => calcolaQuotaCorriere(c, pesoRealeKg, dims, totaleOrdine, sogliaGratuita, divisore))
+    .sort((a, b) => {
+      if (a.preventivo && !b.preventivo) return 1;
+      if (!a.preventivo && b.preventivo) return -1;
+      return a.costoTotale - b.costoTotale;
+    });
+}
+
+// ─── Firestore: Corrieri ───────────────────────────────────────────────────────
+
+const CORRIERI_COLLECTION = 'shipping_couriers';
+const SETTINGS_DOC = 'shipping_settings';
+
+export async function loadCorreriFirestore(): Promise<Corriere[]> {
+  try {
+    const snap = await getDocs(collection(db, CORRIERI_COLLECTION));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Corriere));
+  } catch {
+    return [];
+  }
+}
+
+export async function loadCorreriAttivi(): Promise<Corriere[]> {
+  try {
+    const q = query(collection(db, CORRIERI_COLLECTION), where('attivo', '==', true));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as Corriere));
+  } catch {
+    return [];
+  }
+}
+
+export async function saveCorreire(corriere: Omit<Corriere, 'id'>): Promise<string> {
+  const docRef = await addDoc(collection(db, CORRIERI_COLLECTION), {
+    ...corriere,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  return docRef.id;
+}
+
+export async function updateCorriere(id: string, data: Partial<Corriere>): Promise<void> {
+  await updateDoc(doc(db, CORRIERI_COLLECTION, id), {
+    ...data,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function deleteCorriere(id: string): Promise<void> {
+  await deleteDoc(doc(db, CORRIERI_COLLECTION, id));
+}
+
+export async function inizializzaCorreriDefault(): Promise<void> {
+  const existing = await loadCorreriFirestore();
+  if (existing.length > 0) return;
+  const now = new Date().toISOString();
+  for (const c of CORRIERI_DEFAULT) {
+    await addDoc(collection(db, CORRIERI_COLLECTION), {
+      ...c,
+      tariffe: c.tariffe.map(t => ({ ...t, maxKg: t.maxKg === Infinity ? 9999 : t.maxKg })),
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
+
+// ─── Firestore: Impostazioni globali ─────────────────────────────────────────
+
+export async function loadShippingSettings(): Promise<ShippingSettings> {
+  try {
+    const snap = await getDoc(doc(db, 'settings', SETTINGS_DOC));
+    if (snap.exists()) return snap.data() as ShippingSettings;
+  } catch { /* ignored */ }
+  return {
+    sogliaGratuita: 199,
+    volumetricoDivisore: 5000,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function saveShippingSettings(s: Partial<ShippingSettings>): Promise<void> {
+  await setDoc(doc(db, 'settings', SETTINGS_DOC), {
+    ...s,
+    updatedAt: new Date().toISOString(),
+  }, { merge: true });
+}
+
+// ─── Backward-compat: funzioni precedenti ────────────────────────────────────
+
 export interface ShippingResult {
-  costo: number;          // € spedizione
-  gratuita: boolean;      // true se sopra soglia
-  pesoFatturato: number;  // kg usato per calcolo
+  costo: number;
+  gratuita: boolean;
+  pesoFatturato: number;
   pesoVolumetrico: number;
   pesoReale: number;
   corriere: string;
   stimaConsegna: string;
 }
 
-// Soglia spedizione gratuita
 export const SOGLIA_SPEDIZIONE_GRATUITA = 199;
 
-// Tariffe corriere espresso 24h (BRT/GLS - contratto small business tipico Italia)
-const TARIFFE_24H: Array<{ maxKg: number; prezzo: number }> = [
-  { maxKg: 1,        prezzo: 5.90  },
-  { maxKg: 3,        prezzo: 7.90  },
-  { maxKg: 5,        prezzo: 9.90  },
-  { maxKg: 10,       prezzo: 12.90 },
-  { maxKg: 20,       prezzo: 17.90 },
-  { maxKg: 30,       prezzo: 24.90 },
-  { maxKg: 50,       prezzo: 34.90 },
-  { maxKg: Infinity, prezzo: -1    }, // preventivo manuale
-];
-
-/**
- * Calcola il peso volumetrico in kg
- * Formula standard corrieri: (L × W × H) / 5000
- */
-export function calcolaPesoVolumetrico(dims: ProductDimensions): number {
-  return (dims.lunghezza * dims.larghezza * dims.altezza) / 5000;
-}
-
-/**
- * Restituisce il peso fatturabile (max tra reale e volumetrico)
- */
-export function calcolaPesoFatturato(pesoRealeKg: number, dims?: ProductDimensions): number {
-  if (!dims) return pesoRealeKg;
-  const volWeight = calcolaPesoVolumetrico(dims);
-  return Math.max(pesoRealeKg, volWeight);
-}
-
-/**
- * Calcola la tariffa 24h per un singolo peso
- */
-function tariffa24h(pesoKg: number): number {
-  const fascia = TARIFFE_24H.find(t => pesoKg <= t.maxKg);
-  return fascia?.prezzo ?? -1;
-}
-
-/**
- * Calcola il costo di spedizione per un singolo prodotto
- */
 export function calcolaSpedizioneProdotto(
   prezzoOrdine: number,
   pesoKg: number,
   dims?: ProductDimensions
 ): ShippingResult {
   const pesoVolumetrico = dims ? calcolaPesoVolumetrico(dims) : 0;
-  const pesoFatturato = dims ? Math.max(pesoKg, pesoVolumetrico) : pesoKg;
+  const pesoFatturato = Math.max(pesoKg, pesoVolumetrico);
   const gratuita = prezzoOrdine >= SOGLIA_SPEDIZIONE_GRATUITA;
-  const costo = gratuita ? 0 : tariffa24h(pesoFatturato);
-
+  const costo = gratuita ? 0 : tariffeDefault(pesoFatturato);
   return {
-    costo,
-    gratuita,
+    costo, gratuita,
     pesoFatturato: Math.round(pesoFatturato * 100) / 100,
     pesoVolumetrico: Math.round(pesoVolumetrico * 100) / 100,
     pesoReale: pesoKg,
@@ -90,65 +209,48 @@ export interface CartItemShipping {
   quantita: number;
 }
 
-/**
- * Calcola il costo di spedizione totale per un carrello
- * I colli vengono sommati; il peso volumetrico si calcola per ogni articolo
- */
 export function calcolaSpedizioneCarrello(
   totaleOrdine: number,
   articoli: CartItemShipping[]
 ): ShippingResult {
-  if (articoli.length === 0) {
-    return {
-      costo: 0,
-      gratuita: false,
-      pesoFatturato: 0,
-      pesoVolumetrico: 0,
-      pesoReale: 0,
-      corriere: 'BRT / GLS',
-      stimaConsegna: '24h lavorative',
-    };
+  if (!articoli.length) return { costo: 0, gratuita: false, pesoFatturato: 0, pesoVolumetrico: 0, pesoReale: 0, corriere: 'BRT / GLS', stimaConsegna: '24h lavorative' };
+  let totReale = 0, totVol = 0;
+  for (const a of articoli) {
+    totReale += a.pesoKg * a.quantita;
+    if (a.dims) totVol += calcolaPesoVolumetrico(a.dims) * a.quantita;
   }
-
-  let totPesoReale = 0;
-  let totPesoVol = 0;
-
-  for (const art of articoli) {
-    const q = art.quantita;
-    totPesoReale += art.pesoKg * q;
-    if (art.dims) {
-      totPesoVol += calcolaPesoVolumetrico(art.dims) * q;
-    }
-  }
-
-  const pesoFatturato = Math.max(totPesoReale, totPesoVol);
+  const pesoFatturato = Math.max(totReale, totVol);
   const gratuita = totaleOrdine >= SOGLIA_SPEDIZIONE_GRATUITA;
-  const costo = gratuita ? 0 : tariffa24h(pesoFatturato);
-
   return {
-    costo,
+    costo: gratuita ? 0 : tariffeDefault(pesoFatturato),
     gratuita,
     pesoFatturato: Math.round(pesoFatturato * 100) / 100,
-    pesoVolumetrico: Math.round(totPesoVol * 100) / 100,
-    pesoReale: Math.round(totPesoReale * 100) / 100,
+    pesoVolumetrico: Math.round(totVol * 100) / 100,
+    pesoReale: Math.round(totReale * 100) / 100,
     corriere: 'BRT / GLS',
     stimaConsegna: '24h lavorative',
   };
 }
 
-/**
- * Formatta il costo spedizione come stringa leggibile
- */
-export function formatCostoSpedizione(result: ShippingResult): string {
-  if (result.gratuita) return 'Gratuita';
-  if (result.costo === -1) return 'Preventivo';
-  return `€${result.costo.toFixed(2)}`;
+function tariffeDefault(kg: number): number {
+  if (kg <= 1)  return 5.90;
+  if (kg <= 3)  return 7.90;
+  if (kg <= 5)  return 9.90;
+  if (kg <= 10) return 12.90;
+  if (kg <= 20) return 17.90;
+  if (kg <= 30) return 24.90;
+  if (kg <= 50) return 34.90;
+  return -1;
 }
 
-/**
- * Restituisce quanti euro mancano alla spedizione gratuita
- */
-export function mancaAllaGratuita(totaleOrdine: number): number {
-  const diff = SOGLIA_SPEDIZIONE_GRATUITA - totaleOrdine;
+export function formatCostoSpedizione(result: ShippingResult | QuotaCorriere): string {
+  const costo = 'costo' in result ? result.costo : result.costoTotale;
+  if (result.gratuita) return 'Gratuita';
+  if (costo === -1) return 'Preventivo';
+  return `€${costo.toFixed(2)}`;
+}
+
+export function mancaAllaGratuita(totaleOrdine: number, soglia = SOGLIA_SPEDIZIONE_GRATUITA): number {
+  const diff = soglia - totaleOrdine;
   return diff > 0 ? Math.round(diff * 100) / 100 : 0;
 }

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Logo } from '../components/Logo';
@@ -17,6 +17,7 @@ import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
 import { AdminAIChatbotPanel } from '../components/admin/AdminAIChatbotPanel';
 import { AdminInvoicesPanel } from '../components/admin/AdminInvoicesPanel';
+import { AdminShippingPanel } from '../components/admin/AdminShippingPanel';
 import {
   Product, AdminUser, ErrorLog, BlogPost, DiscountCode,
   AIKnowledge, AILog, SocialPost, SocialSuggestion,
@@ -25,7 +26,7 @@ import {
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture';
+type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping';
 
 interface NavItem {
   id: AdminTab;
@@ -44,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'ai', label: 'AI Chatbot', description: 'Addestra il chatbot', icon: Bot },
   { id: 'ai_features', label: 'Funzionalità AI', description: 'Attiva/disattiva AI features', icon: BrainCircuit },
   { id: 'social', label: 'Social Media', description: 'Pubblica e gestisci i social', icon: Share2 },
+  { id: 'shipping', label: 'Spedizioni', description: 'Corrieri, tariffe e preventivi', icon: Truck },
   { id: 'fatture', label: 'Fatture', description: 'Gestione fatture acquisto e vendita', icon: Receipt },
   { id: 'users', label: 'Utenti', description: 'Clienti registrati', icon: UsersIcon },
   { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
@@ -370,6 +372,7 @@ export function Admin({ onNavigate }: AdminProps) {
           {activeTab === 'users' && <AdminUsersPanel registeredUsers={registeredUsers} newsletterCount={newsletterCount} loadStats={loadStats} />}
           {activeTab === 'monitoring' && <AdminMonitoringPanel errorLogs={errorLogs} setErrorLogs={setErrorLogs} loadStats={loadStats} products={products} blogPosts={blogPosts} discounts={discounts} aiKnowledge={aiKnowledge} manualApiKey={manualApiKey} />}
           {activeTab === 'ai_features' && <AIFeaturesPanel currentUser={currentUser} />}
+          {activeTab === 'shipping' && <AdminShippingPanel />}
           {activeTab === 'fatture' && <AdminInvoicesPanel invoices={invoices} />}
         </div>
       </main>
