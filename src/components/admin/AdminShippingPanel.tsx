@@ -39,7 +39,7 @@ export function AdminShippingPanel() {
   const [corrieri, setCorrieri] = useState<Corriere[]>([]);
   const [settings, setSettings] = useState<ShippingSettings>({
     sogliaGratuita: 199,
-    volumetricoDivisore: 5000,
+    volumetricoDivisore: 5_000_000,
     updatedAt: '',
   });
   const [loading, setLoading] = useState(true);
@@ -549,16 +549,16 @@ export function AdminShippingPanel() {
                 <input type="number" step="0.1" min="0" placeholder="es. 3.5" value={calcPeso} onChange={e => setCalcPeso(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Lunghezza (cm)</label>
-                <input type="number" step="1" min="0" placeholder="es. 50" value={calcL} onChange={e => setCalcL(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
+                <label className={labelCls}>Lunghezza (mm)</label>
+                <input type="number" step="1" min="0" placeholder="es. 500" value={calcL} onChange={e => setCalcL(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Larghezza (cm)</label>
-                <input type="number" step="1" min="0" placeholder="es. 30" value={calcW} onChange={e => setCalcW(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
+                <label className={labelCls}>Larghezza (mm)</label>
+                <input type="number" step="1" min="0" placeholder="es. 300" value={calcW} onChange={e => setCalcW(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Altezza (cm)</label>
-                <input type="number" step="1" min="0" placeholder="es. 20" value={calcH} onChange={e => setCalcH(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
+                <label className={labelCls}>Altezza (mm)</label>
+                <input type="number" step="1" min="0" placeholder="es. 200" value={calcH} onChange={e => setCalcH(e.target.value ? Number(e.target.value) : '')} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Valore ordine (€)</label>
@@ -634,11 +634,11 @@ export function AdminShippingPanel() {
                 onChange={e => setSettings(s => ({ ...s, volumetricoDivisore: Number(e.target.value) }))}
                 className={inputCls}
               >
-                <option value={5000}>5000 (standard corrieri italiani)</option>
-                <option value={4000}>4000 (DHL, FedEx internazionale)</option>
-                <option value={6000}>6000 (pallet / merci su misura)</option>
+                <option value={5_000_000}>5.000.000 (standard corrieri italiani — input mm)</option>
+                <option value={4_000_000}>4.000.000 (DHL, FedEx internazionale — input mm)</option>
+                <option value={6_000_000}>6.000.000 (pallet / merci su misura — input mm)</option>
               </select>
-              <p className="text-[11px] text-zinc-600 mt-1">Formula: (L × W × H cm) / divisore = kg volumetrici. Viene fatturato il maggiore tra reale e volumetrico.</p>
+              <p className="text-[11px] text-zinc-600 mt-1">Formula: (L × W × H mm) / divisore = kg volumetrici. Viene fatturato il maggiore tra reale e volumetrico.</p>
             </div>
             <div>
               <label className={labelCls}>Corriere predefinito (per display prodotti)</label>

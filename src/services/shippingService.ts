@@ -16,16 +16,16 @@ export type { Corriere, QuotaCorriere, ShippingSettings, FasciaTariffaria };
 export { CORRIERI_DEFAULT };
 
 export interface ProductDimensions {
-  lunghezza: number; // cm
-  larghezza: number; // cm
-  altezza: number;   // cm
+  lunghezza: number; // mm
+  larghezza: number; // mm
+  altezza: number;   // mm
 }
 
 // ─── Peso volumetrico ──────────────────────────────────────────────────────────
 
 export function calcolaPesoVolumetrico(
   dims: ProductDimensions,
-  divisore = 5000
+  divisore = 5_000_000
 ): number {
   return (dims.lunghezza * dims.larghezza * dims.altezza) / divisore;
 }
@@ -33,7 +33,7 @@ export function calcolaPesoVolumetrico(
 export function calcolaPesoFatturato(
   pesoRealeKg: number,
   dims?: ProductDimensions,
-  divisore = 5000
+  divisore = 5_000_000
 ): number {
   if (!dims) return pesoRealeKg;
   return Math.max(pesoRealeKg, calcolaPesoVolumetrico(dims, divisore));
@@ -52,7 +52,7 @@ export function calcolaQuotaCorriere(
   dims: ProductDimensions | undefined,
   totaleOrdine: number,
   sogliaGratuita: number,
-  divisore = 5000
+  divisore = 5_000_000
 ): QuotaCorriere {
   const pesoVolumetrico = dims ? calcolaPesoVolumetrico(dims, divisore) : 0;
   const pesoFatturato = Math.max(pesoRealeKg, pesoVolumetrico);
@@ -79,7 +79,7 @@ export function calcolaQuoteTuttiCorrieri(
   dims: ProductDimensions | undefined,
   totaleOrdine: number,
   sogliaGratuita: number,
-  divisore = 5000
+  divisore = 5_000_000
 ): QuotaCorriere[] {
   return corrieri
     .filter(c => c.attivo)
@@ -158,7 +158,7 @@ export async function loadShippingSettings(): Promise<ShippingSettings> {
   } catch { /* ignored */ }
   return {
     sogliaGratuita: 199,
-    volumetricoDivisore: 5000,
+    volumetricoDivisore: 5_000_000,
     updatedAt: new Date().toISOString(),
   };
 }

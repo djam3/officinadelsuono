@@ -52,7 +52,7 @@ export interface QuotaCorriere {
 export interface ShippingSettings {
   sogliaGratuita: number;       // € soglia spedizione gratuita
   corriereDefault?: string;     // codice corriere predefinito
-  volumetricoDivisore: number;  // default 5000
+  volumetricoDivisore: number;  // default 5.000.000 (input in mm)
   updatedAt: string;
 }
 

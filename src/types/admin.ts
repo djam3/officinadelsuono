@@ -14,7 +14,7 @@ export interface Product {
   brand?: string;
   // Spedizione
   weightKg?: number;
-  dimensionsCm?: {
+  dimensionsMm?: {
     lunghezza: number;
     larghezza: number;
     altezza: number;

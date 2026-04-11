@@ -228,8 +228,8 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
       if (editForm.weightKg !== undefined && editForm.weightKg > 0) {
         productData.weightKg = editForm.weightKg;
       }
-      if (editForm.dimensionsCm) {
-        productData.dimensionsCm = editForm.dimensionsCm;
+      if (editForm.dimensionsMm) {
+        productData.dimensionsMm = editForm.dimensionsMm;
       }
 
       if (isEditing) {
@@ -435,7 +435,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
                     <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-3">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-brand-orange" />
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Spedizione 24h — Peso &amp; Dimensioni</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Spedizione 24h — Peso (kg) &amp; Dimensioni (mm)</p>
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
@@ -451,38 +451,38 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Lunghezza (cm)</label>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Lunghezza (mm)</label>
                           <input
                             type="number"
                             step="1"
                             min="0"
-                            placeholder="es. 40"
-                            value={editForm.dimensionsCm?.lunghezza ?? ''}
-                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: Number(e.target.value), larghezza: f.dimensionsCm?.larghezza ?? 0, altezza: f.dimensionsCm?.altezza ?? 0 } }))}
+                            placeholder="es. 400"
+                            value={editForm.dimensionsMm?.lunghezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsMm: { lunghezza: Number(e.target.value), larghezza: f.dimensionsMm?.larghezza ?? 0, altezza: f.dimensionsMm?.altezza ?? 0 } }))}
                             className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Larghezza (cm)</label>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Larghezza (mm)</label>
                           <input
                             type="number"
                             step="1"
                             min="0"
-                            placeholder="es. 30"
-                            value={editForm.dimensionsCm?.larghezza ?? ''}
-                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: f.dimensionsCm?.lunghezza ?? 0, larghezza: Number(e.target.value), altezza: f.dimensionsCm?.altezza ?? 0 } }))}
+                            placeholder="es. 300"
+                            value={editForm.dimensionsMm?.larghezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsMm: { lunghezza: f.dimensionsMm?.lunghezza ?? 0, larghezza: Number(e.target.value), altezza: f.dimensionsMm?.altezza ?? 0 } }))}
                             className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Altezza (cm)</label>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Altezza (mm)</label>
                           <input
                             type="number"
                             step="1"
                             min="0"
-                            placeholder="es. 15"
-                            value={editForm.dimensionsCm?.altezza ?? ''}
-                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: f.dimensionsCm?.lunghezza ?? 0, larghezza: f.dimensionsCm?.larghezza ?? 0, altezza: Number(e.target.value) } }))}
+                            placeholder="es. 150"
+                            value={editForm.dimensionsMm?.altezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsMm: { lunghezza: f.dimensionsMm?.lunghezza ?? 0, larghezza: f.dimensionsMm?.larghezza ?? 0, altezza: Number(e.target.value) } }))}
                             className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
                           />
                         </div>
@@ -494,10 +494,10 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
                             const result = calcolaSpedizioneProdotto(
                               editForm.price ?? 0,
                               editForm.weightKg ?? 0,
-                              editForm.dimensionsCm
+                              editForm.dimensionsMm
                             );
-                            const volKg = editForm.dimensionsCm
-                              ? ((editForm.dimensionsCm.lunghezza * editForm.dimensionsCm.larghezza * editForm.dimensionsCm.altezza) / 5000).toFixed(2)
+                            const volKg = editForm.dimensionsMm
+                              ? ((editForm.dimensionsMm.lunghezza * editForm.dimensionsMm.larghezza * editForm.dimensionsMm.altezza) / 5_000_000).toFixed(2)
                               : null;
                             return (
                               <>

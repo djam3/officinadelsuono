@@ -10,7 +10,7 @@ interface CartItem {
   image: string;
   quantity: number;
   weightKg?: number;
-  dimensionsCm?: {
+  dimensionsMm?: {
     lunghezza: number;
     larghezza: number;
     altezza: number;

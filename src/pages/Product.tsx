@@ -118,7 +118,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
         ? product.images[0]
         : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80'),
       weightKg: product.weightKg,
-      dimensionsCm: product.dimensionsCm,
+      dimensionsMm: product.dimensionsMm,
     } : {
       id: 'bundle-start-dj-pro',
       name: "Bundle Start DJ Pro",
@@ -204,7 +204,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
           const qs = calcolaQuoteTuttiCorrieri(
             corrieri,
             product.weightKg,
-            product.dimensionsCm,
+            product.dimensionsMm,
             product.price,
             sett.sogliaGratuita,
             sett.volumetricoDivisore
