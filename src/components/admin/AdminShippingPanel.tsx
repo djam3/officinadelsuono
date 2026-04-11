@@ -63,8 +63,11 @@ export function AdminShippingPanel() {
     loadAll();
   }, []);
 
+  const [initError, setInitError] = useState<string | null>(null);
+
   async function loadAll() {
     setLoading(true);
+    setInitError(null);
     try {
       const [cors, sett] = await Promise.all([
         loadCorreriFirestore(),
@@ -72,6 +75,8 @@ export function AdminShippingPanel() {
       ]);
       setCorrieri(cors.sort((a, b) => a.nome.localeCompare(b.nome)));
       setSettings(sett);
+    } catch (err) {
+      setInitError(`Errore caricamento: ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
@@ -79,9 +84,12 @@ export function AdminShippingPanel() {
 
   async function handleInit() {
     setSaving(true);
+    setInitError(null);
     try {
       await inizializzaCorreriDefault();
       await loadAll();
+    } catch (err) {
+      setInitError(`Errore inizializzazione: ${(err as Error).message}. Verifica di essere loggato come admin.`);
     } finally {
       setSaving(false);
     }
@@ -250,6 +258,18 @@ export function AdminShippingPanel() {
           </button>
         </div>
       </div>
+
+      {/* Errore */}
+      {initError && (
+        <div className="mx-6 mt-4 flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+          <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold">Accesso negato da Firestore</p>
+            <p className="text-xs mt-1 text-red-500/80">{initError}</p>
+            <p className="text-xs mt-1 text-red-500/60">Soluzione: esegui <code className="bg-red-900/30 px-1 rounded">firebase deploy --only firestore:rules</code> dalla cartella del progetto.</p>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-white/10">

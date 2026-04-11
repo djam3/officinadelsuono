@@ -140,6 +140,12 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // Corrieri spedizione — chiunque legge (per widget prodotti), solo admin scrive
+    match /shipping_couriers/{courierId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
     match /error_logs/{errorId} {
       // Only admin can read error logs
       allow read: if isAdmin();
