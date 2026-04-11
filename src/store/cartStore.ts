@@ -9,6 +9,12 @@ interface CartItem {
   price: number;
   image: string;
   quantity: number;
+  weightKg?: number;
+  dimensionsCm?: {
+    lunghezza: number;
+    larghezza: number;
+    altezza: number;
+  };
 }
 
 interface CartStore {

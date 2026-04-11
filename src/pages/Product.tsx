@@ -1,4 +1,5 @@
-import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus } from 'lucide-react';
+import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package } from 'lucide-react';
+import { calcolaSpedizioneProdotto, formatCostoSpedizione, mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA } from '../services/shippingService';
 import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
@@ -107,13 +108,15 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
       name: product.name,
       price: product.price || 0,
       image: product.image === 'USE_IMAGES_ARRAY' && product.images && product.images.length > 0
-        ? product.images[0] 
-        : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80')
+        ? product.images[0]
+        : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80'),
+      weightKg: product.weightKg,
+      dimensionsCm: product.dimensionsCm,
     } : {
       id: 'bundle-start-dj-pro',
       name: "Bundle Start DJ Pro",
       price: 1749.00,
-      image: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop",
     };
     
     addItem(itemToAdd);
@@ -440,16 +443,55 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
               </a>
             </div>
 
-            {/* Trust Badges */}
-            <div className="grid grid-cols-2 gap-4 mt-8 pt-8 border-t border-white/10">
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <Shield className="w-5 h-5 text-zinc-500" />
-                <span>Garanzia Italiana 24 Mesi</span>
+            {/* Trust Badges + Spedizione dinamica */}
+            <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 text-sm text-zinc-400">
+                  <Shield className="w-5 h-5 text-zinc-500" />
+                  <span>Garanzia Italiana 24 Mesi</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-zinc-400">
+                  <Package className="w-5 h-5 text-zinc-500" />
+                  <span>Imballaggio Professionale</span>
+                </div>
               </div>
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <Truck className="w-5 h-5 text-zinc-500" />
-                <span>Spedizione Assicurata Gratuita</span>
-              </div>
+              {/* Shipping cost badge */}
+              {(() => {
+                const p = displayProduct;
+                if (!p.weightKg) {
+                  return (
+                    <div className="flex items-center gap-3 p-3 bg-zinc-900 rounded-xl border border-white/5">
+                      <Truck className="w-5 h-5 text-brand-orange shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-white">Spedizione Assicurata 24h</p>
+                        <p className="text-xs text-zinc-500">Gratuita sopra €{SOGLIA_SPEDIZIONE_GRATUITA} · BRT / GLS</p>
+                      </div>
+                    </div>
+                  );
+                }
+                const result = calcolaSpedizioneProdotto(p.price, p.weightKg, p.dimensionsCm);
+                const manca = mancaAllaGratuita(p.price);
+                return (
+                  <div className="p-3 bg-zinc-900 rounded-xl border border-white/5 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-5 h-5 text-brand-orange shrink-0" />
+                        <p className="text-sm font-bold text-white">Spedizione 24h — {result.corriere}</p>
+                      </div>
+                      <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${result.gratuita ? 'bg-green-500/10 text-green-400' : 'bg-brand-orange/10 text-brand-orange'}`}>
+                        {formatCostoSpedizione(result)}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-xs text-zinc-500 pl-7">
+                      <span>Peso: {result.pesoFatturato} kg</span>
+                      {result.pesoVolumetrico > 0 && <span>Volumetrico: {result.pesoVolumetrico} kg</span>}
+                      {!result.gratuita && manca > 0 && (
+                        <span className="text-yellow-500">Aggiungi €{manca.toFixed(2)} per la spedizione gratuita</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
           </div>

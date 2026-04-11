@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import { 
-  Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload, 
-  Sparkles, Loader2, Check 
+import {
+  Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload,
+  Sparkles, Loader2, Check, Package, Truck
 } from 'lucide-react';
+import { calcolaSpedizioneProdotto, formatCostoSpedizione, SOGLIA_SPEDIZIONE_GRATUITA } from '../../services/shippingService';
 import { useDropzone } from 'react-dropzone';
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -213,7 +214,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
     }
 
     try {
-      const productData = {
+      const productData: Record<string, unknown> = {
         name: editForm.name,
         category: editForm.category,
         price: Number(editForm.price),
@@ -224,6 +225,12 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
         specs: editForm.specs || {},
         badge: editForm.badge || '',
       };
+      if (editForm.weightKg !== undefined && editForm.weightKg > 0) {
+        productData.weightKg = editForm.weightKg;
+      }
+      if (editForm.dimensionsCm) {
+        productData.dimensionsCm = editForm.dimensionsCm;
+      }
 
       if (isEditing) {
         await updateDoc(doc(db, 'products', isEditing), productData);
@@ -422,6 +429,87 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
                           <span className="text-sm font-bold text-zinc-400">Salva come bozza (nascondi nel negozio)</span>
                         </label>
                       </div>
+                    </div>
+
+                    {/* Spedizione */}
+                    <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Truck className="w-4 h-4 text-brand-orange" />
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Spedizione 24h — Peso &amp; Dimensioni</p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Peso reale (kg)</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            placeholder="es. 2.5"
+                            value={editForm.weightKg ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, weightKg: e.target.value ? Number(e.target.value) : undefined }))}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Lunghezza (cm)</label>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            placeholder="es. 40"
+                            value={editForm.dimensionsCm?.lunghezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: Number(e.target.value), larghezza: f.dimensionsCm?.larghezza ?? 0, altezza: f.dimensionsCm?.altezza ?? 0 } }))}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Larghezza (cm)</label>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            placeholder="es. 30"
+                            value={editForm.dimensionsCm?.larghezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: f.dimensionsCm?.lunghezza ?? 0, larghezza: Number(e.target.value), altezza: f.dimensionsCm?.altezza ?? 0 } }))}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] text-zinc-500 uppercase tracking-wider block mb-1">Altezza (cm)</label>
+                          <input
+                            type="number"
+                            step="1"
+                            min="0"
+                            placeholder="es. 15"
+                            value={editForm.dimensionsCm?.altezza ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, dimensionsCm: { lunghezza: f.dimensionsCm?.lunghezza ?? 0, larghezza: f.dimensionsCm?.larghezza ?? 0, altezza: Number(e.target.value) } }))}
+                            className="w-full bg-zinc-900 border border-white/10 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-brand-orange"
+                          />
+                        </div>
+                      </div>
+                      {/* Preview costo spedizione */}
+                      {(editForm.weightKg ?? 0) > 0 && (
+                        <div className="mt-2 p-3 bg-zinc-950 rounded-lg flex flex-wrap gap-4 text-xs">
+                          {(() => {
+                            const result = calcolaSpedizioneProdotto(
+                              editForm.price ?? 0,
+                              editForm.weightKg ?? 0,
+                              editForm.dimensionsCm
+                            );
+                            const volKg = editForm.dimensionsCm
+                              ? ((editForm.dimensionsCm.lunghezza * editForm.dimensionsCm.larghezza * editForm.dimensionsCm.altezza) / 5000).toFixed(2)
+                              : null;
+                            return (
+                              <>
+                                <span className="text-zinc-400">Peso fatturato: <strong className="text-white">{result.pesoFatturato} kg</strong></span>
+                                {volKg && <span className="text-zinc-400">Volumetrico: <strong className="text-white">{volKg} kg</strong></span>}
+                                <span className="text-zinc-400">Costo 24h: <strong className={result.gratuita ? 'text-green-400' : 'text-brand-orange'}>{formatCostoSpedizione(result)}</strong></span>
+                                {!result.gratuita && <span className="text-zinc-500">Gratuita sopra €{SOGLIA_SPEDIZIONE_GRATUITA}</span>}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex justify-end gap-3 border-t border-white/5 pt-6">

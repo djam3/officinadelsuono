@@ -12,6 +12,13 @@ export interface Product {
   draft?: boolean;
   createdAt?: string | Timestamp;
   brand?: string;
+  // Spedizione
+  weightKg?: number;
+  dimensionsCm?: {
+    lunghezza: number;
+    larghezza: number;
+    altezza: number;
+  };
   specs?: {
     watt?: string;
     frequency?: string;

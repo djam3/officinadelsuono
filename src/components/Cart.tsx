@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Trash2, Plus, Minus, Loader2, Sparkles, ShoppingCart } from 'lucide-react';
+import { X, Trash2, Plus, Minus, Loader2, Sparkles, ShoppingCart, Truck } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
+import { calcolaSpedizioneCarrello, formatCostoSpedizione, mancaAllaGratuita } from '../services/shippingService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { PaymentLogos } from './PaymentLogos';
@@ -22,6 +23,13 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
   const [orderId, setOrderId] = useState<string | null>(null);
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+
+  const spedizione = calcolaSpedizioneCarrello(
+    total,
+    items.map(i => ({ pesoKg: i.weightKg ?? 0, dims: i.dimensionsCm, quantita: i.quantity }))
+  );
+  const totaleConSpedizione = total + (spedizione.costo > 0 ? spedizione.costo : 0);
+  const manca = mancaAllaGratuita(total);
 
   useEffect(() => {
     const fetchSuggestion = async () => {
@@ -421,13 +429,39 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
             {/* Footer */}
             {items.length > 0 && step !== 'success' && (
               <div className="p-10 bg-black border-t border-white/5">
-                <div className="flex justify-between items-center mb-8">
-                  <span className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em]">Subtotale</span>
-                  <div className="text-right">
-                    <span className="text-4xl font-black text-white tracking-tighter">
+                <div className="space-y-3 mb-8">
+                  {/* Subtotale */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em]">Subtotale</span>
+                    <span className="text-xl font-black text-white tracking-tighter">
                       €{total.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
                     </span>
-                    <p className="text-[9px] text-zinc-600 uppercase tracking-widest mt-1 font-bold">Spedizione Gratuita Inclusa</p>
+                  </div>
+                  {/* Spedizione */}
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-3.5 h-3.5 text-brand-orange" />
+                      <span className="text-xs font-black text-zinc-500 uppercase tracking-[0.4em]">Spedizione 24h</span>
+                    </div>
+                    <span className={`text-sm font-bold ${spedizione.gratuita ? 'text-green-400' : 'text-brand-orange'}`}>
+                      {formatCostoSpedizione(spedizione)}
+                    </span>
+                  </div>
+                  {/* Avviso spedizione gratuita */}
+                  {!spedizione.gratuita && manca > 0 && (
+                    <div className="text-[10px] text-yellow-500 text-right">
+                      Aggiungi €{manca.toFixed(2)} per la spedizione gratuita
+                    </div>
+                  )}
+                  {/* Totale finale */}
+                  <div className="flex justify-between items-center pt-3 border-t border-white/10">
+                    <span className="text-xs font-black text-zinc-400 uppercase tracking-[0.4em]">Totale</span>
+                    <div className="text-right">
+                      <span className="text-4xl font-black text-white tracking-tighter">
+                        €{totaleConSpedizione.toLocaleString('it-IT', { minimumFractionDigits: 2 })}
+                      </span>
+                      <p className="text-[9px] text-zinc-600 uppercase tracking-widest mt-1 font-bold">IVA inclusa · BRT / GLS</p>
+                    </div>
                   </div>
                 </div>
                 
