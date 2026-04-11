@@ -146,6 +146,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Ordini — chiunque può creare (checkout), solo admin legge e aggiorna
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
+
     // Contabilità — solo admin (dati fiscali sensibili)
     match /accounting_entries/{entryId} {
       allow read, write: if isAdmin();

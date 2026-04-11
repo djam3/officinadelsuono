@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt, Truck, Calculator } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt, Truck, Calculator, ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Logo } from '../components/Logo';
@@ -19,6 +19,7 @@ import { AdminAIChatbotPanel } from '../components/admin/AdminAIChatbotPanel';
 import { AdminInvoicesPanel } from '../components/admin/AdminInvoicesPanel';
 import { AdminShippingPanel } from '../components/admin/AdminShippingPanel';
 import { AdminAccountingPanel } from '../components/admin/AdminAccountingPanel';
+import { AdminOrdersPanel } from '../components/admin/AdminOrdersPanel';
 import {
   Product, AdminUser, ErrorLog, BlogPost, DiscountCode,
   AIKnowledge, AILog, SocialPost, SocialSuggestion,
@@ -27,31 +28,66 @@ import {
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita';
+type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita';
 
 interface NavItem {
   id: AdminTab;
   label: string;
   description: string;
-  icon: any; // Using any temporarily to avoid lucide-react inference conflicts with AdminTab mapping
+  icon: any;
+  badge?: number;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', description: 'Panoramica generale del sito', icon: LayoutDashboard },
-  { id: 'products', label: 'Prodotti', description: 'Gestisci il catalogo', icon: Package },
-  { id: 'blog', label: 'Blog', description: 'Articoli e contenuti editoriali', icon: ScrollText },
-  { id: 'discounts', label: 'Codici Sconto', description: 'Crea e gestisci coupon', icon: Tag },
-  { id: 'newsletter', label: 'Newsletter', description: 'Invia email agli iscritti', icon: Megaphone },
-  { id: 'content', label: 'Contenuti Sito', description: 'Modifica testi homepage', icon: Globe },
-  { id: 'ai', label: 'AI Chatbot', description: 'Addestra il chatbot', icon: Bot },
-  { id: 'ai_features', label: 'Funzionalità AI', description: 'Attiva/disattiva AI features', icon: BrainCircuit },
-  { id: 'social', label: 'Social Media', description: 'Pubblica e gestisci i social', icon: Share2 },
-  { id: 'shipping', label: 'Spedizioni', description: 'Corrieri, tariffe e preventivi', icon: Truck },
-  { id: 'fatture', label: 'Fatture', description: 'Gestione fatture acquisto e vendita', icon: Receipt },
-  { id: 'contabilita', label: 'Contabilità', description: 'Regime forfettario, imposta, scadenze', icon: Calculator },
-  { id: 'users', label: 'Utenti', description: 'Clienti registrati', icon: UsersIcon },
-  { id: 'monitoring', label: 'Monitoring', description: 'Errori e performance', icon: Activity },
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_GROUPS: NavGroup[] = [
+  {
+    label: 'Negozio',
+    items: [
+      { id: 'dashboard',  label: 'Dashboard',   description: 'Panoramica generale del sito',        icon: LayoutDashboard },
+      { id: 'orders',     label: 'Ordini',       description: 'Gestisci e spedisci gli ordini',      icon: ShoppingCart },
+      { id: 'products',   label: 'Prodotti',     description: 'Gestisci il catalogo',                icon: Package },
+      { id: 'shipping',   label: 'Spedizioni',   description: 'Corrieri, tariffe e preventivi',      icon: Truck },
+    ],
+  },
+  {
+    label: 'Clienti',
+    items: [
+      { id: 'users',      label: 'Utenti',       description: 'Clienti registrati',                  icon: UsersIcon },
+      { id: 'newsletter', label: 'Newsletter',   description: 'Invia email agli iscritti',           icon: Megaphone },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { id: 'blog',       label: 'Blog',         description: 'Articoli e contenuti editoriali',     icon: ScrollText },
+      { id: 'social',     label: 'Social Media', description: 'Pubblica e gestisci i social',        icon: Share2 },
+      { id: 'discounts',  label: 'Codici Sconto',description: 'Crea e gestisci coupon',              icon: Tag },
+    ],
+  },
+  {
+    label: 'Contenuti & AI',
+    items: [
+      { id: 'content',    label: 'Contenuti Sito',  description: 'Modifica testi homepage',          icon: Globe },
+      { id: 'ai',         label: 'AI Chatbot',      description: 'Addestra il chatbot',              icon: Bot },
+      { id: 'ai_features',label: 'Funzionalità AI', description: 'Attiva/disattiva AI features',    icon: BrainCircuit },
+    ],
+  },
+  {
+    label: 'Amministrazione',
+    items: [
+      { id: 'fatture',    label: 'Fatture',      description: 'Gestione fatture acquisto e vendita', icon: Receipt },
+      { id: 'contabilita',label: 'Contabilità',  description: 'Regime forfettario, imposta, scadenze', icon: Calculator },
+      { id: 'monitoring', label: 'Monitoring',   description: 'Errori e performance',               icon: Activity },
+    ],
+  },
 ];
+
+// Array piatto derivato dai gruppi (usato per find/lookup)
+const NAV_ITEMS: NavItem[] = NAV_GROUPS.flatMap(g => g.items);
 
 // Use imported Product interface
 
@@ -269,18 +305,44 @@ export function Admin({ onNavigate }: AdminProps) {
             </div>
           )}
         </div>
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${isActive ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'}`}>
-                <Icon className="w-4 h-4 shrink-0" />
-                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-                {!sidebarCollapsed && isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto shrink-0" />}
-              </button>
-            );
-          })}
+        <nav className="flex-1 p-3 overflow-y-auto space-y-1">
+          {NAV_GROUPS.map(group => (
+            <div key={group.label}>
+              {!sidebarCollapsed && (
+                <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 px-2 pt-3 pb-1">
+                  {group.label}
+                </p>
+              )}
+              {sidebarCollapsed && <div className="border-t border-zinc-800/60 my-2" />}
+              {group.items.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-bold transition-all ${isActive ? 'bg-brand-orange/10 text-brand-orange border border-brand-orange/20' : 'text-zinc-400 hover:text-white hover:bg-white/5 border border-transparent'}`}
+                  >
+                    <div className="relative shrink-0">
+                      <Icon className="w-4 h-4" />
+                      {item.badge != null && item.badge > 0 && (
+                        <span className="absolute -top-1.5 -right-1.5 w-3.5 h-3.5 bg-brand-orange rounded-full text-[8px] font-black text-white flex items-center justify-center">
+                          {item.badge > 9 ? '9+' : item.badge}
+                        </span>
+                      )}
+                    </div>
+                    {!sidebarCollapsed && <span className="truncate flex-1">{item.label}</span>}
+                    {!sidebarCollapsed && item.badge != null && item.badge > 0 && (
+                      <span className="bg-brand-orange text-white text-[10px] font-black px-1.5 py-0.5 rounded-full shrink-0">
+                        {item.badge}
+                      </span>
+                    )}
+                    {!sidebarCollapsed && isActive && !item.badge && <ChevronRight className="w-3.5 h-3.5 ml-auto shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
         <div className="p-3 border-t border-white/5">
           <button onClick={() => setSidebarCollapsed(v => !v)} className="w-full flex items-center justify-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 rounded-lg transition-colors mb-2">
@@ -375,6 +437,7 @@ export function Admin({ onNavigate }: AdminProps) {
           {activeTab === 'monitoring' && <AdminMonitoringPanel errorLogs={errorLogs} setErrorLogs={setErrorLogs} loadStats={loadStats} products={products} blogPosts={blogPosts} discounts={discounts} aiKnowledge={aiKnowledge} manualApiKey={manualApiKey} />}
           {activeTab === 'ai_features' && <AIFeaturesPanel currentUser={currentUser} />}
           {activeTab === 'shipping' && <AdminShippingPanel />}
+          {activeTab === 'orders' && <AdminOrdersPanel />}
           {activeTab === 'fatture' && <AdminInvoicesPanel invoices={invoices} />}
           {activeTab === 'contabilita' && <AdminAccountingPanel />}
         </div>

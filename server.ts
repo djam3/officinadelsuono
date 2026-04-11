@@ -39,6 +39,10 @@ try {
   console.error("Error initializing Firebase Admin:", error);
 }
 
+function getFirestore() {
+  return admin.firestore();
+}
+
 const upload = multer({ dest: os.tmpdir() });
 const OFFICIAL_EMAIL = 'info@officinadelsuono.it';
 const OFFICIAL_NAME = 'Officina del Suono';
@@ -448,10 +452,25 @@ async function startServer() {
   // API routes FIRST
   app.post("/api/create-manual-order", async (req, res) => {
     try {
-      const { items, total, paymentMethod, customerEmail } = req.body;
-      
-      // Here you would typically save to Firestore
-      const orderId = `ORD-${Math.floor(Math.random() * 1000000)}`;
+      const { items, total, paymentMethod, customerEmail, customerName, phone, address, spedizione } = req.body;
+
+      // Salva ordine su Firestore
+      const orderData = {
+        items: items || [],
+        total: typeof total === 'number' ? total : 0,
+        spedizione: typeof spedizione === 'number' ? spedizione : 0,
+        paymentMethod: paymentMethod || '',
+        customerEmail: customerEmail || '',
+        customerName: customerName || '',
+        phone: phone || '',
+        address: address || {},
+        status: 'nuovo',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const docRef = await getFirestore().collection('orders').add(orderData);
+      const orderId = `ORD-${docRef.id.slice(-6).toUpperCase()}`;
       
       console.log(`Manual order created: ${orderId} for ${customerEmail} via ${paymentMethod}`);
       
