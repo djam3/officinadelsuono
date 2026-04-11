@@ -83,32 +83,61 @@ function buildScadenzario(annoApertura: number): ScadenzaItem[] {
   if (annoApertura === ANNO_CORRENTE) {
     addItem(
       `${ANNO_CORRENTE}-03-16`,
-      'Apertura P.IVA',
-      'Iscrizione al Registro Imprese completata (16/03/2026)',
+      'Apertura P.IVA ✓',
+      'Iscrizione al Registro Imprese completata il 16/03/2026.',
       'avviso'
     );
     addItem(
+      `${ANNO_CORRENTE}-04-30`,
+      '⚠️ URGENTE — Comunicazione inizio attività',
+      'L\'impresa risulta ancora INATTIVA. Devi comunicare l\'inizio attività alla CCIAA prima di emettere fatture o ricevere pagamenti ufficiali. '
+      + 'Come fare: vai su impresa.italia.it (ex Telemaco) oppure porta la visura a un CAF/commercialista e chiedi la "pratica di inizio attività" (costo ~€50-100). '
+      + 'Il codice ATECO è già corretto: 47.69.12.',
+      'avviso'
+    );
+    addItem(
+      `${ANNO_CORRENTE}-12-31`,
+      'Registro corrispettivi — tenuta annuale',
+      'Tieni aggiornato il registro entrate (già gestito da questo pannello). '
+      + 'Non sei obbligato alla fattura elettronica con i privati nel regime forfettario, '
+      + 'ma devi conservare i corrispettivi. Per i clienti B2B che la richiedono, emetti fattura con dicitura "Operazione effettuata ai sensi dell\'art. 1, commi 54-89, L. 190/2014 — regime forfettario".',
+      'avviso'
+    );
+    addItem(
+      `${ANNO_CORRENTE + 1}-05-01`,
+      'Prepara documenti per il CAF',
+      `Raccogli entro maggio ${ANNO_CORRENTE + 1}: (1) export CSV da questo pannello con tutte le entrate ${ANNO_CORRENTE}, `
+      + '(2) ricevute spese deducibili (hosting, merci, ecc.), (3) CU (Certificazione Unica) dal tuo datore di lavoro, '
+      + '(4) codice fiscale e documento d\'identità. Porta tutto al CAF per il Modello Redditi PF.',
+      'dichiarazione'
+    );
+    addItem(
       `${ANNO_CORRENTE + 1}-06-30`,
-      `Saldo imposta sostitutiva ${ANNO_CORRENTE}`,
-      `Pagare il saldo dell'imposta sostitutiva ${ANNO_CORRENTE} tramite F24`,
+      `Saldo imposta sostitutiva ${ANNO_CORRENTE} — F24`,
+      `Paga il saldo dell'imposta sostitutiva ${ANNO_CORRENTE} tramite F24 (codice tributo 1792). `
+      + 'Importo = base imponibile × 5%. Il CAF ti prepara il modello F24. '
+      + 'Puoi pagare online su Agenzia delle Entrate (area riservata) o in banca/posta.',
       'pagamento'
     );
     addItem(
       `${ANNO_CORRENTE + 1}-06-30`,
-      `Primo acconto ${ANNO_CORRENTE + 1} (40%)`,
-      `Acconto imposta sostitutiva ${ANNO_CORRENTE + 1} — primo anno con acconto`,
+      `Primo acconto ${ANNO_CORRENTE + 1} — 40% (F24)`,
+      `Se l'imposta ${ANNO_CORRENTE} supera €51.65, devi versare il primo acconto ${ANNO_CORRENTE + 1} pari al 40% dell'imposta ${ANNO_CORRENTE}. `
+      + 'Codice tributo F24: 1790. Stessa scadenza del saldo.',
       'pagamento'
     );
     addItem(
       `${ANNO_CORRENTE + 1}-11-30`,
-      `Secondo acconto ${ANNO_CORRENTE + 1} (60%)`,
-      `Secondo acconto imposta sostitutiva ${ANNO_CORRENTE + 1}`,
+      `Secondo acconto ${ANNO_CORRENTE + 1} — 60% (F24)`,
+      `Secondo acconto imposta sostitutiva ${ANNO_CORRENTE + 1}: 60% dell'imposta ${ANNO_CORRENTE}. Codice tributo F24: 1791.`,
       'pagamento'
     );
     addItem(
       `${ANNO_CORRENTE + 1}-10-15`,
-      `Modello Redditi PF ${ANNO_CORRENTE}`,
-      `Dichiarazione dei redditi ${ANNO_CORRENTE} tramite CAF o commercialista`,
+      `Modello Redditi PF ${ANNO_CORRENTE} — CAF`,
+      `Dichiarazione annuale dei redditi ${ANNO_CORRENTE}. Porta i documenti preparati a maggio al CAF (costo ~€80-120). `
+      + 'In alternativa, fai da solo con la dichiarazione precompilata su agenziaentrate.gov.it (accesso con SPID). '
+      + 'Scadenza invio telematico: 15 ottobre ${ANNO_CORRENTE + 1}.',
       'dichiarazione'
     );
   }
@@ -447,10 +476,14 @@ export function AdminAccountingPanel() {
           {/* Avviso attività inattiva */}
           <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 flex gap-3">
             <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-yellow-300">
-              <strong>Stato impresa: INATTIVA</strong> — L'impresa risulta registrata ma non ancora avviata.
-              Per iniziare l'attività occorre comunicarlo alla CCIAA (pratica di inizio attività).
-              Rivolgiti a un CAF o usa il portale <strong>Telemaco / impresa.italia.it</strong>.
+            <div className="text-sm text-yellow-300 space-y-1">
+              <div><strong>⚠️ Azione richiesta — Impresa INATTIVA</strong></div>
+              <div>La tua impresa è registrata ma non ancora avviata ufficialmente. Devi comunicare l'inizio attività alla CCIAA <strong>prima di ricevere pagamenti o emettere documenti fiscali</strong>.</div>
+              <div className="mt-2 space-y-1 text-yellow-200">
+                <div>1. Vai su <strong>impresa.italia.it</strong> (con SPID) → Comunica inizio attività</div>
+                <div>2. Oppure porta la visura a un <strong>CAF</strong> e chiedi la pratica di inizio attività (~€50)</div>
+                <div>3. Il codice ATECO è già corretto: <strong>47.69.12</strong></div>
+              </div>
             </div>
           </div>
         </div>
