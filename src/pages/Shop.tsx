@@ -34,7 +34,11 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState("Tutti i Prodotti");
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const saved = sessionStorage.getItem('shopCategory');
+    if (saved) { sessionStorage.removeItem('shopCategory'); return saved; }
+    return "Tutti i Prodotti";
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("Popolarità");
   const addItem = useCartStore((state) => state.addItem);

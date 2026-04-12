@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSEO } from '../hooks/useSEO';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown } from 'lucide-react';
 
@@ -57,6 +58,12 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string, answ
 }
 
 export function Contact() {
+  useSEO({
+    title: 'Contatti — Officina del Suono',
+    description: 'Contatta Officina del Suono per informazioni su prodotti, ordini o consulenza tecnica gratuita. Siamo disponibili su WhatsApp, email e telefono.',
+    url: '/contatti',
+  });
+
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (

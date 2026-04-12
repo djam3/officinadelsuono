@@ -163,6 +163,32 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
+      {/* Prove Sociali — Social Proof Bar */}
+      <section className="py-10 bg-zinc-950 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+            {[
+              { value: '50+', label: 'Setup consegnati' },
+              { value: '100%', label: 'Clienti soddisfatti' },
+              { value: '15 min', label: 'Consulenza gratuita' },
+              { value: 'MAT', label: 'Certificazione Academy' },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="text-center"
+              >
+                <p className="text-3xl md:text-4xl font-black text-brand-orange tracking-tighter">{stat.value}</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-[0.15em] font-bold mt-1">{stat.label}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Perché Sceglierci — Competitive Differentiators */}
       <section className="py-24 md:py-32 bg-zinc-950 border-t border-white/5 relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,95,0,0.04),transparent_60%)]" />
@@ -182,7 +208,7 @@ export function Home({ onNavigate }: HomeProps) {
               Non un Altro <span className="text-brand-orange">Negozio Online</span>.
             </h2>
             <p className="text-zinc-500 text-lg md:text-xl max-w-3xl mx-auto font-medium">
-              Thomann ha 100.000 prodotti. Amazon ti spedisce in un giorno. Ma nessuno ti dice <strong className="text-white">cosa comprare e perché</strong>. Noi sì.
+              Qui trovi un esperto certificato che ha <strong className="text-white">testato ogni prodotto sul campo</strong> e ti dice esattamente cosa comprare, perché e come configurarlo.
             </p>
           </motion.div>
 
@@ -355,10 +381,10 @@ export function Home({ onNavigate }: HomeProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
             {[
-              { id: 'cat1', type: 'controller' as const, fallbackTitle: "Console & Mixer", fallbackDesc: "Sistemi professionali per performance digitali", fallbackImg: "https://assets.alphatheta.com/page-assets/djm-v5/assets/djmv5-product-specification-image-01.webp", isCover: false },
-              { id: 'cat2', type: 'speaker' as const, fallbackTitle: "Impianti PA", fallbackDesc: "Sistemi di diffusione ad alta pressione", fallbackImg: "https://www.rcf.it/documents/20124/26930472/woofer-background.jpg/01e81bcc-d8c8-33d0-515f-1625abce4e8f?t=1733310296162&download=true", isCover: true },
-              { id: 'cat3', type: 'mixer' as const, fallbackTitle: "Cuffie Pro", fallbackDesc: "Monitoraggio critico e isolamento", fallbackImg: "https://images.unsplash.com/photo-1487215078519-e21cc028cb29?q=80&w=500&auto=format&fit=crop", isCover: true },
-              { id: 'cat4', type: 'accessories' as const, fallbackTitle: "Microfoni & Studio", fallbackDesc: "Trasduzione ad alta fedeltà", fallbackImg: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=500&auto=format&fit=crop", isCover: true }
+              { id: 'cat1', category: 'Controller DJ', fallbackTitle: "Controller DJ", fallbackDesc: "Sistemi professionali per performance digitali", fallbackImg: "https://assets.alphatheta.com/page-assets/djm-v5/assets/djmv5-product-specification-image-01.webp", isCover: false },
+              { id: 'cat2', category: 'Casse Attive (PA)', fallbackTitle: "Impianti PA", fallbackDesc: "Sistemi di diffusione ad alta pressione", fallbackImg: "https://www.rcf.it/documents/20124/26930472/woofer-background.jpg/01e81bcc-d8c8-33d0-515f-1625abce4e8f?t=1733310296162&download=true", isCover: true },
+              { id: 'cat3', category: 'Cuffie Pro', fallbackTitle: "Cuffie Pro", fallbackDesc: "Monitoraggio critico e isolamento", fallbackImg: "https://images.unsplash.com/photo-1487215078519-e21cc028cb29?q=80&w=500&auto=format&fit=crop", isCover: true },
+              { id: 'cat4', category: 'Mixer & Effetti', fallbackTitle: "Mixer & Effetti", fallbackDesc: "Controllo totale del mix", fallbackImg: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?q=80&w=500&auto=format&fit=crop", isCover: true }
             ].map((cat, idx) => (
               <motion.div 
                 key={idx} 
@@ -370,7 +396,7 @@ export function Home({ onNavigate }: HomeProps) {
               >
                 <TiltCard intensity={12} className="h-full">
                   <div
-                    onClick={() => onNavigate('shop')}
+                    onClick={() => { onNavigate('shop'); sessionStorage.setItem('shopCategory', cat.category); }}
                     className="group cursor-pointer relative overflow-hidden rounded-[3rem] border border-white/5 aspect-[4/5.5] flex flex-col justify-end p-8 hover:border-brand-orange/40 transition-all duration-700 bg-zinc-900/30 backdrop-blur-md shadow-2xl"
                   >
                     <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-transparent to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
@@ -515,6 +541,23 @@ export function Home({ onNavigate }: HomeProps) {
           </motion.div>
         </div>
       </section>
+      {/* WhatsApp Sticky Button */}
+      <a
+        href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Vorrei%20una%20consulenza%20tecnica%20per%20progettare%20il%20mio%20setup%20audio."
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Scrivici su WhatsApp"
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] hover:shadow-[0_8px_40px_rgba(34,197,94,0.6)] transition-all duration-300 group overflow-hidden"
+      >
+        {/* Icona sempre visibile */}
+        <span className="flex items-center justify-center w-14 h-14 shrink-0">
+          <MessageCircle className="w-7 h-7" />
+        </span>
+        {/* Label che si espande su hover (solo desktop) */}
+        <span className="hidden md:block max-w-0 group-hover:max-w-[160px] overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out pr-0 group-hover:pr-5 text-sm font-black">
+          Chiedimi consiglio
+        </span>
+      </a>
     </div>
   );
 }

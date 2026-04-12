@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useSEO } from '../hooks/useSEO';
 import { Award, MapPin, Star, Music, ShieldCheck } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
@@ -6,6 +7,12 @@ import { doc, getDoc } from 'firebase/firestore';
 import { getDirectDriveUrl } from '../utils/drive';
 
 export function AboutUs() {
+  useSEO({
+    title: 'Chi Siamo — Amerigo De Cristofaro & Officina del Suono',
+    description: 'Scopri chi è Amerigo De Cristofaro: sound engineer certificato MAT Academy, esperto di attrezzatura DJ e audio professionale. La storia di Officina del Suono.',
+    url: '/chi-siamo',
+  });
+
   const [profileImage, setProfileImage] = useState('/profile_new.jpg');
 
   useEffect(() => {

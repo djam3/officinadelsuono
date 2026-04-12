@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSEO } from '../hooks/useSEO';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Calendar, Clock, Share2, ChevronRight, ShoppingCart, Loader2, MessageCircle, Award, Bookmark, ArrowUp } from 'lucide-react';
 import { MOCK_POSTS } from './Blog';
@@ -151,6 +152,13 @@ const BLOG_STYLES = `
 export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: BlogPostProps) {
   const [post, setPost] = useState<BlogPostType | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useSEO({
+    title: post ? `${post.title} — Officina del Suono Blog` : 'Blog — Officina del Suono',
+    description: post?.excerpt || 'Guide tecniche, tips e news su attrezzatura DJ e audio professionale.',
+    url: postId ? `/blog/${postId}` : '/blog',
+    image: post?.image || undefined,
+  });
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [email, setEmail] = useState('');
   const [privacyConsent, setPrivacyConsent] = useState(false);
