@@ -133,7 +133,7 @@ export function Admin({ onNavigate }: AdminProps) {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [manualApiKey, setManualApiKey] = useState(() => {
     const fromStorage = localStorage.getItem('gemini_api_key');
-    const fromEnv = import.meta.env.VITE_GEMINI_API_KEY;
+    const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GEMINI_API_KEY;
     const key = fromStorage || fromEnv || '';
     if (!fromStorage && fromEnv) localStorage.setItem('gemini_api_key', fromEnv);
     return key;

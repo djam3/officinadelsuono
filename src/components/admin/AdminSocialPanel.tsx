@@ -122,10 +122,11 @@ export function AdminSocialPanel({
   };
 
   const generateAISuggestions = async () => {
-    if (!manualApiKey) { showSocialToast('Imposta la chiave Gemini API nelle impostazioni AI', 'error'); return; }
+    const apiKey = manualApiKey || localStorage.getItem('gemini_api_key') || ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GEMINI_API_KEY;
+    if (!apiKey) { showSocialToast('Imposta la chiave Gemini API nelle impostazioni AI', 'error'); return; }
     setIsGeneratingSuggestions(true);
     try {
-      const genAI = new GoogleGenerativeAI(manualApiKey);
+      const genAI = new GoogleGenerativeAI(apiKey);
       const productList = products.slice(0, 15).map(p => `${p.name} — €${p.price} (${p.category})`).join('\n');
 
       const prompt = `Sei un esperto di social media marketing per "Officina del Suono", negozio DJ professionale italiano certificato MAT Academy.
