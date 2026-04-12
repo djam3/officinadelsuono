@@ -2,6 +2,54 @@ const functions = require('firebase-functions/v1');
 const { Resend } = require('resend');
 
 /**
+ * callAI — proxy server-side per Groq (Llama 3.3 70B).
+ * La chiave API non tocca mai il browser: viene letta dal secret Firebase.
+ *
+ * Impostare il secret UNA sola volta:
+ *   firebase functions:secrets:set GROQ_API_KEY
+ *
+ * Accetta:
+ *   { prompt, systemInstruction?, maxTokens?, messages? }
+ * Ritorna:
+ *   { text: string }
+ */
+exports.callAI = functions
+  .runWith({ secrets: ['GROQ_API_KEY'], timeoutSeconds: 60, memory: '256MB' })
+  .https.onCall(async (data) => {
+    const { prompt, systemInstruction, maxTokens, messages } = data || {};
+
+    if (!prompt && (!Array.isArray(messages) || messages.length === 0)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Campo "prompt" o "messages" obbligatorio.');
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      throw new functions.https.HttpsError('failed-precondition', 'Chiave GROQ_API_KEY non configurata. Esegui: firebase functions:secrets:set GROQ_API_KEY');
+    }
+
+    const Groq = require('groq-sdk');
+    const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    const groqMessages = [
+      ...(systemInstruction ? [{ role: 'system', content: String(systemInstruction) }] : []),
+      ...(Array.isArray(messages)
+        ? messages.map(m => ({
+            role: m.role === 'model' ? 'assistant' : 'user',
+            content: String(m.text || ''),
+          }))
+        : []),
+      ...(prompt ? [{ role: 'user', content: String(prompt) }] : []),
+    ];
+
+    const completion = await client.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      max_tokens: Math.min(Number(maxTokens) || 1024, 4096),
+      messages: groqMessages,
+    });
+
+    return { text: completion.choices[0]?.message?.content || '' };
+  });
+
+/**
  * Auth trigger: invia l'email di benvenuto quando un nuovo utente viene creato.
  * Si attiva sia per signup email/password che Google Sign In.
  *

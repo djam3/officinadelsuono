@@ -1,93 +1,97 @@
 /**
- * Shared AI service — Groq (Llama 3.3 70B, gratuito) per tutte le funzioni AI.
- * API key letta da localStorage (set by admin) o Firestore (solo se admin autenticato).
- * NON usare VITE_GROQ_API_KEY — verrebbe inclusa nel bundle JS pubblico.
+ * Shared AI service — Groq (Llama 3.3 70B) via Firebase Function server-side.
+ * La chiave API NON tocca mai il browser — è un Firebase Secret nella Function.
+ *
+ * Fallback a Groq diretto (con localStorage key) solo in sviluppo locale
+ * quando la Function non è disponibile.
  */
-import Groq from 'groq-sdk';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { functions as firebaseFunctions } from '../firebase';
 
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+// ─── Firebase Function proxy ──────────────────────────────────────────────────
 
-// ─── Key management ───────────────────────────────────────────────────────────
-
-let _cachedKey: string | null = null;
-
-export async function getAIKey(): Promise<string | null> {
-  // 1. localStorage (impostato dall'admin via pannello impostazioni AI)
-  const local = localStorage.getItem('groq_api_key');
-  if (local) return local;
-
-  // 2. In-memory cache
-  if (_cachedKey) return _cachedKey;
-
-  // 3. Firestore — solo se admin autenticato (regola Firestore protegge ai_config)
-  try {
-    const snap = await getDoc(doc(db, 'settings', 'ai_config'));
-    if (snap.exists() && snap.data().groqApiKey) {
-      _cachedKey = snap.data().groqApiKey as string;
-      return _cachedKey;
-    }
-  } catch { /* ignore — utente non admin o chiave non impostata */ }
-
-  return null;
+interface AIFunctionPayload {
+  prompt?: string;
+  systemInstruction?: string;
+  maxTokens?: number;
+  messages?: Array<{ role: 'user' | 'model'; text: string }>;
 }
 
-// Backward compat aliases
-export const getGeminiKey = getAIKey;
-
-// ─── Low-level Groq calls ─────────────────────────────────────────────────────
-
-export async function callClaude(
-  prompt: string,
-  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
-): Promise<string> {
-  const apiKey = await getAIKey();
-  if (!apiKey) throw new Error('Groq API key non configurata. Vai nelle impostazioni AI (⚙️) e inserisci la chiave.');
-
-  const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
-
-  const completion = await client.chat.completions.create({
-    model: options.model || GROQ_MODEL,
-    max_tokens: options.maxTokens || 1024,
-    messages: [
-      ...(options.systemInstruction ? [{ role: 'system' as const, content: options.systemInstruction }] : []),
-      { role: 'user' as const, content: prompt },
-    ],
-  });
-
-  return completion.choices[0]?.message?.content || '';
+interface AIFunctionResult {
+  text: string;
 }
 
-export async function callClaudeChat(
-  messages: Array<{ role: 'user' | 'model'; text: string }>,
-  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
-): Promise<string> {
-  const apiKey = await getAIKey();
-  if (!apiKey) throw new Error('Groq API key non configurata.');
+const _callAIFunction = httpsCallable<AIFunctionPayload, AIFunctionResult>(
+  firebaseFunctions,
+  'callAI'
+);
 
+// ─── Fallback diretto (solo dev locale con chiave in localStorage) ────────────
+
+async function _callGroqDirect(
+  payload: AIFunctionPayload
+): Promise<string> {
+  const apiKey = localStorage.getItem('groq_api_key');
+  if (!apiKey) throw new Error('Groq API key non configurata. Vai nelle impostazioni AI (⚙️).');
+
+  const { default: Groq } = await import('groq-sdk');
   const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
   const groqMessages = [
-    ...(options.systemInstruction ? [{ role: 'system' as const, content: options.systemInstruction }] : []),
-    ...messages.map(m => ({
+    ...(payload.systemInstruction ? [{ role: 'system' as const, content: payload.systemInstruction }] : []),
+    ...(payload.messages || []).map(m => ({
       role: m.role === 'model' ? ('assistant' as const) : ('user' as const),
       content: m.text,
     })),
+    ...(payload.prompt ? [{ role: 'user' as const, content: payload.prompt }] : []),
   ];
 
   const completion = await client.chat.completions.create({
-    model: options.model || GROQ_MODEL,
-    max_tokens: options.maxTokens || 1024,
+    model: 'llama-3.3-70b-versatile',
+    max_tokens: payload.maxTokens || 1024,
     messages: groqMessages,
   });
 
   return completion.choices[0]?.message?.content || '';
 }
 
-// Keep backward compat aliases
+// ─── Chiamata unificata ───────────────────────────────────────────────────────
+
+async function callAI(payload: AIFunctionPayload): Promise<string> {
+  try {
+    const result = await _callAIFunction(payload);
+    return result.data.text;
+  } catch (err: unknown) {
+    // In sviluppo locale la Function potrebbe non essere avviata — fallback diretto
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes('internal') || msg.includes('unavailable') || msg.includes('NOT_FOUND')) {
+      return _callGroqDirect(payload);
+    }
+    throw err;
+  }
+}
+
+// ─── API pubblica ─────────────────────────────────────────────────────────────
+
+export async function callClaude(
+  prompt: string,
+  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
+): Promise<string> {
+  return callAI({ prompt, systemInstruction: options.systemInstruction, maxTokens: options.maxTokens });
+}
+
+export async function callClaudeChat(
+  messages: Array<{ role: 'user' | 'model'; text: string }>,
+  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
+): Promise<string> {
+  return callAI({ messages, systemInstruction: options.systemInstruction, maxTokens: options.maxTokens });
+}
+
+// Backward compat
 export const callGemini = callClaude;
 export const callGeminiChat = callClaudeChat;
+export const getGeminiKey = async () => localStorage.getItem('groq_api_key');
+export const getAIKey = getGeminiKey;
 
 // ─── SEO content generation ───────────────────────────────────────────────────
 
