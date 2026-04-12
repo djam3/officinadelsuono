@@ -134,30 +134,22 @@ export function Home({ onNavigate }: HomeProps) {
             transition={{ duration: 1, delay: 1.5, ease: "easeOut" }}
             className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4"
           >
-            <button 
+            <button
               onClick={() => onNavigate('shop')}
               className="w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95"
             >
-              <EditableText 
-                as="span" 
-                contentKey="hero_cta1" 
-                fallback="Accedi all'Arsenale Pro-Audio" 
-              />
+              Trova il tuo Setup
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform shrink-0" />
             </button>
-            
-            <a 
-              href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Vorrei%20una%20consulenza%20tecnica%20per%20progettare%20il%20mio%20setup%20audio." 
-              target="_blank" 
+
+            <a
+              href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Vorrei%20una%20consulenza%20tecnica%20per%20progettare%20il%20mio%20setup%20audio."
+              target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-12 py-5 bg-zinc-900/50 hover:bg-zinc-800 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 border border-white/10 backdrop-blur-md"
             >
               <MessageCircle className="w-6 h-6 text-green-500 shrink-0" />
-              <EditableText 
-                as="span" 
-                contentKey="hero_cta2" 
-                fallback="Consulto Tecnico" 
-              />
+              Consulenza Gratuita
             </a>
           </motion.div>
         </div>
