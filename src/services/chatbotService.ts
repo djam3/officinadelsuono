@@ -121,7 +121,7 @@ class ChatbotService {
 
     // Real-time listener per blog posts
     this.unsubscribeBlog = onSnapshot(
-      collection(db, 'posts'),
+      collection(db, 'blog_posts'),
       (snap) => {
         this.blogPosts = snap.docs.map(d => ({ id: d.id, ...d.data() } as BlogPost));
         this.buildBlogFuse();
@@ -134,7 +134,7 @@ class ChatbotService {
       const [prodSnap, knowSnap, blogSnap] = await Promise.all([
         getDocs(collection(db, 'products')),
         getDocs(collection(db, 'chatbot_knowledge')),
-        getDocs(collection(db, 'posts')),
+        getDocs(collection(db, 'blog_posts')),
       ]);
       this.products = prodSnap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
       this.knowledge = knowSnap.docs.map(d => ({ id: d.id, ...d.data() } as KnowledgeEntry));

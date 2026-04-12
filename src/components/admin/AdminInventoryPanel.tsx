@@ -185,6 +185,7 @@ Rispondi ESCLUSIVAMENTE in JSON:
         draft: !!editForm.draft,
         specs: editForm.specs || {},
         badge: editForm.badge || '',
+        stock: editForm.stock !== undefined ? editForm.stock : null,
       };
       if (editForm.weightKg !== undefined && editForm.weightKg > 0) {
         productData.weightKg = editForm.weightKg;
@@ -374,6 +375,14 @@ Rispondi ESCLUSIVAMENTE in JSON:
                             placeholder="Badge (es. Novità)"
                             value={editForm.badge || ''}
                             onChange={e => setEditForm(f => ({ ...f, badge: e.target.value }))}
+                            className="bg-black border border-white/10 rounded-xl px-4 py-3 text-sm"
+                          />
+                          <input
+                            type="number"
+                            placeholder="Stock (quantità disponibile)"
+                            min="0"
+                            value={editForm.stock ?? ''}
+                            onChange={e => setEditForm(f => ({ ...f, stock: e.target.value !== '' ? Number(e.target.value) : undefined }))}
                             className="bg-black border border-white/10 rounded-xl px-4 py-3 text-sm"
                           />
                         </div>

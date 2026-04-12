@@ -26,7 +26,7 @@ export function Cart({ isOpen, onClose, onNavigate }: CartProps) {
 
   const spedizione = calcolaSpedizioneCarrello(
     total,
-    items.map(i => ({ pesoKg: i.weightKg ?? 0, dims: i.dimensionsCm, quantita: i.quantity }))
+    items.map(i => ({ pesoKg: i.weightKg ?? 0, dims: i.dimensionsMm, quantita: i.quantity }))
   );
   const totaleConSpedizione = total + (spedizione.costo > 0 ? spedizione.costo : 0);
   const manca = mancaAllaGratuita(total);

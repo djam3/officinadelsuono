@@ -268,7 +268,7 @@ interface OrderRowProps {
 
 function OrderRow({ order, expanded, onToggle, onUpdateStatus, updating, fmt, fmtDate }: OrderRowProps) {
   const cfg = STATUS_CONFIG[order.status] || STATUS_CONFIG['nuovo'];
-  const StatusIcon = cfg.icon;
+  const StatusIcon = cfg.icon as React.ComponentType<{ className?: string }>;
   const [localTracking, setLocalTracking] = useState(order.trackingNumber || '');
   const [localCorriere, setLocalCorriere] = useState(order.corriere || '');
   const [localStatus, setLocalStatus] = useState<OrderStatus>(order.status);

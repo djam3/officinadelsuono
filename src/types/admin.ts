@@ -27,6 +27,7 @@ export interface Product {
     dimensions?: string;
     weight?: string;
   };
+  stock?: number;
   seoTitle?: string;
   metaDescription?: string;
   bullets?: string[];

@@ -343,7 +343,11 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                           referrerPolicy="no-referrer"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        {product.badge && (
+                        {product.stock === 0 ? (
+                          <div className="absolute top-4 left-4 px-3 py-1 bg-zinc-700 text-zinc-300 text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-10">
+                            Esaurito
+                          </div>
+                        ) : product.badge && (
                           <div className="absolute top-4 left-4 px-3 py-1 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-10">
                             {product.badge}
                           </div>
@@ -396,10 +400,11 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                             >
                               <Search className="w-5 h-5" />
                             </button>
-                            <button 
+                            <button
                               onClick={(e) => handleAddToCart(e, product)}
-                              className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-brand-orange hover:text-white transition-colors"
-                              title="Acquista Ora"
+                              disabled={product.stock === 0}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${product.stock === 0 ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' : 'bg-white/5 hover:bg-brand-orange hover:text-white'}`}
+                              title={product.stock === 0 ? 'Prodotto esaurito' : 'Acquista Ora'}
                             >
                               <ShoppingCart className="w-5 h-5" />
                             </button>

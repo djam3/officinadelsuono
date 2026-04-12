@@ -19,7 +19,7 @@ import { AdminAIChatbotPanel } from '../components/admin/AdminAIChatbotPanel';
 import { AdminInvoicesPanel } from '../components/admin/AdminInvoicesPanel';
 import { AdminShippingPanel } from '../components/admin/AdminShippingPanel';
 import { AdminAccountingPanel } from '../components/admin/AdminAccountingPanel';
-import { AdminOrdersPanel } from '../components/admin/AdminOrdersPanel';
+import { AdminOrdersPanel, Order } from '../components/admin/AdminOrdersPanel';
 import {
   Product, AdminUser, ErrorLog, BlogPost, DiscountCode,
   AIKnowledge, AILog, SocialPost, SocialSuggestion,
@@ -130,6 +130,9 @@ export function Admin({ onNavigate }: AdminProps) {
   const [socialConnections, setSocialConnections] = useState<Record<string, SocialConnection>>({});
   const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
 
+  // Orders analytics
+  const [orders, setOrders] = useState<Order[]>([]);
+
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [manualApiKey, setManualApiKey] = useState(() => {
     const fromStorage = localStorage.getItem('groq_api_key');
@@ -176,6 +179,7 @@ export function Admin({ onNavigate }: AdminProps) {
     loadAiData();
     loadSocialData();
     loadInvoices();
+    loadOrders();
   }, []);
 
   const loadProducts = () => {
@@ -212,6 +216,12 @@ export function Admin({ onNavigate }: AdminProps) {
   const loadInvoices = () => {
     return onSnapshot(query(collection(db, 'invoices'), orderBy('date', 'desc')), s => {
       setInvoices(s.docs.map(d => ({ id: d.id, ...d.data() } as Invoice)));
+    });
+  };
+
+  const loadOrders = () => {
+    return onSnapshot(query(collection(db, 'orders'), orderBy('createdAt', 'desc')), s => {
+      setOrders(s.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
     });
   };
 
@@ -389,49 +399,131 @@ export function Admin({ onNavigate }: AdminProps) {
         </header>
 
         <div className="flex-1 p-6 md:p-10 max-w-[1600px] w-full">
-          {activeTab === 'dashboard' && (
-            <div className="space-y-8">
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                {[
-                  { label: 'Prodotti', value: products.length, icon: Package, color: 'text-brand-orange', bg: 'bg-brand-orange/10' },
-                  { label: 'Blog', value: blogPosts.length, icon: ScrollText, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-                  { label: 'Newsletter', value: newsletterCount, icon: Mail, color: 'text-green-400', bg: 'bg-green-500/10' },
-                  { label: 'Coupon', value: discounts.length, icon: Tag, color: 'text-purple-400', bg: 'bg-purple-500/10' },
-                  { label: 'Chat AI', value: aiLogs.length, icon: Bot, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
-                  { label: 'Errori', value: errorLogs.length, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
-                ].map(kpi => (
-                  <div key={kpi.label} className={`p-5 rounded-2xl border border-white/5 ${kpi.bg} backdrop-blur-xl`}>
-                    <kpi.icon className={`w-5 h-5 ${kpi.color} mb-3`} />
-                    <div className={`text-3xl font-black ${kpi.color}`}>{kpi.value}</div>
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{kpi.label}</div>
+          {activeTab === 'dashboard' && (() => {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+            const toDate = (v: any): Date => v?.toDate ? v.toDate() : new Date(v || 0);
+
+            const ordersThisMonth = orders.filter(o => toDate(o.createdAt) >= startOfMonth);
+            const ordersLastMonth = orders.filter(o => { const d = toDate(o.createdAt); return d >= startOfLastMonth && d <= endOfLastMonth; });
+            const activeOrders = orders.filter(o => ['nuovo', 'in_lavorazione'].includes(o.status));
+            const revenueTotal = orders.filter(o => o.status !== 'annullato').reduce((s, o) => s + (o.total || 0), 0);
+            const revenueMonth = ordersThisMonth.filter(o => o.status !== 'annullato').reduce((s, o) => s + (o.total || 0), 0);
+            const revenueLastMonth = ordersLastMonth.filter(o => o.status !== 'annullato').reduce((s, o) => s + (o.total || 0), 0);
+            const revenueGrowth = revenueLastMonth > 0 ? Math.round(((revenueMonth - revenueLastMonth) / revenueLastMonth) * 100) : null;
+
+            const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+            orders.filter(o => o.status !== 'annullato').forEach(o => {
+              (o.items || []).forEach((item: any) => {
+                if (!productSales[item.id]) productSales[item.id] = { name: item.name, qty: 0, revenue: 0 };
+                productSales[item.id].qty += item.quantity || 1;
+                productSales[item.id].revenue += (item.price || 0) * (item.quantity || 1);
+              });
+            });
+            const topProducts = Object.values(productSales).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+            const recentOrders = orders.slice(0, 5);
+
+            return (
+              <div className="space-y-6">
+                {/* KPI Row 1 — revenue + orders */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-5 rounded-2xl border border-white/5 bg-brand-orange/10 col-span-2 md:col-span-1">
+                    <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Entrate totali</div>
+                    <div className="text-3xl font-black text-brand-orange">€{revenueTotal.toFixed(0)}</div>
+                    <div className="text-xs text-zinc-500 mt-1">tutti gli ordini</div>
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                 <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-black uppercase tracking-widest mb-4">Chat AI Recenti</h3>
-                    <div className="space-y-2">
-                       {aiLogs.slice(0, 5).map(log => (
-                         <div key={log.id} className="p-3 bg-zinc-950 rounded-lg border border-white/5 text-xs truncate">
-                           <span className="text-brand-orange font-bold">👤 {log.userMessage}</span>
-                         </div>
-                       ))}
+                  <div className="p-5 rounded-2xl border border-white/5 bg-green-500/10">
+                    <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Questo mese</div>
+                    <div className="text-3xl font-black text-green-400">€{revenueMonth.toFixed(0)}</div>
+                    {revenueGrowth !== null && (
+                      <div className={`text-xs mt-1 font-bold ${revenueGrowth >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {revenueGrowth >= 0 ? '▲' : '▼'} {Math.abs(revenueGrowth)}% vs mese scorso
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5 rounded-2xl border border-white/5 bg-blue-500/10">
+                    <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Ordini attivi</div>
+                    <div className="text-3xl font-black text-blue-400">{activeOrders.length}</div>
+                    <div className="text-xs text-zinc-500 mt-1">da evadere</div>
+                  </div>
+                  <div className="p-5 rounded-2xl border border-white/5 bg-purple-500/10">
+                    <div className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Ordini mese</div>
+                    <div className="text-3xl font-black text-purple-400">{ordersThisMonth.length}</div>
+                    <div className="text-xs text-zinc-500 mt-1">questo mese</div>
+                  </div>
+                </div>
+
+                {/* KPI Row 2 — catalog stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { label: 'Prodotti', value: products.length, icon: Package, color: 'text-brand-orange', bg: 'bg-brand-orange/10' },
+                    { label: 'Newsletter', value: newsletterCount, icon: Mail, color: 'text-green-400', bg: 'bg-green-500/10' },
+                    { label: 'Chat AI', value: aiLogs.length, icon: Bot, color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+                    { label: 'Errori', value: errorLogs.length, icon: AlertTriangle, color: errorLogs.length > 0 ? 'text-red-400' : 'text-zinc-500', bg: errorLogs.length > 0 ? 'bg-red-500/10' : 'bg-zinc-800' },
+                  ].map(kpi => (
+                    <div key={kpi.label} className={`p-5 rounded-2xl border border-white/5 ${kpi.bg}`}>
+                      <kpi.icon className={`w-4 h-4 ${kpi.color} mb-2`} />
+                      <div className={`text-2xl font-black ${kpi.color}`}>{kpi.value}</div>
+                      <div className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1">{kpi.label}</div>
                     </div>
-                 </div>
-                 <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-black uppercase tracking-widest mb-4">Stato Servizi</h3>
-                    <div className="space-y-3">
-                       {['Firestore', 'Auth', 'Functions', 'Storage'].map(s => (
-                         <div key={s} className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-white/5 text-xs">
-                           <span>{s}</span>
-                           <span className="text-green-400 font-bold uppercase tracking-widest">Online</span>
-                         </div>
-                       ))}
-                    </div>
-                 </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Top prodotti */}
+                  <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest mb-4 text-zinc-300">Top Prodotti per Fatturato</h3>
+                    {topProducts.length === 0 ? (
+                      <p className="text-xs text-zinc-600 italic">Nessun ordine ancora</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {topProducts.map((p, i) => (
+                          <div key={p.name} className="flex items-center gap-3">
+                            <span className="text-xs font-black text-zinc-600 w-4">{i + 1}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-bold text-zinc-200 truncate">{p.name}</p>
+                              <p className="text-[10px] text-zinc-500">{p.qty} venduti</p>
+                            </div>
+                            <span className="text-xs font-black text-brand-orange">€{p.revenue.toFixed(0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Ordini recenti */}
+                  <div className="bg-zinc-900 border border-white/5 rounded-2xl p-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest mb-4 text-zinc-300">Ordini Recenti</h3>
+                    {recentOrders.length === 0 ? (
+                      <p className="text-xs text-zinc-600 italic">Nessun ordine ancora</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {recentOrders.map(o => {
+                          const cfg = { nuovo: 'text-blue-400', in_lavorazione: 'text-yellow-400', spedito: 'text-purple-400', consegnato: 'text-green-400', annullato: 'text-red-400' };
+                          return (
+                            <div key={o.id} className="flex items-center justify-between p-3 bg-zinc-950 rounded-lg border border-white/5 text-xs">
+                              <div className="min-w-0">
+                                <p className="font-bold text-zinc-200 truncate">{o.customerName || o.customerEmail}</p>
+                                <p className="text-zinc-500">{(o.items || []).length} prodotti</p>
+                              </div>
+                              <div className="text-right shrink-0 ml-3">
+                                <p className="font-black text-brand-orange">€{(o.total || 0).toFixed(0)}</p>
+                                <p className={`font-bold uppercase tracking-widest text-[9px] ${cfg[o.status] || 'text-zinc-500'}`}>{o.status}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'products' && <AdminInventoryPanel products={products} categories={categories} manualApiKey={manualApiKey} />}
           {activeTab === 'content' && <AdminSiteContentPanel />}
