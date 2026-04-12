@@ -63,13 +63,13 @@ class ChatbotService {
 
   // ── AI config ─────────────────────────────────────────────────────────────
   private aiEnabled = false;
-  private aiModel = 'gemini-2.0-flash-lite';
+  private aiModel = 'claude-haiku-4-5-20251001';
   private aiSystemPrompt = '';
   private conversationHistory: Array<{ role: 'user' | 'model'; text: string }> = [];
 
   configureAI(config: { enabled?: boolean; model?: string; systemPrompt?: string }) {
     this.aiEnabled = config.enabled ?? false;
-    this.aiModel = config.model || 'gemini-2.0-flash-lite';
+    this.aiModel = config.model || 'claude-haiku-4-5-20251001';
     this.aiSystemPrompt = config.systemPrompt || '';
     this.conversationHistory = [];
   }

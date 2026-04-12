@@ -63,7 +63,7 @@ export function Chatbot() {
     const cfg = features.consulente_am3;
     chatbotService.configureAI({
       enabled: chatbotEnabled,
-      model: cfg?.model || 'gemini-2.0-flash-lite',
+      model: cfg?.model || 'claude-haiku-4-5-20251001',
       systemPrompt: cfg?.systemPrompt || '',
     });
   }, [chatbotEnabled, features.consulente_am3?.model, features.consulente_am3?.systemPrompt]);
