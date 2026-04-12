@@ -189,7 +189,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
   };
 
   const activeCount = AI_FEATURE_DEFS.filter(f => features[f.key]?.enabled).length;
-  const hasApiKey = !!localStorage.getItem('anthropic_api_key');
+  const hasApiKey = !!localStorage.getItem('groq_api_key');
 
   return (
     <div className="space-y-6">

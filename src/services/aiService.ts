@@ -1,29 +1,32 @@
 /**
- * Shared AI service — Claude Haiku calls, SEO generation, review summaries, email content.
- * API key is read from localStorage (set by admin), with env variable as fallback.
+ * Shared AI service — Groq (Llama 3.3 70B, gratuito) per tutte le funzioni AI.
+ * API key letta da localStorage (set by admin) o env variable come fallback.
  */
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
+const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // ─── Key management ───────────────────────────────────────────────────────────
 
 let _cachedKey: string | null = null;
 
+const getEnvKey = () =>
+  ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GROQ_API_KEY;
+
 export async function getAIKey(): Promise<string | null> {
-  // 1. localStorage (admin device — fastest)
-  const local = localStorage.getItem('anthropic_api_key');
+  // 1. localStorage
+  const local = localStorage.getItem('groq_api_key');
   if (local) return local;
 
   // 2. In-memory cache
   if (_cachedKey) return _cachedKey;
 
   // 3. Env variable
-  const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY;
+  const fromEnv = getEnvKey();
   if (fromEnv) {
-    localStorage.setItem('anthropic_api_key', fromEnv);
+    localStorage.setItem('groq_api_key', fromEnv);
     _cachedKey = fromEnv;
     return fromEnv;
   }
@@ -31,8 +34,8 @@ export async function getAIKey(): Promise<string | null> {
   // 4. Firestore (cross-device)
   try {
     const snap = await getDoc(doc(db, 'settings', 'ai_config'));
-    if (snap.exists() && snap.data().anthropicApiKey) {
-      _cachedKey = snap.data().anthropicApiKey as string;
+    if (snap.exists() && snap.data().groqApiKey) {
+      _cachedKey = snap.data().groqApiKey as string;
       return _cachedKey;
     }
   } catch { /* ignore */ }
@@ -40,29 +43,30 @@ export async function getAIKey(): Promise<string | null> {
   return null;
 }
 
-// Keep backward compat alias
+// Backward compat aliases
 export const getGeminiKey = getAIKey;
 
-// ─── Low-level Claude calls ───────────────────────────────────────────────────
+// ─── Low-level Groq calls ─────────────────────────────────────────────────────
 
 export async function callClaude(
   prompt: string,
   options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
 ): Promise<string> {
   const apiKey = await getAIKey();
-  if (!apiKey) throw new Error('Anthropic API key non configurata');
+  if (!apiKey) throw new Error('Groq API key non configurata. Vai nelle impostazioni AI (⚙️) e inserisci la chiave.');
 
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
-  const message = await client.messages.create({
-    model: options.model || CLAUDE_MODEL,
+  const completion = await client.chat.completions.create({
+    model: options.model || GROQ_MODEL,
     max_tokens: options.maxTokens || 1024,
-    system: options.systemInstruction,
-    messages: [{ role: 'user', content: prompt }],
+    messages: [
+      ...(options.systemInstruction ? [{ role: 'system' as const, content: options.systemInstruction }] : []),
+      { role: 'user' as const, content: prompt },
+    ],
   });
 
-  const block = message.content[0];
-  return block.type === 'text' ? block.text : '';
+  return completion.choices[0]?.message?.content || '';
 }
 
 export async function callClaudeChat(
@@ -70,24 +74,25 @@ export async function callClaudeChat(
   options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
 ): Promise<string> {
   const apiKey = await getAIKey();
-  if (!apiKey) throw new Error('Anthropic API key non configurata');
+  if (!apiKey) throw new Error('Groq API key non configurata.');
 
-  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+  const client = new Groq({ apiKey, dangerouslyAllowBrowser: true });
 
-  const anthropicMessages = messages.map(m => ({
-    role: m.role === 'model' ? ('assistant' as const) : ('user' as const),
-    content: m.text,
-  }));
+  const groqMessages = [
+    ...(options.systemInstruction ? [{ role: 'system' as const, content: options.systemInstruction }] : []),
+    ...messages.map(m => ({
+      role: m.role === 'model' ? ('assistant' as const) : ('user' as const),
+      content: m.text,
+    })),
+  ];
 
-  const message = await client.messages.create({
-    model: options.model || CLAUDE_MODEL,
+  const completion = await client.chat.completions.create({
+    model: options.model || GROQ_MODEL,
     max_tokens: options.maxTokens || 1024,
-    system: options.systemInstruction,
-    messages: anthropicMessages,
+    messages: groqMessages,
   });
 
-  const block = message.content[0];
-  return block.type === 'text' ? block.text : '';
+  return completion.choices[0]?.message?.content || '';
 }
 
 // Keep backward compat aliases
