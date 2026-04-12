@@ -135,11 +135,7 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [manualApiKey, setManualApiKey] = useState(() => {
-    const fromStorage = localStorage.getItem('groq_api_key');
-    const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GROQ_API_KEY;
-    const key = fromStorage || fromEnv || '';
-    if (!fromStorage && fromEnv) localStorage.setItem('groq_api_key', fromEnv);
-    return key;
+    return localStorage.getItem('groq_api_key') || '';
   });
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);

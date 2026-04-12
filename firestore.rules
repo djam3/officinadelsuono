@@ -1,31 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: products
-    // Document ID: auto-generated
-    // Fields:
-    //   - name: string (required) - The name of the product
-    //   - category: string (required) - The category of the product
-    //   - price: number (required) - The price of the product
-    //   - image: string (required) - URL of the product image
-    //   - badge: string (optional) - Optional badge text
-    //   - createdAt: timestamp (optional) - Creation timestamp
-    //
-    // Collection: users
-    // Document ID: user UID
-    // Fields:
-    //   - email: string (required) - The user's email address
-    //   - role: string (required) - The user's role ('admin' or 'user')
-    //
-    // ===============================================================
 
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    // ─── Helper Functions ────────────────────────────────────────────────────
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -33,142 +11,223 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() &&
         ((request.auth.token.email == "officinadelsuono99@gmail.com" && request.auth.token.email_verified == true) ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
-    function hasRequiredFields(fields) {
+    function hasFields(fields) {
       return request.resource.data.keys().hasAll(fields);
     }
 
     function isValidProduct() {
-      return hasRequiredFields(['name', 'category', 'price']) &&
+      return hasFields(['name', 'category', 'price']) &&
         request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() < 100 &&
         request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() < 50 &&
         request.resource.data.price is number && request.resource.data.price >= 0 &&
         (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() < 800000)) &&
         (!('images' in request.resource.data) || (request.resource.data.images is list && request.resource.data.images.size() <= 5)) &&
         (!('badge' in request.resource.data) || (request.resource.data.badge is string && request.resource.data.badge.size() < 50)) &&
-        (!('createdAt' in request.resource.data) || request.resource.data.createdAt is string) &&
         (!('specs' in request.resource.data) || request.resource.data.specs is map);
     }
 
     function isValidUser() {
-      return hasRequiredFields(['email', 'role']) &&
+      return hasFields(['email', 'role']) &&
         request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 100 &&
         request.resource.data.role in ['admin', 'user'];
     }
 
     function isValidReview() {
-      return hasRequiredFields(['productId', 'userId', 'userName', 'rating', 'text', 'createdAt']) &&
+      return hasFields(['productId', 'userId', 'userName', 'rating', 'text', 'createdAt']) &&
         request.resource.data.productId is string && request.resource.data.productId.size() > 0 && request.resource.data.productId.size() < 100 &&
         request.resource.data.userId is string && request.resource.data.userId == request.auth.uid &&
         request.resource.data.userName is string && request.resource.data.userName.size() > 0 && request.resource.data.userName.size() < 100 &&
         request.resource.data.rating is number && request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
-        request.resource.data.text is string && request.resource.data.text.size() <= 1000 &&
+        request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000 &&
         request.resource.data.createdAt is string;
     }
 
-    // ===============================================================
-    // Rules
-    // ===============================================================
-
-    match /reviews/{reviewId} {
-      // Anyone can read reviews
-      allow read: if true;
-      // Authenticated users can create reviews for themselves
-      allow create: if isAuthenticated() && isValidReview();
-      // Users can update their own reviews
-      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && isValidReview() && request.resource.data.userId == resource.data.userId && request.resource.data.productId == resource.data.productId;
-      // Users can delete their own reviews
-      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    function isValidOrder() {
+      return hasFields(['customerEmail', 'items', 'total', 'status', 'createdAt']) &&
+        request.resource.data.customerEmail is string &&
+        request.resource.data.customerEmail.size() > 3 &&
+        request.resource.data.customerEmail.size() < 200 &&
+        request.resource.data.customerEmail.matches('.*@.*\\..*') &&
+        request.resource.data.items is list &&
+        request.resource.data.items.size() > 0 &&
+        request.resource.data.items.size() <= 50 &&
+        request.resource.data.total is number &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.total <= 100000 &&
+        request.resource.data.status is string &&
+        request.resource.data.status in ['nuovo', 'in_lavorazione', 'spedito', 'consegnato', 'annullato'] &&
+        request.resource.data.createdAt is string &&
+        (!('customerName' in request.resource.data) || (request.resource.data.customerName is string && request.resource.data.customerName.size() < 200)) &&
+        (!('shippingAddress' in request.resource.data) || request.resource.data.shippingAddress is map) &&
+        (!('notes' in request.resource.data) || (request.resource.data.notes is string && request.resource.data.notes.size() < 1000));
     }
 
+    // ─── Products ────────────────────────────────────────────────────────────
+
     match /products/{productId} {
-      // Anyone can read products
       allow read: if true;
-      // Only admins can create, update, delete products
       allow create: if isAdmin() && isValidProduct();
       allow update: if isAdmin() && isValidProduct();
       allow delete: if isAdmin();
     }
 
+    // ─── Reviews ─────────────────────────────────────────────────────────────
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isValidReview();
+      allow update: if isAuthenticated() &&
+        request.auth.uid == resource.data.userId &&
+        isValidReview() &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.productId == resource.data.productId;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    // ─── Users ───────────────────────────────────────────────────────────────
+
     match /users/{userId} {
-      // Admins can read all users. Users can read their own profile.
       allow read: if isAdmin() || (isAuthenticated() && request.auth.uid == userId);
-      // Only admins can create or update users (to prevent self-escalation)
       allow create: if isAdmin() && isValidUser();
       allow update: if isAdmin() && isValidUser();
       allow delete: if isAdmin();
     }
 
+    // ─── Settings ────────────────────────────────────────────────────────────
+    // ai_config contiene la chiave API — solo admin può leggerla
+    // Gli altri documenti (feature flags, site_content) restano pubblici
+
     match /settings/{settingId} {
-      // Anyone can read settings (needed for real-time AI feature flags)
-      allow read: if true;
-      // Only admins can write to settings
+      allow read: if settingId != 'ai_config' || isAdmin();
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
 
-    // Social Media posts — solo admin
+    // ─── Orders ──────────────────────────────────────────────────────────────
+    // Chiunque può creare un ordine valido (checkout anonimo)
+    // Solo admin può leggere, aggiornare, eliminare
+
+    match /orders/{orderId} {
+      allow create: if isValidOrder();
+      allow read, update, delete: if isAdmin();
+    }
+
+    // ─── Blog Posts ──────────────────────────────────────────────────────────
+
+    match /blog_posts/{postId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─── Chatbot Knowledge Base ───────────────────────────────────────────────
+
+    match /chatbot_knowledge/{docId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─── Chatbot Logs ─────────────────────────────────────────────────────────
+
+    match /chatbot_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() || true; // chatbot funziona anche anonimo
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // ─── Discount Codes ──────────────────────────────────────────────────────
+
+    match /discount_codes/{codeId} {
+      allow read: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─── Invoices ────────────────────────────────────────────────────────────
+
+    match /invoices/{invoiceId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── AI Costs Tracker ─────────────────────────────────────────────────────
+
+    match /ai_costs/{entryId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if isAdmin();
+    }
+
+    // ─── Newsletter (legacy collection) ──────────────────────────────────────
+
+    match /newsletter/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // ─── Newsletter Subscriptions ─────────────────────────────────────────────
+
+    match /newsletter_subscriptions/{subscriptionId} {
+      allow read: if isAdmin();
+      allow create: if hasFields(['email', 'privacyConsent', 'timestamp']) &&
+        request.resource.data.email is string &&
+        request.resource.data.email.size() > 3 &&
+        request.resource.data.email.size() < 200 &&
+        request.resource.data.email.matches('.*@.*\\..*') &&
+        request.resource.data.privacyConsent is bool &&
+        request.resource.data.privacyConsent == true &&
+        request.resource.data.timestamp is string &&
+        (!('marketingConsent' in request.resource.data) || request.resource.data.marketingConsent is bool) &&
+        (!('source' in request.resource.data) || (request.resource.data.source is string && request.resource.data.source.size() < 100));
+      allow update, delete: if isAdmin();
+    }
+
+    // ─── Social Media ─────────────────────────────────────────────────────────
+
     match /social_posts/{postId} {
       allow read, write: if isAdmin();
     }
 
-    // Social AI suggestions — solo admin
     match /social_suggestions/{sugId} {
       allow read, write: if isAdmin();
     }
 
-    // AI features change log — solo admin legge/cancella, admin scrive
-    match /logs/ai_features_changes/entries/{entryId} {
-      allow read, delete: if isAdmin();
-      allow create: if isAdmin();
-      allow update: if false;
-    }
+    // ─── Shipping Couriers ────────────────────────────────────────────────────
 
-    match /newsletter_subscriptions/{subscriptionId} {
-      // Only admins can read subscriptions
-      allow read: if isAdmin();
-      // Anyone can create a subscription
-      allow create: if hasRequiredFields(['email', 'privacyConsent', 'timestamp']) &&
-        request.resource.data.email is string && request.resource.data.email.size() > 0 && request.resource.data.email.size() < 100 &&
-        request.resource.data.privacyConsent is bool && request.resource.data.privacyConsent == true &&
-        request.resource.data.timestamp is string &&
-        (!('marketingConsent' in request.resource.data) || request.resource.data.marketingConsent is bool) &&
-        (!('source' in request.resource.data) || request.resource.data.source is string);
-      // Only admins can update or delete
-      allow update, delete: if isAdmin();
-    }
-
-    // Corrieri spedizione — chiunque legge (per widget prodotti), solo admin scrive
     match /shipping_couriers/{courierId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();
     }
 
-    // Ordini — chiunque può creare (checkout), solo admin legge e aggiorna
-    match /orders/{orderId} {
-      allow create: if true;
-      allow read, update, delete: if isAdmin();
-    }
+    // ─── Accounting ───────────────────────────────────────────────────────────
 
-    // Contabilità — solo admin (dati fiscali sensibili)
     match /accounting_entries/{entryId} {
       allow read, write: if isAdmin();
     }
 
+    // ─── Error Logs ───────────────────────────────────────────────────────────
+
     match /error_logs/{errorId} {
-      // Only admin can read error logs
       allow read: if isAdmin();
-      // Anyone (including anonymous visitors) can create an error log, size-limited to prevent abuse
-      allow create: if hasRequiredFields(['message', 'timestamp']) &&
-        request.resource.data.message is string && request.resource.data.message.size() < 2000 &&
+      allow create: if hasFields(['message', 'timestamp']) &&
+        request.resource.data.message is string &&
+        request.resource.data.message.size() > 0 &&
+        request.resource.data.message.size() < 2000 &&
         (!('stack' in request.resource.data) || (request.resource.data.stack is string && request.resource.data.stack.size() < 5000)) &&
         (!('url' in request.resource.data) || (request.resource.data.url is string && request.resource.data.url.size() < 500)) &&
         (!('userAgent' in request.resource.data) || (request.resource.data.userAgent is string && request.resource.data.userAgent.size() < 500));
-      // Only admins can delete
+      allow update: if false;
       allow delete: if isAdmin();
-      // No updates allowed
+    }
+
+    // ─── AI Features Change Log ───────────────────────────────────────────────
+
+    match /logs/ai_features_changes/entries/{entryId} {
+      allow read, delete: if isAdmin();
+      allow create: if isAdmin();
       allow update: if false;
     }
   }

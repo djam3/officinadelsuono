@@ -1,6 +1,7 @@
 /**
  * Shared AI service — Groq (Llama 3.3 70B, gratuito) per tutte le funzioni AI.
- * API key letta da localStorage (set by admin) o env variable come fallback.
+ * API key letta da localStorage (set by admin) o Firestore (solo se admin autenticato).
+ * NON usare VITE_GROQ_API_KEY — verrebbe inclusa nel bundle JS pubblico.
  */
 import Groq from 'groq-sdk';
 import { doc, getDoc } from 'firebase/firestore';
@@ -12,33 +13,22 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 let _cachedKey: string | null = null;
 
-const getEnvKey = () =>
-  ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GROQ_API_KEY;
-
 export async function getAIKey(): Promise<string | null> {
-  // 1. localStorage
+  // 1. localStorage (impostato dall'admin via pannello impostazioni AI)
   const local = localStorage.getItem('groq_api_key');
   if (local) return local;
 
   // 2. In-memory cache
   if (_cachedKey) return _cachedKey;
 
-  // 3. Env variable
-  const fromEnv = getEnvKey();
-  if (fromEnv) {
-    localStorage.setItem('groq_api_key', fromEnv);
-    _cachedKey = fromEnv;
-    return fromEnv;
-  }
-
-  // 4. Firestore (cross-device)
+  // 3. Firestore — solo se admin autenticato (regola Firestore protegge ai_config)
   try {
     const snap = await getDoc(doc(db, 'settings', 'ai_config'));
     if (snap.exists() && snap.data().groqApiKey) {
       _cachedKey = snap.data().groqApiKey as string;
       return _cachedKey;
     }
-  } catch { /* ignore */ }
+  } catch { /* ignore — utente non admin o chiave non impostata */ }
 
   return null;
 }
