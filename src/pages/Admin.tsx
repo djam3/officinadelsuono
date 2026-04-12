@@ -470,7 +470,7 @@ export function Admin({ onNavigate }: AdminProps) {
                 <button onClick={() => setShowAiSettings(false)}><X className="w-5 h-5 text-zinc-500" /></button>
               </div>
               <input type="password" value={manualApiKey} onChange={e => setManualApiKey(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm mb-4" placeholder="Gemini API Key..." />
-              <button onClick={() => setShowAiSettings(false)} className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl">Chiudi</button>
+              <button onClick={() => { if (manualApiKey) localStorage.setItem('gemini_api_key', manualApiKey); else localStorage.removeItem('gemini_api_key'); setShowAiSettings(false); }} className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl">Salva</button>
             </motion.div>
           </div>
         )}
