@@ -63,7 +63,7 @@ export function Chatbot() {
     const cfg = features.consulente_am3;
     chatbotService.configureAI({
       enabled: chatbotEnabled,
-      model: cfg?.model || 'gemini-2.0-flash',
+      model: cfg?.model || 'gemini-2.0-flash-lite',
       systemPrompt: cfg?.systemPrompt || '',
     });
   }, [chatbotEnabled, features.consulente_am3?.model, features.consulente_am3?.systemPrompt]);

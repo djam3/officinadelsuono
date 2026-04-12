@@ -41,7 +41,7 @@ export async function callGemini(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-2.0-flash',
+    model: options.model || 'gemini-2.0-flash-lite',
     systemInstruction: options.systemInstruction 
   });
 
@@ -58,7 +58,7 @@ export async function callGeminiChat(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-2.0-flash',
+    model: options.model || 'gemini-2.0-flash-lite',
     systemInstruction: options.systemInstruction 
   });
 
@@ -116,7 +116,7 @@ Rispondi ESCLUSIVAMENTE in JSON con questa struttura:
   ${includeFaq ? '"faq": [{"q": "domanda 1", "a": "risposta 1"}, {"q": "domanda 2", "a": "risposta 2"}, {"q": "domanda 3", "a": "risposta 3"}]' : '"faq": []'}
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash' });
+  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
@@ -179,7 +179,7 @@ Genera una sintesi delle recensioni in italiano. Rispondi ESCLUSIVAMENTE in JSON
   "disclaimer": "Sintesi generata da AI basata su ${reviews.length} recensioni verificate"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash' });
+  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
@@ -248,7 +248,7 @@ Rispondi ESCLUSIVAMENTE in JSON:
   "bodyText": "versione testo puro senza HTML — max 500 parole"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash' });
+  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
@@ -313,7 +313,7 @@ Rispondi ESCLUSIVAMENTE in JSON:
   "productId": "ID del prodotto dal catalogo se disponibile, altrimenti null"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash' });
+  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {

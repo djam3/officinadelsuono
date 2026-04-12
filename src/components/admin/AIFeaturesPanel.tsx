@@ -94,7 +94,7 @@ const FEATURE_GUIDES: Record<string, {
     ],
     appearsIn: 'Widget chat fisso in basso a destra su tutte le pagine del sito (solo se feature attiva)',
     requires: ['API Key Gemini (gratuita su aistudio.google.com)', 'Feature abilitata da questo pannello'],
-    freeModel: 'gemini-2.0-flash-exp — 1.500 richieste/giorno gratis',
+    freeModel: 'gemini-2.0-flash-lite-exp — 1.500 richieste/giorno gratis',
   },
   quiz_trova_setup: {
     steps: [
@@ -104,7 +104,7 @@ const FEATURE_GUIDES: Record<string, {
     ],
     appearsIn: 'Sezione dedicata nella homepage + pagina /quiz (quando implementata)',
     requires: ['API Key Gemini (gratuita)', 'Lista prodotti nel catalogo Firestore', 'Feature abilitata'],
-    freeModel: 'gemini-2.0-flash-exp — 1.500 richieste/giorno gratis',
+    freeModel: 'gemini-2.0-flash-lite-exp — 1.500 richieste/giorno gratis',
   },
   descrizioni_seo_auto: {
     steps: [
@@ -114,7 +114,7 @@ const FEATURE_GUIDES: Record<string, {
     ],
     appearsIn: 'Pannello Admin → Prodotti → Modifica prodotto → pulsante "Genera SEO con AI"',
     requires: ['API Key Gemini (gratuita)', 'Feature abilitata', 'Prodotto con nome e categoria'],
-    freeModel: 'gemini-2.0-flash — 1.500 richieste/giorno gratis',
+    freeModel: 'gemini-2.0-flash-lite — 1.500 richieste/giorno gratis',
   },
   recensioni_aggregate: {
     steps: [
@@ -124,7 +124,7 @@ const FEATURE_GUIDES: Record<string, {
     ],
     appearsIn: 'Scheda prodotto nel negozio → sezione "Cosa dicono i DJ" (sotto la descrizione)',
     requires: ['API Key Gemini (gratuita)', 'Feature abilitata', 'Prodotti nel catalogo'],
-    freeModel: 'gemini-2.0-flash — aggiornamento trimestrale, pochi token per prodotto',
+    freeModel: 'gemini-2.0-flash-lite — aggiornamento trimestrale, pochi token per prodotto',
   },
   email_personalizzate: {
     steps: [
@@ -134,7 +134,7 @@ const FEATURE_GUIDES: Record<string, {
     ],
     appearsIn: 'Background service — nessuna UI visibile al cliente. Gestione nel pannello Newsletter.',
     requires: ['API Key Gemini (gratuita)', 'API Key Resend configurata', 'Almeno 10 iscritti newsletter', 'Feature abilitata'],
-    freeModel: 'gemini-2.0-flash — ~1 token/email, molto economico',
+    freeModel: 'gemini-2.0-flash-lite — ~1 token/email, molto economico',
   },
 };
 
@@ -170,7 +170,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
     setIsSwitchingAll(true);
     try {
       for (const f of AI_FEATURE_DEFS) {
-        await updateConfig(f.key, { provider: 'gemini-free', model: 'gemini-2.0-flash-exp' }, currentUser?.email || ADMIN_EMAIL);
+        await updateConfig(f.key, { provider: 'gemini-free', model: 'gemini-2.0-flash-lite-exp' }, currentUser?.email || ADMIN_EMAIL);
       }
       showToast('Tutte le funzionalità ora usano Gemini Free! ✨');
     } catch {
@@ -515,7 +515,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                         onClick={() => setConfigDraft(p => ({
                           ...p,
                           provider: opt.value,
-                          model: opt.value === 'gemini-free' ? 'gemini-2.0-flash-exp' : 'claude-haiku-4-5-20251001',
+                          model: opt.value === 'gemini-free' ? 'gemini-2.0-flash-lite-exp' : 'claude-haiku-4-5-20251001',
                         }))}
                         className={`p-3 rounded-xl border text-left transition-all ${(configDraft.provider ?? 'gemini-free') === opt.value ? opt.color : 'border-white/5 bg-zinc-800 hover:bg-zinc-700'}`}
                       >
@@ -533,9 +533,9 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Modello AI</label>
                   {(configDraft.provider ?? 'gemini-free') === 'gemini-free' ? (
-                    <select value={(configDraft.model as string) || 'gemini-2.0-flash-exp'} onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500">
-                      <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (gratuito, più recente)</option>
-                      <option value="gemini-2.0-flash">gemini-2.0-flash (gratuito, stabile)</option>
+                    <select value={(configDraft.model as string) || 'gemini-2.0-flash-lite-exp'} onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500">
+                      <option value="gemini-2.0-flash-lite-exp">gemini-2.0-flash-lite-exp (gratuito, più recente)</option>
+                      <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite (gratuito, stabile)</option>
                     </select>
                   ) : (
                     <select value={(configDraft.model as string) || 'claude-haiku-4-5-20251001'} onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">

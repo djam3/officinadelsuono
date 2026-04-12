@@ -63,13 +63,13 @@ class ChatbotService {
 
   // ── AI config ─────────────────────────────────────────────────────────────
   private aiEnabled = false;
-  private aiModel = 'gemini-2.0-flash';
+  private aiModel = 'gemini-2.0-flash-lite';
   private aiSystemPrompt = '';
   private conversationHistory: Array<{ role: 'user' | 'model'; text: string }> = [];
 
   configureAI(config: { enabled?: boolean; model?: string; systemPrompt?: string }) {
     this.aiEnabled = config.enabled ?? false;
-    this.aiModel = config.model || 'gemini-2.0-flash';
+    this.aiModel = config.model || 'gemini-2.0-flash-lite';
     this.aiSystemPrompt = config.systemPrompt || '';
     this.conversationHistory = [];
   }

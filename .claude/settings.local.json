@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(ls node_modules/.bin/vite*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\Warzo\\\\Desktop\\\\officinadelsuono-clone && dir node_modules /b 2>&1 | head\")",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\Warzo\\\\Desktop\\\\officinadelsuono-clone && dir node_modules /b 2>&1 | more\")",
+      "Bash(cmd /c \"dir C:\\\\Users\\\\Warzo\\\\Desktop\\\\officinadelsuono-clone\\\\node_modules /b 2>&1\")",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(npm run:*)",
+      "Bash(firebase deploy:*)"
+    ]
+  }
+}

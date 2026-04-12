@@ -31,7 +31,7 @@ export interface AIFeatures {
 }
 
 const DEFAULT_FEATURES: AIFeatures = {
-  consulente_am3: { enabled: true, provider: 'gemini-free', model: 'gemini-2.0-flash' },
+  consulente_am3: { enabled: true, provider: 'gemini-free', model: 'gemini-2.0-flash-lite' },
   quiz_trova_setup: { enabled: true, provider: 'gemini-free' },
   descrizioni_seo_auto: { enabled: true, provider: 'gemini-free' },
   recensioni_aggregate: { enabled: true, provider: 'gemini-free' },

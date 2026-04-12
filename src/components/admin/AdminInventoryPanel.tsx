@@ -124,7 +124,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
     try {
       const ai = new GoogleGenerativeAI(apiKey);
       const model = ai.getGenerativeModel({
-        model: "gemini-2.0-flash",
+        model: "gemini-2.0-flash-lite",
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -177,7 +177,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
     setIsGeneratingImage(true);
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
       
       const prompt = `Realistic professional product photo of ${editForm.name} on a clean white background. High resolution, 4k, sharp focus.`;
       const result = await model.generateContent(prompt);
