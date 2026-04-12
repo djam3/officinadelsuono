@@ -517,6 +517,71 @@ async function startServer() {
     }
   });
 
+  // Contact form endpoint
+  app.post("/api/contact", async (req, res) => {
+    try {
+      const { name, email, message, budget, usage } = req.body;
+
+      // Validation
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: "Il nome è obbligatorio." });
+      }
+      if (!email || typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "Inserisci un indirizzo email valido." });
+      }
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ error: "Il messaggio è obbligatorio." });
+      }
+
+      const leadData = {
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        message: message.trim(),
+        budget: budget || '',
+        usage: usage || '',
+        source: 'contact_form',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      // Save lead to Firestore
+      await getFirestore().collection('leads').add(leadData);
+
+      // Send notification email to Amerigo
+      if (process.env.RESEND_API_KEY) {
+        try {
+          await getResend().emails.send({
+            from: `${OFFICIAL_NAME} <${OFFICIAL_EMAIL}>`,
+            to: 'officinadelsuono99@gmail.com',
+            replyTo: email.trim(),
+            subject: `Nuovo contatto: ${name.trim()}`,
+            html: `
+              <div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#0a0a0a;color:#fff;border-radius:10px;">
+                <h2 style="color:#F27D26;">Nuovo messaggio dal sito</h2>
+                <p><strong>Nome:</strong> ${name.trim()}</p>
+                <p><strong>Email:</strong> ${email.trim()}</p>
+                ${budget ? `<p><strong>Budget:</strong> ${budget}</p>` : ''}
+                ${usage ? `<p><strong>Utilizzo:</strong> ${usage}</p>` : ''}
+                <div style="background:#141414;padding:16px;border-radius:8px;margin:16px 0;border:1px solid #333;">
+                  <p style="margin:0;white-space:pre-wrap;">${message.trim()}</p>
+                </div>
+                <p style="color:#888;font-size:12px;">Rispondi direttamente a questa email per contattare il cliente.</p>
+              </div>
+            `
+          });
+        } catch (emailError) {
+          console.error("Error sending contact notification:", emailError);
+        }
+      } else {
+        console.log(`[Contact Form] New lead: ${name} (${email}) - ${message.slice(0, 100)}`);
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Contact Form Error:", error);
+      res.status(500).json({ error: "Errore durante l'invio. Riprova più tardi." });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

@@ -306,7 +306,7 @@ export default function App() {
               {currentPage === 'blog-post' && <BlogPost postId={selectedProductId} onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'quiz' && <Quiz onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'profile' && <Profile onNavigate={handleNavigate} />}
-              {currentPage === 'about' && <AboutUs />}
+              {currentPage === 'about' && <AboutUs onNavigate={handleNavigate} />}
               {currentPage === 'contact' && <Contact />}
               {currentPage === 'terms' && <Terms />}
               {currentPage === 'privacy' && <Privacy />}

@@ -14,7 +14,7 @@ export function Footer({ onNavigate }: FooterProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: Truck, title: "Spedizione Gratuita", desc: "Ordini sopra 99\u20AC" },
+              { icon: Truck, title: "Spedizione Gratuita", desc: "Ordini sopra 199\u20AC" },
               { icon: ShieldCheck, title: "Garanzia 2 Anni", desc: "Su tutti i prodotti" },
               { icon: Award, title: "Esperto Certificato", desc: "MAT Academy" },
               { icon: MessageCircle, title: "Supporto WhatsApp", desc: "Rispondiamo in 15 min" },
@@ -43,7 +43,7 @@ export function Footer({ onNavigate }: FooterProps) {
               </span>
             </div>
             <p className="text-zinc-400 max-w-sm mb-6">
-              Consulenza tecnica specializzata per DJ (Certificazione MAT Academy) e vendita hardware professionale. Il tuo suono, configurato da esperti.
+              Setup DJ e audio professionale, configurati da un sound engineer certificato MAT Academy. Non un catalogo: una selezione curata con consulenza gratuita inclusa.
             </p>
           </div>
           

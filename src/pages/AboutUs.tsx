@@ -1,15 +1,19 @@
 import { motion } from 'framer-motion';
 import { useSEO } from '../hooks/useSEO';
-import { Award, MapPin, Star, Music, ShieldCheck } from 'lucide-react';
+import { Award, Star, ShieldCheck, CheckCircle, MessageCircle, Package, HelpCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { getDirectDriveUrl } from '../utils/drive';
+import { trackEvent } from '../utils/analytics';
 
-export function AboutUs() {
+interface AboutUsProps {
+  onNavigate?: (page: string) => void;
+}
+
+export function AboutUs({ onNavigate }: AboutUsProps) {
   useSEO({
-    title: 'Chi Siamo — Amerigo De Cristofaro & Officina del Suono',
-    description: 'Scopri chi è Amerigo De Cristofaro: sound engineer certificato MAT Academy, esperto di attrezzatura DJ e audio professionale. La storia di Officina del Suono.',
+    title: 'Chi Siamo — La storia di Officina del Suono e di Amerigo De Cristofaro',
+    description: 'Amerigo De Cristofaro, sound engineer certificato MAT Academy, ha fondato Officina del Suono per offrire competenza reale, non solo un catalogo. Scopri la nostra storia.',
     url: '/chi-siamo',
   });
 
@@ -32,8 +36,8 @@ export function AboutUs() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Hero Section / Storytelling */}
+
+        {/* ── Hero: "Più di un negozio online." ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
           <motion.div
             initial={{ opacity: 0, x: -30 }}
@@ -41,24 +45,23 @@ export function AboutUs() {
             transition={{ duration: 0.8 }}
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-6">
-              <Music className="w-4 h-4" />
+              <ShieldCheck className="w-4 h-4" />
               <span className="text-xs font-bold uppercase tracking-wider">La Nostra Storia</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">
-              Oltre il Negozio:<br />
-              Un <span className="text-brand-orange">Laboratorio</span> di Passione.
+              Più di un <span className="text-brand-orange">negozio online</span>.
             </h1>
-            
+
             <div className="space-y-6 text-lg text-zinc-400 leading-relaxed">
               <p>
-                Tutto inizia con una console e un'ossessione: capire perché alcuni setup suonano "bene" e altri semplicemente "forte". <strong>Amerigo De Cristofaro</strong> non ha fondato Officinadelsuono solo per vendere hardware, ma per colmare il vuoto tra il manuale d'istruzioni e la performance reale.
-              </p>
-              <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
-                "Mentre gli altri leggono un manuale, io ho studiato l'ingegneria del suono per darti solo setup che funzionano davvero, testati sul campo e ottimizzati per la tua visione artistica."
+                Officina del Suono nasce dall'idea che chi compra attrezzatura audio meriti di più di un catalogo infinito e una scheda tecnica copiata.
               </p>
               <p>
-                Nata a <strong>Forino (AV)</strong>, nel cuore dell'Irpinia, Officinadelsuono è oggi il punto di riferimento per chi cerca competenza tecnica reale, supportata da certificazioni internazionali e una selezione maniacale dei brand leader.
+                <strong className="text-white">Amerigo De Cristofaro</strong>, sound engineer certificato MAT Academy, ha fondato questo progetto con una missione precisa: offrire competenza reale, selezione curata e supporto diretto a chi cerca un setup che funziona davvero.
+              </p>
+              <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
+                "Non ho aperto un e-commerce per riempire un catalogo. L'ho fatto perché quando cercavo attrezzatura trovavo tutto tranne risposte chiare."
               </p>
             </div>
           </motion.div>
@@ -79,13 +82,62 @@ export function AboutUs() {
               />
               <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/60 to-transparent">
                 <p className="text-white font-bold text-xl">Amerigo De Cristofaro</p>
-                <p className="text-zinc-400 text-sm">Founder & DJ Certificato MAT Academy</p>
+                <p className="text-zinc-400 text-sm">Founder & Sound Engineer certificato MAT Academy</p>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Proof of Concept / Certificate */}
+        {/* ── Cosa ci rende diversi ── */}
+        <div className="mb-24">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl md:text-5xl font-black tracking-tighter mb-4">
+              Cosa ci rende <span className="text-brand-orange">diversi</span>
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Award,
+                title: "Competenza certificata",
+                body: "Ogni consiglio che ricevi si basa su formazione reale (MAT Academy) e ore di test sul campo, non su schede copiate dal distributore."
+              },
+              {
+                icon: HelpCircle,
+                title: "Consulenza gratuita",
+                body: "Non ti lasciamo solo con un catalogo. 15 minuti di consulenza su WhatsApp per capire cosa ti serve davvero — gratis, senza impegno."
+              },
+              {
+                icon: Package,
+                title: "Setup completi e testati",
+                body: "Non vendiamo singoli prodotti sperando che funzionino insieme. Progettiamo catene audio complete con compatibilità garantita."
+              }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="p-8 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center mb-5">
+                  <item.icon className="w-6 h-6 text-brand-orange" />
+                </div>
+                <h3 className="text-lg font-black mb-2">{item.title}</h3>
+                <p className="text-zinc-400 text-sm leading-relaxed">{item.body}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── MAT Certificate ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24 bg-zinc-900/30 rounded-3xl p-8 md:p-16 border border-white/5">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -95,27 +147,29 @@ export function AboutUs() {
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-zinc-900 text-zinc-400 border border-white/10 mb-6">
               <ShieldCheck className="w-4 h-4 text-[#E6007E]" />
-              <span className="text-xs font-bold uppercase tracking-wider">Proof of Concept</span>
+              <span className="text-xs font-bold uppercase tracking-wider">Certificazione</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
-              La formazione è la tua <span className="text-brand-orange">Garanzia</span>.
+              La formazione è la tua <span className="text-brand-orange">garanzia</span>.
             </h2>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
-              Non ci improvvisiamo esperti. La certificazione <strong>MAT Academy</strong> è il "bollino di qualità" che assicura che ogni consiglio tecnico, ogni cablaggio e ogni configurazione software sia eseguita secondo i più alti standard dell'industria Pro-Audio.
+              La certificazione <strong className="text-white">MAT Academy</strong> è il "bollino di qualità" che assicura che ogni consiglio tecnico, ogni configurazione e ogni setup sia progettato secondo i più alti standard dell'industria Pro-Audio.
             </p>
-            <div className="flex items-center gap-4 text-zinc-300">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-zinc-950 bg-zinc-800 flex items-center justify-center">
-                    <Star className="w-4 h-4 text-brand-orange fill-current" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm font-medium">Oltre 500 setup configurati con successo.</p>
+            <div className="space-y-3">
+              {[
+                "Pro DJ Academy — Full Course completato",
+                "Setup progettati con metodo ingegneristico",
+                "Consulenza basata su test reali, non marketing"
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-brand-orange shrink-0" />
+                  <span className="text-zinc-300 font-medium text-sm">{item}</span>
+                </div>
+              ))}
             </div>
           </motion.div>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9, rotate: 2 }}
             whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
             viewport={{ once: true }}
@@ -124,12 +178,10 @@ export function AboutUs() {
             className="order-1 lg:order-2 relative p-[2px] rounded-2xl bg-gradient-to-br from-[#E6007E] via-brand-orange to-zinc-800 shadow-[0_0_50px_rgba(242,125,38,0.15)] group transition-all duration-500"
           >
             <div className="bg-zinc-950 p-8 md:p-12 rounded-xl border border-white/10 relative overflow-hidden">
-              {/* Decorative Background Elements */}
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(242,125,38,0.05),transparent_70%)]"></div>
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-brand-orange/50 to-transparent"></div>
               <Award className="absolute -right-12 -bottom-12 w-64 h-64 text-white/[0.03] -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
 
-              {/* Certificate Content */}
               <div className="relative z-10">
                 <div className="text-center mb-10">
                   <div className="inline-flex items-center justify-center gap-3 mb-6">
@@ -173,7 +225,6 @@ export function AboutUs() {
                   </div>
                 </div>
 
-                {/* Seal */}
                 <div className="absolute top-0 right-0 opacity-20 group-hover:opacity-40 transition-opacity">
                   <ShieldCheck className="w-12 h-12 text-brand-orange" />
                 </div>
@@ -182,23 +233,37 @@ export function AboutUs() {
           </motion.div>
         </div>
 
-        {/* Contact CTA */}
-        <motion.div 
+        {/* ── CTA ── */}
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="p-12 rounded-3xl bg-zinc-900/50 border border-brand-orange/20 text-center"
         >
-          <h3 className="text-2xl font-bold mb-4">Pronto per il tuo prossimo Setup?</h3>
-          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">Offriamo consulenza tecnica personalizzata per aiutarti a scegliere l'attrezzatura perfetta per le tue esigenze.</p>
-          <a 
-            href="https://wa.me/393477397016" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-brand-orange text-white rounded-xl font-bold hover:bg-orange-600 transition-all"
-          >
-            Contattaci su WhatsApp
-          </a>
+          <h3 className="text-2xl font-bold mb-4">Vuoi parlare con Amerigo?</h3>
+          <p className="text-zinc-400 mb-8 max-w-xl mx-auto">
+            Consulenza gratuita e senza impegno. Scrivici il tuo budget e il tuo obiettivo — ti rispondiamo con una proposta su misura.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="https://wa.me/393477397016"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackEvent('whatsapp_click', { source: 'about' })}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold transition-all"
+            >
+              <MessageCircle className="w-5 h-5" />
+              Scrivici su WhatsApp
+            </a>
+            {onNavigate && (
+              <button
+                onClick={() => onNavigate('contact')}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-all border border-white/10"
+              >
+                Compila il form contatti
+              </button>
+            )}
+          </div>
         </motion.div>
 
       </div>

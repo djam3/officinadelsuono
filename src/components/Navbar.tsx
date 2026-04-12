@@ -90,6 +90,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
             <button onClick={() => onNavigate('compare')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Confronta</button>
             <button onClick={() => onNavigate('blog')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Blog</button>
             <button onClick={() => onNavigate('about')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Chi Siamo</button>
+            <button onClick={() => onNavigate('contact')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Contatti</button>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
