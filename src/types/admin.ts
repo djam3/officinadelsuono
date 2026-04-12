@@ -79,10 +79,14 @@ export interface SocialSuggestion {
   caption: string;
   hashtags: string[];
   platforms: string[];
-  angle: 'product' | 'educational' | 'engagement' | 'promotional';
+  angle: 'product' | 'educational' | 'engagement' | 'promotional' | 'tiktok_video';
   reasoning: string;
   status: 'pending' | 'approved' | 'rejected';
   createdAt: any;
+  // TikTok video fields
+  hook?: string;
+  script?: string;
+  videoPrompt?: string;
 }
 
 export interface SocialConnection {

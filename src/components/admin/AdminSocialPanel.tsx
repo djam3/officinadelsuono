@@ -126,28 +126,75 @@ export function AdminSocialPanel({
     try {
       const productList = products.slice(0, 15).map(p => `${p.name} — €${p.price} (${p.category})`).join('\n');
 
-      const prompt = `Sei un esperto di social media marketing per "Officina del Suono", negozio DJ professionale italiano certificato MAT Academy.
+      const BRAND_IDENTITY = `
+BRAND: Officina del Suono
+FONDATORE: Amerigo, DJ e tecnico del suono professionista certificato MAT Academy
+SEDE: Forino (AV), Campania — spedizioni in tutta Italia
+MISSIONE: Rendere l'attrezzatura DJ professionale accessibile a tutti, con consulenza vera e competenza tecnica
+TONO DI VOCE: Appassionato, autentico, esperto ma mai arrogante. Parla da DJ a DJ. Usa il "tu". Concreto, diretto, con personalità del Sud Italia.
+TARGET: DJ principianti entusiasti, DJ intermedi che vogliono crescere, DJ pro esigenti, amanti del vinile, producer home studio
+VALORI: Passione genuina per la musica, onestà sui prodotti, supporto post-vendita reale, community DJ italiana
+DIFFERENZIATORI: Certificazione MAT Academy, consulenza personalizzata da Amerigo, prodotti testati direttamente, nessun marketing vuoto
+WHATSAPP: +39 347 739 7016 (Amerigo risponde personalmente)
+COLORI BRAND: arancione #F27D26, sfondo dark zinc-950
+PRODOTTI PRINCIPALI: Controller Pioneer DDJ, Mixer Allen & Heath, Cuffie Pioneer HDJ, Monitor da Studio, Vinili, Accessori pro`;
 
-Prodotti in catalogo:
-${productList || 'Controller DJ, Mixer, Cuffie Pioneer, Monitor da Studio'}
+      const prompt = `Sei il social media manager di "Officina del Suono". Conosci perfettamente il brand:
+${BRAND_IDENTITY}
 
-Genera 3 post social media in italiano con angoli diversi:
-1. PRODOTTO: highlight di un prodotto specifico con call-to-action
-2. EDUCATIONAL: consiglio tecnico o tip per DJ professionisti
-3. ENGAGEMENT: domanda o contenuto che stimola commenti dalla community DJ
+CATALOGO ATTUALE:
+${productList || 'Controller DJ, Mixer, Cuffie Pioneer, Monitor da Studio, Vinili'}
 
-Per ogni post fornisci SOLO questo JSON (nessun testo extra):
+Genera 4 contenuti social distinti e di alta qualità per far crescere il brand. Ogni contenuto deve sembrare scritto da Amerigo in persona, non da un algoritmo.
+
+CONTENUTO 1 — INSTAGRAM/FACEBOOK (angle: "product")
+Post sul prodotto più interessante del catalogo con storia/contesto, non solo specifiche. CTA naturale.
+
+CONTENUTO 2 — INSTAGRAM/FACEBOOK (angle: "educational")
+Tip tecnico prezioso che un DJ esperto condivide gratis. Deve dare valore reale, non essere generico.
+
+CONTENUTO 3 — INSTAGRAM/FACEBOOK (angle: "engagement")
+Domanda o dibattito che spacca la community DJ (es. vinile vs digitale, Pioneer vs Denon, ecc.)
+
+CONTENUTO 4 — TIKTOK (angle: "tiktok_video")
+Script + prompt video AI per un TikTok virale sul mondo DJ. Struttura: hook 3 secondi → corpo → CTA.
+
+Rispondi ESCLUSIVAMENTE con questo JSON (nessun testo fuori dal JSON):
 [
   {
-    "caption": "testo del post max 300 caratteri, emoji incluse, coinvolgente",
-    "hashtags": ["hashtag1","hashtag2","hashtag3","hashtag4","hashtag5"],
+    "caption": "testo post Instagram/Facebook, max 400 caratteri, emoji naturali, tono Amerigo",
+    "hashtags": ["djitalia","officinadelsuono","pioneerdj","djlife","attrezzaturadj","mixerdj","djset"],
     "platforms": ["instagram","facebook"],
     "angle": "product",
-    "reasoning": "perché questo post funziona in max 1 frase"
+    "reasoning": "perché funziona per questo brand in 1 frase"
+  },
+  {
+    "caption": "tip educativo post Instagram/Facebook",
+    "hashtags": ["djtech","tutorial","pioneerdj","djlife","musicproduction"],
+    "platforms": ["instagram","facebook"],
+    "angle": "educational",
+    "reasoning": "perché funziona"
+  },
+  {
+    "caption": "domanda engagement post Instagram/Facebook",
+    "hashtags": ["djdebate","djcommunity","djlife","vinile","digitalvsvinyl"],
+    "platforms": ["instagram","facebook"],
+    "angle": "engagement",
+    "reasoning": "perché funziona"
+  },
+  {
+    "caption": "caption breve per il video TikTok (max 150 caratteri)",
+    "hashtags": ["djtiktok","djlife","pioneerdj","officinadelsuono","djitalia","fyp","foryou"],
+    "platforms": ["tiktok"],
+    "angle": "tiktok_video",
+    "reasoning": "perché questo video può diventare virale",
+    "hook": "prima frase parlata nei primi 3 secondi del video — deve fermare lo scroll",
+    "script": "script completo parlato del video (30-60 secondi): [0-3s] hook | [3-15s] sviluppo | [15-25s] punto principale | [25-30s] CTA — scritto come lo direbbe Amerigo, in italiano, tono autentico",
+    "videoPrompt": "prompt dettagliato in inglese per Runway/Kling/Pika AI video generation: stile cinematografico, soggetto, azione, ambiente, lighting, mood, camera movement, duration 15-30s. Esempio struttura: 'Cinematic close-up of [soggetto] in [ambiente], [azione], [lighting], [mood], [camera movement], professional quality, 4K'"
   }
 ]`;
 
-      const rawText = await callClaude(prompt, { maxTokens: 1024 });
+      const rawText = await callClaude(prompt, { maxTokens: 2048 });
       const jsonMatch = rawText.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('JSON non valido nella risposta AI');
       const suggestions = JSON.parse(jsonMatch[0]);
@@ -349,22 +396,69 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
           ) : (
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
               {pendingSuggestions.map(sug => {
-                const angleColors: Record<string, string> = { product: 'text-brand-orange bg-brand-orange/10 border-brand-orange/20', educational: 'text-blue-400 bg-blue-500/10 border-blue-500/20', engagement: 'text-green-400 bg-green-500/10 border-green-500/20', promotional: 'text-pink-400 bg-pink-500/10 border-pink-500/20' };
-                const angleLabels: Record<string, string> = { product: 'Prodotto', educational: 'Educational', engagement: 'Engagement', promotional: 'Promo' };
+                const angleColors: Record<string, string> = {
+                  product: 'text-brand-orange bg-brand-orange/10 border-brand-orange/20',
+                  educational: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+                  engagement: 'text-green-400 bg-green-500/10 border-green-500/20',
+                  promotional: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
+                  tiktok_video: 'text-red-400 bg-red-500/10 border-red-500/20',
+                };
+                const angleLabels: Record<string, string> = {
+                  product: 'Prodotto',
+                  educational: 'Educational',
+                  engagement: 'Engagement',
+                  promotional: 'Promo',
+                  tiktok_video: '🎬 TikTok Video',
+                };
                 const ac = angleColors[sug.angle] || 'text-zinc-400 bg-zinc-800 border-white/5';
                 const al = angleLabels[sug.angle] || sug.angle;
+                const isTikTok = sug.angle === 'tiktok_video';
                 return (
-                  <div key={sug.id} className="bg-zinc-800/50 border border-white/5 rounded-xl p-4">
+                  <div key={sug.id} className={`border rounded-xl p-4 ${isTikTok ? 'bg-red-950/20 border-red-500/20' : 'bg-zinc-800/50 border-white/5'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${ac}`}>{al}</span>
+                      {sug.reasoning && <span className="text-[10px] text-zinc-500 italic truncate">{sug.reasoning}</span>}
                     </div>
-                    <p className="text-sm text-zinc-300 leading-relaxed mb-2 line-clamp-3">{sug.caption}</p>
+
+                    <p className="text-sm text-zinc-300 leading-relaxed mb-3 line-clamp-3">{sug.caption}</p>
+
+                    {isTikTok && (
+                      <div className="space-y-2 mb-3">
+                        {sug.hook && (
+                          <div className="bg-zinc-900/80 border border-red-500/10 rounded-lg p-3">
+                            <p className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Hook (0-3s)</p>
+                            <p className="text-xs text-zinc-200 italic">"{sug.hook}"</p>
+                          </div>
+                        )}
+                        {sug.script && (
+                          <div className="bg-zinc-900/80 border border-white/5 rounded-lg p-3">
+                            <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Script Video</p>
+                            <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-line">{sug.script}</p>
+                          </div>
+                        )}
+                        {sug.videoPrompt && (
+                          <div className="bg-zinc-900/80 border border-purple-500/20 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Prompt AI Video (Runway / Kling / Pika)</p>
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(sug.videoPrompt); showSocialToast('Prompt video copiato ✓'); }}
+                                className="text-[10px] font-bold text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2 py-0.5 rounded transition-colors"
+                              >
+                                Copia
+                              </button>
+                            </div>
+                            <p className="text-xs text-zinc-400 leading-relaxed">{sug.videoPrompt}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex gap-2">
                       <button
                         onClick={() => publishSuggestion(sug)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-brand-orange/90 hover:bg-brand-orange text-white rounded-lg text-xs font-bold transition-colors"
                       >
-                        <ThumbsUp className="w-3 h-3" /> Usa nel Composer
+                        <ThumbsUp className="w-3 h-3" /> {isTikTok ? 'Copia Caption' : 'Usa nel Composer'}
                       </button>
                       <button
                         onClick={() => rejectSuggestion(sug.id)}
