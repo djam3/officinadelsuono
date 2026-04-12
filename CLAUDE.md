@@ -70,6 +70,38 @@ Tipi di commit: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `pe
 - MAI bypassare TypeScript strict mode
 - MAI eliminare dati in produzione senza backup
 
+### ⚠️ CHECKLIST DI SICUREZZA OBBLIGATORIA — da eseguire PRIMA di ogni deploy
+
+Ogni modifica al codice DEVE superare questi controlli prima del commit:
+
+**1. Firestore Rules**
+- Ogni nuova collection usata nel codice DEVE avere una regola esplicita in `firestore.rules`
+- Le collection con dati sensibili (chiavi API, ordini, fatture, sconti) devono richiedere `isAdmin()`
+- `allow read/write: if true` è VIETATO salvo per dati pubblici (products, reviews, shipping_couriers)
+- Dopo ogni modifica a `firestore.rules` eseguire: `npx firebase deploy --only firestore:rules`
+
+**2. Esposizione chiavi API**
+- MAI usare variabili `VITE_*` per chiavi API — vengono incluse nel bundle JS pubblico
+- Le chiavi AI (Groq, OpenAI, ecc.) vanno salvate solo in localStorage (via admin panel) o Firestore (con regola admin-only)
+- Verificare che nessun secret appaia nei network requests tramite DevTools
+
+**3. Validazione input**
+- Ogni `allow create: if true` in Firestore DEVE avere una funzione di validazione dei campi
+- Non accettare mai campi arbitrari da utenti non autenticati senza validazione di tipo e lunghezza
+
+**4. HTTP Security Headers**
+- Il file `firebase.json` deve mantenere gli header: `X-Frame-Options`, `X-Content-Type-Options`, `HSTS`, `Referrer-Policy`
+- Non rimuovere header di sicurezza esistenti
+
+**5. Sequenza obbligatoria pre-deploy**
+```bash
+npm run lint          # 1. TypeScript: zero errori
+npm run build         # 2. Build: zero errori
+# Se modificato firestore.rules:
+npx firebase deploy --only firestore:rules   # 3. Deploy rules
+npm run deploy        # 4. Deploy hosting
+```
+
 ## COMANDI
 
 ```bash
