@@ -41,7 +41,7 @@ export async function callGemini(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-1.5-flash',
+    model: options.model || 'gemini-2.0-flash',
     systemInstruction: options.systemInstruction 
   });
 
@@ -58,7 +58,7 @@ export async function callGeminiChat(
 
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-1.5-flash',
+    model: options.model || 'gemini-2.0-flash',
     systemInstruction: options.systemInstruction 
   });
 

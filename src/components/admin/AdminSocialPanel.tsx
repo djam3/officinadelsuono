@@ -149,7 +149,7 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
   }
 ]`;
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
       const result = await model.generateContent(prompt);
       const rawText = result.response.text();
       const jsonMatch = rawText.match(/\[[\s\S]*\]/);

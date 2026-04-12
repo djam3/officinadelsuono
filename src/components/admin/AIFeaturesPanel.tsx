@@ -535,7 +535,7 @@ export function AIFeaturesPanel({ currentUser }: { currentUser: import('firebase
                   {(configDraft.provider ?? 'gemini-free') === 'gemini-free' ? (
                     <select value={(configDraft.model as string) || 'gemini-2.0-flash-exp'} onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-green-500">
                       <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp (gratuito, più recente)</option>
-                      <option value="gemini-1.5-flash">gemini-1.5-flash (gratuito, stabile)</option>
+                      <option value="gemini-2.0-flash">gemini-2.0-flash (gratuito, stabile)</option>
                     </select>
                   ) : (
                     <select value={(configDraft.model as string) || 'claude-haiku-4-5-20251001'} onChange={e => setConfigDraft(p => ({ ...p, model: e.target.value }))} className="w-full bg-zinc-800 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-orange">
