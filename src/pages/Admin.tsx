@@ -131,7 +131,7 @@ export function Admin({ onNavigate }: AdminProps) {
   const [socialStats, setSocialStats] = useState<SocialStats | null>(null);
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
-  const [manualApiKey, setManualApiKey] = useState(localStorage.getItem('gemini_api_key') || '');
+  const [manualApiKey, setManualApiKey] = useState(localStorage.getItem('gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [showAiSettings, setShowAiSettings] = useState(false);
   const [showProfileSettings, setShowProfileSettings] = useState(false);
   const [profileImageUrl, setProfileImageUrl] = useState('');
