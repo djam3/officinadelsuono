@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { Chatbot } from './components/Chatbot';
@@ -18,6 +18,30 @@ import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
 import { Product as ProductType } from './types/admin';
+
+// ─── URL ↔ page mapping ───────────────────────────────────────────────────────
+const PAGE_TO_PATH: Record<string, string> = {
+  home: '/',
+  shop: '/shop',
+  blog: '/blog',
+  quiz: '/quiz',
+  about: '/chi-siamo',
+  contact: '/contatti',
+  compare: '/confronta',
+  terms: '/termini',
+  privacy: '/privacy',
+  'cookie-policy': '/cookie-policy',
+  profile: '/profilo',
+  admin: '/admin',
+};
+
+function pathToPage(pathname: string): { page: string; id?: string } {
+  if (pathname === '/' || pathname === '') return { page: 'home' };
+  if (pathname.startsWith('/prodotto/')) return { page: 'product', id: pathname.replace('/prodotto/', '') };
+  if (pathname.startsWith('/blog/')) return { page: 'blog-post', id: pathname.replace('/blog/', '') };
+  const found = Object.entries(PAGE_TO_PATH).find(([, p]) => p === pathname);
+  return found ? { page: found[0] } : { page: 'home' };
+}
 
 // Install global error logger once at module load
 installErrorLogger();
@@ -68,13 +92,15 @@ interface FlyingItem {
 }
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const initialRoute = pathToPage(window.location.pathname);
+  const [currentPage, setCurrentPage] = useState(initialRoute.page);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.id || null);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'canceled' | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [compareList, setCompareList] = useState<ProductType[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([]);
+  const isPopState = useRef(false);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -114,12 +140,10 @@ export default function App() {
     const query = new URLSearchParams(window.location.search);
     if (query.get('success')) {
       setPaymentStatus('success');
-      // Remove query params to clean up URL
       window.history.replaceState(null, '', window.location.pathname);
     }
     if (query.get('canceled')) {
       setPaymentStatus('canceled');
-      // Remove query params to clean up URL
       window.history.replaceState(null, '', window.location.pathname);
     }
     const pageParam = query.get('page');
@@ -127,11 +151,27 @@ export default function App() {
       setCurrentPage(pageParam);
       window.history.replaceState(null, '', window.location.pathname);
     }
+
+    // Handle browser back/forward
+    const onPopState = () => {
+      isPopState.current = true;
+      const route = pathToPage(window.location.pathname);
+      setCurrentPage(route.page);
+      setSelectedProductId(route.id || null);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const handleNavigate = (page: string, productId?: string) => {
     setCurrentPage(page);
     setSelectedProductId(productId || null);
+    // Update browser URL
+    let path = PAGE_TO_PATH[page] || '/';
+    if (page === 'product' && productId) path = `/prodotto/${productId}`;
+    if (page === 'blog-post' && productId) path = `/blog/${productId}`;
+    window.history.pushState({ page, productId }, '', path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

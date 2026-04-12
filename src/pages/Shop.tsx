@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../utils/drive';
 import { CATEGORIES_DATA } from '../constants';
 import { Product } from '../types/admin';
+import { useSEO } from '../hooks/useSEO';
 
 interface Review {
   id: string;
@@ -24,6 +25,12 @@ interface ShopProps {
 }
 
 export function Shop({ onNavigate, compareList, toggleCompare, showToast, triggerFlyToCart }: ShopProps) {
+  useSEO({
+    title: 'Shop — Attrezzatura DJ & Audio Professionale',
+    description: 'Acquista controller DJ, mixer, impianti PA, cuffie pro e molto altro. Catalogo curato da un esperto certificato MAT Academy. Spedizione in tutta Italia.',
+    url: '/shop',
+  });
+
   const [products, setProducts] = useState<Product[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);

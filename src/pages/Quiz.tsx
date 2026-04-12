@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSEO } from '../hooks/useSEO';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronLeft, Sparkles, Headphones, Speaker, Mic, Music, Settings, ArrowRight, ShoppingCart, Check, MessageCircle } from 'lucide-react';
 import { getDirectDriveUrl } from '../utils/drive';
@@ -19,6 +20,12 @@ type Environment = 'Home Studio' | 'Club' | 'Live/Eventi' | '';
 type Budget = 'Entry' | 'Mid' | 'High' | '';
 
 export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
+  useSEO({
+    title: 'AI Setup Architect — Trova il Setup DJ Perfetto per Te',
+    description: 'Rispondi a 4 domande sul tuo stile, genere musicale e budget. La nostra AI ingegnerizzerà il setup DJ perfetto per te in pochi secondi.',
+    url: '/quiz',
+  });
+
   const { features, loading: featuresLoading } = useAIFeatures();
   const quizEnabled = features.quiz_trova_setup?.enabled ?? true;
 

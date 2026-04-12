@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSEO } from '../hooks/useSEO';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Clock, User, ChevronRight, Loader2, Edit2, Plus, Search } from 'lucide-react';
 import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
@@ -481,6 +482,12 @@ export const MOCK_POSTS = [
 ];
 
 export function Blog({ onNavigate, showToast }: BlogProps) {
+  useSEO({
+    title: 'Blog — Guide, Tips & News per DJ e Audio Pro',
+    description: 'Articoli, guide tecniche e news su attrezzatura DJ, audio professionale e produzione musicale. Scritti da un esperto certificato MAT Academy.',
+    url: '/blog',
+  });
+
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);

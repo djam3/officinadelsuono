@@ -15,6 +15,7 @@ import { DJ_KNOWLEDGE_BASE } from '../data/djKnowledgeBase';
 import { useAIFeatures } from '../contexts/AIFeaturesContext';
 import { generateReviewSummary } from '../services/aiService';
 import { Product as ProductType } from '../types/admin';
+import { useSEO } from '../hooks/useSEO';
 
 
 interface ProductProps {
@@ -40,6 +41,16 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
 
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [product, setProduct] = useState<ProductType | null>(null);
+
+  useSEO({
+    title: product ? `${product.name} — Officina del Suono` : 'Prodotto — Officina del Suono',
+    description: product
+      ? (product.metaDescription || `Acquista ${product.name} da Officina del Suono. ${product.description?.slice(0, 100) || ''}`)
+      : 'Attrezzatura DJ e audio professionale selezionata da esperti.',
+    url: productId ? `/prodotto/${productId}` : '/shop',
+    image: product?.image || undefined,
+  });
+
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [newReviewText, setNewReviewText] = useState('');

@@ -1,4 +1,5 @@
 import { ArrowRight, MessageCircle, ShieldCheck, Settings, SlidersHorizontal, Speaker, Mic2, Cable, Sparkles, Award, Package, Users, Headphones, Monitor, Radio, Star, CheckCircle } from 'lucide-react';
+import { useSEO } from '../hooks/useSEO';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
@@ -16,6 +17,12 @@ interface HomeProps {
 }
 
 export function Home({ onNavigate }: HomeProps) {
+  useSEO({
+    title: 'Officina del Suono — Attrezzatura DJ & Audio Pro | Setup Ingegnerizzati',
+    description: 'Negozio specializzato in attrezzatura DJ e audio professionale. Setup ingegnerizzati su misura, consulenza gratuita su WhatsApp e prodotti selezionati da un esperto certificato MAT Academy.',
+    url: '/',
+  });
+
   const [profileImage, setProfileImage] = useState('/profile_new.jpg');
   const containerRef = useRef<HTMLDivElement>(null);
 

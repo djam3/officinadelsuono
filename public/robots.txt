@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://officinadelsuono-87986.web.app/sitemap.xml
