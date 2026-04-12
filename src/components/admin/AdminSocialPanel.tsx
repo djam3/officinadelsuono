@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { callClaude } from '../../services/aiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Wifi, WifiOff, BarChart3, RefreshCw, Send, Wand2, Sparkles, 
@@ -122,11 +122,8 @@ export function AdminSocialPanel({
   };
 
   const generateAISuggestions = async () => {
-    const apiKey = manualApiKey || localStorage.getItem('gemini_api_key') || ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GEMINI_API_KEY;
-    if (!apiKey) { showSocialToast('Imposta la chiave Gemini API nelle impostazioni AI', 'error'); return; }
     setIsGeneratingSuggestions(true);
     try {
-      const genAI = new GoogleGenerativeAI(apiKey);
       const productList = products.slice(0, 15).map(p => `${p.name} — €${p.price} (${p.category})`).join('\n');
 
       const prompt = `Sei un esperto di social media marketing per "Officina del Suono", negozio DJ professionale italiano certificato MAT Academy.
@@ -150,9 +147,7 @@ Per ogni post fornisci SOLO questo JSON (nessun testo extra):
   }
 ]`;
 
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
-      const result = await model.generateContent(prompt);
-      const rawText = result.response.text();
+      const rawText = await callClaude(prompt, { maxTokens: 1024 });
       const jsonMatch = rawText.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('JSON non valido nella risposta AI');
       const suggestions = JSON.parse(jsonMatch[0]);

@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { calcolaSpedizioneProdotto, formatCostoSpedizione, SOGLIA_SPEDIZIONE_GRATUITA } from '../../services/shippingService';
 import { useDropzone } from 'react-dropzone';
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { callClaude } from '../../services/aiService';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../../utils/drive';
 import { generateSEOContent } from '../../services/aiService';
@@ -114,45 +114,27 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
       return;
     }
 
-    const apiKey = manualApiKey;
-    if (!apiKey) {
-      alert("Configura una chiave API Gemini nelle impostazioni AI.");
-      return;
-    }
-
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenerativeAI(apiKey);
-      const model = ai.getGenerativeModel({
-        model: "gemini-2.0-flash-lite",
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: SchemaType.OBJECT,
-            properties: {
-              description: { type: SchemaType.STRING },
-              specs: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  watt: { type: SchemaType.STRING },
-                  frequency: { type: SchemaType.STRING },
-                  inputs: { type: SchemaType.STRING },
-                  outputs: { type: SchemaType.STRING },
-                  dimensions: { type: SchemaType.STRING },
-                  weight: { type: SchemaType.STRING }
-                }
-              }
-            }
-          }
-        }
-      });
+      const prompt = `Sei un esperto di attrezzatura DJ e audio professionale.
+PRODOTTO: ${editForm.name}
+ESTRAI: Specifiche tecniche (Watt, Frequenza, Ingressi, Uscite, Dimensioni, Peso) e genera una descrizione professionale in italiano (max 800 caratteri).
 
-      const prompt = `Sei un esperto di attrezzatura DJ e audio professionale. 
-      PRODOTTO: ${editForm.name}
-      ESTRAI: Specifiche tecniche (Watt, Frequenza, Ingressi, Uscite, Dimensioni, Peso) e Genera una descrizione professionale in italiano (max 800 caratteri).`;
+Rispondi ESCLUSIVAMENTE in JSON:
+{
+  "description": "descrizione professionale del prodotto",
+  "specs": {
+    "watt": "potenza in watt o stringa vuota",
+    "frequency": "risposta in frequenza o stringa vuota",
+    "inputs": "ingressi disponibili o stringa vuota",
+    "outputs": "uscite disponibili o stringa vuota",
+    "dimensions": "dimensioni o stringa vuota",
+    "weight": "peso o stringa vuota"
+  }
+}`;
 
-      const result = await model.generateContent(prompt);
-      const details = JSON.parse(result.response.text());
+      const raw = await callClaude(prompt, { maxTokens: 1024 });
+      const details = JSON.parse(raw.replace(/```json/g, '').replace(/```/g, '').trim());
 
       setEditForm(prev => ({
         ...prev,
@@ -168,28 +150,7 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
 
   const generateAIImage = async () => {
     if (!editForm.name) return;
-    const apiKey = manualApiKey;
-    if (!apiKey) {
-      alert("Configura una chiave API Gemini nelle impostazioni AI.");
-      return;
-    }
-
-    setIsGeneratingImage(true);
-    try {
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
-      
-      const prompt = `Realistic professional product photo of ${editForm.name} on a clean white background. High resolution, 4k, sharp focus.`;
-      const result = await model.generateContent(prompt);
-      
-      // In a real environment, this might return image data or search results.
-      // Based on previous Admin.tsx logic, it was using groundingMetadata or inlineData.
-      alert("Funzionalità di generazione immagine tramite Flash Image richiede configurazione specifica. Vedi logs.");
-    } catch (e) {
-      alert("Errore AI Foto: " + (e as Error).message);
-    } finally {
-      setIsGeneratingImage(false);
-    }
+    alert("Generazione immagine AI non disponibile. Usa un URL immagine manuale.");
   };
 
   const generatePrice = () => {

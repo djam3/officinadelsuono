@@ -132,10 +132,10 @@ export function Admin({ onNavigate }: AdminProps) {
 
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [manualApiKey, setManualApiKey] = useState(() => {
-    const fromStorage = localStorage.getItem('gemini_api_key');
-    const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_GEMINI_API_KEY;
+    const fromStorage = localStorage.getItem('anthropic_api_key');
+    const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY;
     const key = fromStorage || fromEnv || '';
-    if (!fromStorage && fromEnv) localStorage.setItem('gemini_api_key', fromEnv);
+    if (!fromStorage && fromEnv) localStorage.setItem('anthropic_api_key', fromEnv);
     return key;
   });
   const [showAiSettings, setShowAiSettings] = useState(false);
@@ -469,8 +469,8 @@ export function Admin({ onNavigate }: AdminProps) {
                 <h3 className="text-xl font-bold">Configurazione AI</h3>
                 <button onClick={() => setShowAiSettings(false)}><X className="w-5 h-5 text-zinc-500" /></button>
               </div>
-              <input type="password" value={manualApiKey} onChange={e => setManualApiKey(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm mb-4" placeholder="Gemini API Key..." />
-              <button onClick={() => { if (manualApiKey) localStorage.setItem('gemini_api_key', manualApiKey); else localStorage.removeItem('gemini_api_key'); setShowAiSettings(false); }} className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl">Salva</button>
+              <input type="password" value={manualApiKey} onChange={e => setManualApiKey(e.target.value)} className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 text-sm mb-4" placeholder="Claude API Key (Anthropic)..." />
+              <button onClick={() => { if (manualApiKey) localStorage.setItem('anthropic_api_key', manualApiKey); else localStorage.removeItem('anthropic_api_key'); setShowAiSettings(false); }} className="w-full py-3 bg-brand-orange text-white font-bold rounded-xl">Salva</button>
             </motion.div>
           </div>
         )}

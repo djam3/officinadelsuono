@@ -1,28 +1,38 @@
 /**
- * Shared AI service — Gemini calls, SEO generation, review summaries, email content.
- * API key is read from localStorage (set by admin), with Firestore as fallback.
+ * Shared AI service — Claude Haiku calls, SEO generation, review summaries, email content.
+ * API key is read from localStorage (set by admin), with env variable as fallback.
  */
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import Anthropic from '@anthropic-ai/sdk';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+
+const CLAUDE_MODEL = 'claude-haiku-4-5-20251001';
 
 // ─── Key management ───────────────────────────────────────────────────────────
 
 let _cachedKey: string | null = null;
 
-export async function getGeminiKey(): Promise<string | null> {
+export async function getAIKey(): Promise<string | null> {
   // 1. localStorage (admin device — fastest)
-  const local = localStorage.getItem('gemini_api_key');
+  const local = localStorage.getItem('anthropic_api_key');
   if (local) return local;
 
   // 2. In-memory cache
   if (_cachedKey) return _cachedKey;
 
-  // 3. Firestore (cross-device)
+  // 3. Env variable
+  const fromEnv = ((import.meta as unknown) as { env?: Record<string, string> }).env?.VITE_ANTHROPIC_API_KEY;
+  if (fromEnv) {
+    localStorage.setItem('anthropic_api_key', fromEnv);
+    _cachedKey = fromEnv;
+    return fromEnv;
+  }
+
+  // 4. Firestore (cross-device)
   try {
     const snap = await getDoc(doc(db, 'settings', 'ai_config'));
-    if (snap.exists() && snap.data().geminiApiKey) {
-      _cachedKey = snap.data().geminiApiKey as string;
+    if (snap.exists() && snap.data().anthropicApiKey) {
+      _cachedKey = snap.data().anthropicApiKey as string;
       return _cachedKey;
     }
   } catch { /* ignore */ }
@@ -30,48 +40,59 @@ export async function getGeminiKey(): Promise<string | null> {
   return null;
 }
 
-// ─── Low-level calls ──────────────────────────────────────────────────────────
+// Keep backward compat alias
+export const getGeminiKey = getAIKey;
 
-export async function callGemini(
+// ─── Low-level Claude calls ───────────────────────────────────────────────────
+
+export async function callClaude(
   prompt: string,
-  options: { model?: string; systemInstruction?: string } = {}
+  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
 ): Promise<string> {
-  const apiKey = await getGeminiKey();
-  if (!apiKey) throw new Error('Gemini API key non configurata');
+  const apiKey = await getAIKey();
+  if (!apiKey) throw new Error('Anthropic API key non configurata');
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-2.0-flash-lite',
-    systemInstruction: options.systemInstruction 
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+  const message = await client.messages.create({
+    model: options.model || CLAUDE_MODEL,
+    max_tokens: options.maxTokens || 1024,
+    system: options.systemInstruction,
+    messages: [{ role: 'user', content: prompt }],
   });
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const block = message.content[0];
+  return block.type === 'text' ? block.text : '';
 }
 
-export async function callGeminiChat(
+export async function callClaudeChat(
   messages: Array<{ role: 'user' | 'model'; text: string }>,
-  options: { model?: string; systemInstruction?: string } = {}
+  options: { model?: string; systemInstruction?: string; maxTokens?: number } = {}
 ): Promise<string> {
-  const apiKey = await getGeminiKey();
-  if (!apiKey) throw new Error('Gemini API key non configurata');
+  const apiKey = await getAIKey();
+  if (!apiKey) throw new Error('Anthropic API key non configurata');
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ 
-    model: options.model || 'gemini-2.0-flash-lite',
-    systemInstruction: options.systemInstruction 
+  const client = new Anthropic({ apiKey, dangerouslyAllowBrowser: true });
+
+  const anthropicMessages = messages.map(m => ({
+    role: m.role === 'model' ? ('assistant' as const) : ('user' as const),
+    content: m.text,
+  }));
+
+  const message = await client.messages.create({
+    model: options.model || CLAUDE_MODEL,
+    max_tokens: options.maxTokens || 1024,
+    system: options.systemInstruction,
+    messages: anthropicMessages,
   });
 
-  const chat = model.startChat({
-    history: messages.slice(0, -1).map(m => ({ 
-      role: m.role === 'user' ? 'user' : 'model', 
-      parts: [{ text: m.text }] 
-    }))
-  });
-
-  const result = await chat.sendMessage(messages[messages.length - 1].text);
-  return result.response.text();
+  const block = message.content[0];
+  return block.type === 'text' ? block.text : '';
 }
+
+// Keep backward compat aliases
+export const callGemini = callClaude;
+export const callGeminiChat = callClaudeChat;
 
 // ─── SEO content generation ───────────────────────────────────────────────────
 
@@ -116,13 +137,12 @@ Rispondi ESCLUSIVAMENTE in JSON con questa struttura:
   ${includeFaq ? '"faq": [{"q": "domanda 1", "a": "risposta 1"}, {"q": "domanda 2", "a": "risposta 2"}, {"q": "domanda 3", "a": "risposta 3"}]' : '"faq": []'}
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
+  const raw = await callClaude(prompt, { maxTokens: 2048 });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
     return JSON.parse(cleaned) as SEOResult;
   } catch {
-    // Fallback if JSON parse fails
     return {
       seoTitle: product.name.slice(0, 60),
       metaDescription: `Acquista ${product.name} da Officina del Suono. Spedizione gratuita e garanzia 24 mesi.`,
@@ -179,7 +199,7 @@ Genera una sintesi delle recensioni in italiano. Rispondi ESCLUSIVAMENTE in JSON
   "disclaimer": "Sintesi generata da AI basata su ${reviews.length} recensioni verificate"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
+  const raw = await callClaude(prompt, { maxTokens: 1024 });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
@@ -248,14 +268,14 @@ Rispondi ESCLUSIVAMENTE in JSON:
   "bodyText": "versione testo puro senza HTML — max 500 parole"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
+  const raw = await callClaude(prompt, { maxTokens: 2048 });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {
     return JSON.parse(cleaned) as EmailContentResult;
   } catch {
     return {
-      subject: `Novità da Officina del Suono 🎛️`,
+      subject: `Novità da Officina del Suono`,
       preheader: 'Scopri le ultime novità per il tuo setup DJ',
       bodyHtml: raw.slice(0, 2000),
       bodyText: raw.replace(/<[^>]+>/g, '').slice(0, 1500),
@@ -313,7 +333,7 @@ Rispondi ESCLUSIVAMENTE in JSON:
   "productId": "ID del prodotto dal catalogo se disponibile, altrimenti null"
 }`;
 
-  const raw = await callGemini(prompt, { model: 'gemini-2.0-flash-lite' });
+  const raw = await callClaude(prompt, { maxTokens: 1024 });
   const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
 
   try {

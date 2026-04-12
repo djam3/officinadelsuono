@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { ShoppingCart, Plus, X, Search, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCartStore } from '../store/cartStore';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { callClaude } from '../services/aiService';
 import { getDirectDriveUrl } from '../utils/drive';
 import { Product as ProductType } from '../types/admin';
 
@@ -48,24 +48,14 @@ export function Compare({ onNavigate, initialProducts = [], showToast, triggerFl
 
       setIsAiLoading(true);
       try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-          setAiAdvice("Configura la chiave API di Gemini per ricevere consigli personalizzati.");
-          setIsAiLoading(false);
-          return;
-        }
-
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
-        
         const prompt = `Sei un esperto di attrezzature audio (DJ, PA, studio).
 Sto confrontando questi prodotti:
 ${selectedProducts.map(p => `- ${p.name} (${p.category}): €${p.price}`).join('\n')}
 
 Dammi un breve consiglio (massimo 3-4 frasi) su quale scegliere in base alle esigenze comuni (es. budget, professionalità, portabilità). Sii diretto e utile, senza formattazioni complesse.`;
 
-        const result = await model.generateContent(prompt);
-        setAiAdvice(result.response.text());
+        const advice = await callClaude(prompt, { maxTokens: 512 });
+        setAiAdvice(advice);
       } catch (error) {
         console.error("Errore Gemini:", error);
         setAiAdvice("Non è stato possibile generare un consiglio al momento.");
