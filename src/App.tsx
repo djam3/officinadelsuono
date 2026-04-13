@@ -40,7 +40,7 @@ function pathToPage(pathname: string): { page: string; id?: string } {
   if (pathname.startsWith('/prodotto/')) return { page: 'product', id: pathname.replace('/prodotto/', '') };
   if (pathname.startsWith('/blog/')) return { page: 'blog-post', id: pathname.replace('/blog/', '') };
   const found = Object.entries(PAGE_TO_PATH).find(([, p]) => p === pathname);
-  return found ? { page: found[0] } : { page: 'home' };
+  return found ? { page: found[0] } : { page: '404' };
 }
 
 // Install global error logger once at module load
@@ -70,6 +70,7 @@ const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Pro
 const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })));
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
+const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -311,6 +312,7 @@ export default function App() {
               {currentPage === 'terms' && <Terms />}
               {currentPage === 'privacy' && <Privacy />}
               {currentPage === 'cookie-policy' && <CookiePolicy />}
+              {currentPage === '404' && <NotFound onNavigate={handleNavigate} />}
             </motion.div>
           </AnimatePresence>
         </Suspense>
@@ -318,7 +320,7 @@ export default function App() {
 
       {!isAdminPage && <Footer onNavigate={handleNavigate} />}
       {!isAdminPage && <Chatbot />}
-      {!isAdminPage && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onNavigate={handleNavigate} />}
+      {!isAdminPage && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onNavigate={handleNavigate} showToast={showToast} />}
       {!isAdminPage && <CookieBanner onNavigate={handleNavigate} />}
       </div>
     </BuilderProvider>

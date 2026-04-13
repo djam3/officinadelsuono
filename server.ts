@@ -233,6 +233,14 @@ async function startServer() {
         </table>
       </td>
     </tr>
+    <tr>
+      <td align="center" style="padding:20px 16px 40px;">
+        <p style="color:#52525b;font-size:11px;margin:0;">
+          Ricevi questa email perché ti sei iscritto alla newsletter di Officina del Suono.<br/>
+          <a href="mailto:info@officina-del-suono.it?subject=Cancellazione%20Newsletter" style="color:#F27D26;text-decoration:underline;">Cancella iscrizione</a>
+        </p>
+      </td>
+    </tr>
   </table>
 </body>
 </html>`
@@ -277,6 +285,11 @@ async function startServer() {
             <div style="margin-top: 30px;">
               <a href="${postUrl}" style="background-color: #F27D26; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Leggi l'articolo completo</a>
             </div>
+            <hr style="border:none;border-top:1px solid #333;margin:30px 0 15px;" />
+            <p style="color:#666;font-size:11px;text-align:center;">
+              Ricevi questa email perché ti sei iscritto alla newsletter di Officina del Suono.<br/>
+              <a href="mailto:info@officina-del-suono.it?subject=Cancellazione%20Newsletter" style="color:#F27D26;">Cancella iscrizione</a>
+            </p>
           </div>
         `
       });
@@ -544,7 +557,8 @@ async function startServer() {
       };
 
       // Save lead to Firestore
-      await getFirestore().collection('leads').add(leadData);
+      const leadRef = await getFirestore().collection('leads').add(leadData);
+      const ticketId = `TKT-${leadRef.id.slice(-6).toUpperCase()}`;
 
       // Send notification email to Amerigo
       if (process.env.RESEND_API_KEY) {
@@ -575,7 +589,7 @@ async function startServer() {
         console.log(`[Contact Form] New lead: ${name} (${email}) - ${message.slice(0, 100)}`);
       }
 
-      res.json({ success: true });
+      res.json({ success: true, ticketId });
     } catch (error: any) {
       console.error("Contact Form Error:", error);
       res.status(500).json({ error: "Errore durante l'invio. Riprova più tardi." });

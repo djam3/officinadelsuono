@@ -64,7 +64,7 @@ export function Terms() {
             <section>
               <h2 className="text-2xl font-bold text-brand-orange mb-3">5. Spedizioni e consegna</h2>
               <p className="text-zinc-300 leading-relaxed">
-                Le spedizioni sono effettuate tramite corrieri espressi specializzati, con consegna stimata in <strong className="text-white">2-5 giorni lavorativi</strong> per il territorio italiano. Tutti i pacchi sono coperti da <strong className="text-white">assicurazione integrale</strong> contro danni e smarrimenti. In caso di pacco visibilmente danneggiato all'arrivo, il cliente è tenuto a firmare con la dicitura <em className="text-white">"Accetto con riserva di controllo"</em> e a contattarci entro 24 ore.
+                Le spedizioni sono effettuate tramite corrieri espressi specializzati (BRT / GLS), con consegna stimata in <strong className="text-white">24-48 ore lavorative</strong> per il territorio italiano. Tutti i pacchi sono coperti da <strong className="text-white">assicurazione integrale</strong> contro danni e smarrimenti. In caso di pacco visibilmente danneggiato all'arrivo, il cliente è tenuto a firmare con la dicitura <em className="text-white">"Accetto con riserva di controllo"</em> e a contattarci entro 24 ore.
               </p>
             </section>
 

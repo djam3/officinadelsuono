@@ -77,6 +77,7 @@ export function Contact() {
   });
   const [formStatus, setFormStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
   const [formError, setFormError] = useState('');
+  const [ticketId, setTicketId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +110,8 @@ export function Contact() {
         throw new Error(data.error || 'Errore durante l\'invio.');
       }
 
+      const data = await res.json();
+      setTicketId(data.ticketId || null);
       setFormStatus('success');
       setFormData({ name: '', email: '', message: '', budget: '', usage: '' });
       trackEvent('form_submit', { form: 'contact' });
@@ -148,7 +151,10 @@ export function Contact() {
                     <Send className="w-8 h-8 text-green-500" />
                   </div>
                   <h3 className="text-xl font-bold mb-2">Messaggio inviato!</h3>
-                  <p className="text-zinc-400">Ti risponderemo entro 24 ore.</p>
+                  {ticketId && (
+                    <p className="text-brand-orange font-mono font-bold mb-2">Ticket: {ticketId}</p>
+                  )}
+                  <p className="text-zinc-400">Ti risponderemo entro 24 ore. Conserva il numero di ticket per riferimento.</p>
                   <button
                     onClick={() => setFormStatus('idle')}
                     className="mt-6 text-brand-orange font-bold hover:text-white transition-colors"
