@@ -27,7 +27,7 @@ interface ShopProps {
 export function Shop({ onNavigate, compareList, toggleCompare, showToast, triggerFlyToCart }: ShopProps) {
   useSEO({
     title: 'Shop — Attrezzatura DJ & Audio Pro selezionata da un esperto',
-    description: 'Controller DJ, mixer, casse PA e cuffie pro: ogni prodotto è selezionato e testato da un sound engineer certificato. Spedizione gratuita sopra 199€.',
+    description: 'Controller DJ, mixer, casse PA e cuffie pro: ogni prodotto è selezionato e testato da un DJ certificato MAT Academy. Spedizione gratuita sopra 199€.',
     url: '/shop',
   });
 

@@ -43,7 +43,7 @@ export function Footer({ onNavigate }: FooterProps) {
               </span>
             </div>
             <p className="text-zinc-400 max-w-sm mb-6">
-              Setup DJ e audio professionale, configurati da un sound engineer certificato MAT Academy. Non un catalogo: una selezione curata con consulenza gratuita inclusa.
+              Setup DJ e audio professionale, configurati da un DJ certificato MAT Academy. Non un catalogo: una selezione curata con consulenza gratuita inclusa.
             </p>
           </div>
           

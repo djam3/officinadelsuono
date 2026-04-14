@@ -431,7 +431,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
               ) : (
                 <div className="text-zinc-400 italic flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-brand-orange" />
-                  Specifiche in fase di analisi da parte dei nostri Sound Engineer.
+                  Specifiche in fase di analisi da parte dei nostri esperti.
                 </div>
               )}
             </div>

@@ -20,7 +20,7 @@ interface HomeProps {
 export function Home({ onNavigate }: HomeProps) {
   useSEO({
     title: 'Officina del Suono — Setup DJ & Audio Pro configurati da un esperto certificato',
-    description: 'Setup DJ e audio professionale configurati da un sound engineer certificato MAT Academy. Consulenza gratuita, spedizione assicurata sopra 199€ e garanzia italiana 24 mesi.',
+    description: 'Setup DJ e audio professionale configurati da un DJ certificato MAT Academy. Consulenza gratuita, spedizione assicurata sopra 199€ e garanzia italiana 24 mesi.',
     url: '/',
   });
 
@@ -80,7 +80,7 @@ export function Home({ onNavigate }: HomeProps) {
             <ShieldCheck className="w-5 h-5 shrink-0" />
             <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4 brightness-0 invert opacity-80" />
             <span className="text-xs md:text-sm font-black tracking-[0.2em] uppercase">
-              Sound Engineer certificato
+              DJ Certificato
             </span>
           </motion.div>
 
