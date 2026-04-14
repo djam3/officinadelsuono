@@ -78,8 +78,9 @@ export function Home({ onNavigate }: HomeProps) {
             className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-10"
           >
             <ShieldCheck className="w-5 h-5 shrink-0" />
+            <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4 opacity-90" />
             <span className="text-xs md:text-sm font-black tracking-[0.2em] uppercase">
-              Sound Engineer certificato MAT Academy
+              Sound Engineer certificato
             </span>
           </motion.div>
 
@@ -139,9 +140,8 @@ export function Home({ onNavigate }: HomeProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
             {[
-              { value: 'MAT', label: 'Certificazione Academy' },
               { value: '15 min', label: 'Consulenza gratuita' },
-              { value: '199\u20AC+', label: 'Spedizione gratuita' },
+              { value: '199€+', label: 'Spedizione gratuita' },
               { value: 'Diretto', label: 'Supporto su WhatsApp' },
             ].map((stat, i) => (
               <motion.div
@@ -149,13 +149,23 @@ export function Home({ onNavigate }: HomeProps) {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
+                transition={{ duration: 0.5, delay: (i + 1) * 0.1 }}
                 className="text-center"
               >
                 <p className="text-3xl md:text-4xl font-black text-brand-orange tracking-tighter">{stat.value}</p>
                 <p className="text-xs text-zinc-500 uppercase tracking-[0.15em] font-bold mt-1">{stat.label}</p>
               </motion.div>
             ))}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0 }}
+              className="text-center flex flex-col items-center gap-1"
+            >
+              <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-9 opacity-90" />
+              <p className="text-xs text-zinc-500 uppercase tracking-[0.15em] font-bold">Pro DJ Full Course</p>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -184,7 +194,7 @@ export function Home({ onNavigate }: HomeProps) {
               {
                 icon: Award,
                 title: "Competenza reale, non marketing",
-                body: "Amerigo è un sound engineer certificato MAT Academy. Ogni consiglio che ricevi si basa su ore di test, non su una scheda prodotto copiata dal distributore.",
+                body: "Amerigo ha completato il Pro DJ Full Course di MAT Academy — l'accademia DJ online di riferimento in Italia con oltre 10.000 studenti certificati. Ogni consiglio si basa su formazione reale, non su schede copiate.",
                 delay: 0
               },
               {
@@ -255,8 +265,7 @@ export function Home({ onNavigate }: HomeProps) {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: 0.8, ease: "backOut" }}
                 >
-                  <Award className="w-4 h-4 text-brand-orange" />
-                  <span className="text-xs font-black text-brand-orange uppercase tracking-wider">MAT Certified</span>
+                  <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4" />
                 </motion.div>
               </div>
             </motion.div>
@@ -276,14 +285,14 @@ export function Home({ onNavigate }: HomeProps) {
                 Un esperto, non un <span className="text-brand-orange">catalogo</span>.
               </h2>
               <p className="text-zinc-400 text-lg leading-relaxed mb-6">
-                Amerigo De Cristofaro è un sound engineer certificato MAT Academy. Non ha fondato Officina del Suono per riempire un catalogo, ma per offrire competenza reale a chi cerca attrezzatura che funziona davvero.
+                Amerigo De Cristofaro ha completato il <strong className="text-white">Pro DJ Full Course</strong> di MAT Academy — l'accademia DJ online di riferimento in Italia, fondata nel 2017, con oltre 10.000 studenti in 140 paesi. Ha fondato Officina del Suono per offrire competenza reale, non un catalogo.
               </p>
               <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic mb-8">
                 "Ogni setup che propongo l'ho testato sul campo. Non vendo nulla che non consiglierei a un amico."
               </p>
               <div className="space-y-3">
                 {[
-                  "Certificazione MAT Academy (Pro DJ Full Course)",
+                  "Pro DJ Full Course — MAT Academy (certificazione ID: 176913)",
                   "Consulenza gratuita 1-to-1 su WhatsApp",
                   "Selezione maniacale dei prodotti"
                 ].map((item, i) => (

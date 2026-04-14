@@ -153,11 +153,11 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
               La formazione è la tua <span className="text-brand-orange">garanzia</span>.
             </h2>
             <p className="text-lg text-zinc-400 leading-relaxed mb-8">
-              La certificazione <strong className="text-white">MAT Academy</strong> è il "bollino di qualità" che assicura che ogni consiglio tecnico, ogni configurazione e ogni setup sia progettato secondo i più alti standard dell'industria Pro-Audio.
+              <strong className="text-white">MAT Academy</strong> è l'accademia DJ e music production online di riferimento in Italia, fondata nel 2017 da Alex Tripi e Nello Greco (The ReLoud). Con oltre 10.000 studenti in 140 paesi, le sue certificazioni sono riconosciute nell'industria Pro-Audio.
             </p>
             <div className="space-y-3">
               {[
-                "Pro DJ Academy — Full Course completato",
+                "Pro DJ Full Course completato (ID verificato: 176913)",
                 "Setup progettati con metodo ingegneristico",
                 "Consulenza basata su test reali, non marketing"
               ].map((item, i) => (
@@ -184,13 +184,8 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
 
               <div className="relative z-10">
                 <div className="text-center mb-10">
-                  <div className="inline-flex items-center justify-center gap-3 mb-6">
-                    <div className="flex gap-1.5">
-                      <div className="w-2 h-8 bg-[#E6007E] transform -skew-x-12"></div>
-                      <div className="w-2 h-10 bg-[#E6007E] transform -skew-x-12 -translate-y-1"></div>
-                      <div className="w-2 h-8 bg-brand-orange transform -skew-x-12"></div>
-                    </div>
-                    <span className="text-2xl font-black tracking-[0.2em] text-white">MAT ACADEMY</span>
+                  <div className="inline-flex items-center justify-center mb-6">
+                    <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-14 opacity-95" />
                   </div>
                   <div className="flex items-center justify-center gap-4 mb-2">
                     <div className="h-[1px] w-8 bg-zinc-800"></div>

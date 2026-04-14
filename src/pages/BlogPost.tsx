@@ -466,13 +466,12 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2 mb-2">
                     <h4 className="text-lg font-black text-white">{post.author}</h4>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-brand-orange/10 border border-brand-orange/20">
-                      <Award className="w-3 h-3 text-brand-orange" />
-                      <span className="text-[10px] font-bold text-brand-orange uppercase tracking-wider">MAT Certified</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/5 border border-white/10">
+                      <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-3.5 opacity-80" />
                     </span>
                   </div>
                   <p className="text-zinc-400 text-sm leading-relaxed mb-4">
-                    DJ certificato MAT Academy e fondatore di Officinadelsuono. Testo ogni prodotto sul campo prima di consigliarlo — nessun algoritmo, solo esperienza reale.
+                    Fondatore di Officina del Suono, certificato <strong className="text-white">Pro DJ Full Course</strong> da MAT Academy (l'accademia DJ online di riferimento in Italia). Ogni prodotto che consiglio è stato testato sul campo — nessun algoritmo, solo esperienza reale.
                   </p>
                   <a
                     href="https://wa.me/393477397016"
@@ -497,7 +496,7 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
                   <img src="/amerigo_hero.png" alt={post.author} className="w-11 h-11 rounded-xl object-cover ring-2 ring-brand-orange/30" />
                   <div>
                     <p className="font-black text-white text-sm leading-tight">{post.author}</p>
-                    <p className="text-zinc-500 text-xs">Esperto Certificato MAT Academy</p>
+                    <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-3.5 opacity-70 mt-0.5" />
                   </div>
                 </div>
                 <a
