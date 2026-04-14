@@ -285,16 +285,16 @@ export function Home({ onNavigate }: HomeProps) {
                 Un esperto, non un <span className="text-brand-orange">catalogo</span>.
               </h2>
               <p className="text-zinc-400 text-lg leading-relaxed mb-6">
-                Amerigo De Cristofaro ha completato il <strong className="text-white">Pro DJ Full Course</strong> di MAT Academy — l'accademia DJ online di riferimento in Italia, fondata nel 2017, con oltre 10.000 studenti in 140 paesi. Ha fondato Officina del Suono per offrire competenza reale, non un catalogo.
+                Amerigo ha completato il <strong className="text-white">Pro DJ Full Course</strong> di MAT Academy: 23 capitoli, 246 lezioni e 30+ ore su beatmatching, mix in chiave, setup Pioneer, costruzione set e gestione della carriera. Tutta questa formazione entra in ogni consiglio che trovi qui.
               </p>
               <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic mb-8">
                 "Ogni setup che propongo l'ho testato sul campo. Non vendo nulla che non consiglierei a un amico."
               </p>
               <div className="space-y-3">
                 {[
-                  "Pro DJ Full Course — MAT Academy (certificazione ID: 176913)",
-                  "Consulenza gratuita 1-to-1 su WhatsApp",
-                  "Selezione maniacale dei prodotti"
+                  "Beatmatching, mix in chiave, effetti e costruzione set",
+                  "Setup Pioneer CDJ, DDJ, controller e mixer",
+                  "Consulenza gratuita 1-to-1 su WhatsApp"
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-brand-orange shrink-0" />
