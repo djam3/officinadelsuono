@@ -78,7 +78,7 @@ export function Home({ onNavigate }: HomeProps) {
             className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-10"
           >
             <ShieldCheck className="w-5 h-5 shrink-0" />
-            <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4 opacity-90" />
+            <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4 brightness-0 invert opacity-80" />
             <span className="text-xs md:text-sm font-black tracking-[0.2em] uppercase">
               Sound Engineer certificato
             </span>
@@ -163,7 +163,7 @@ export function Home({ onNavigate }: HomeProps) {
               transition={{ duration: 0.5, delay: 0 }}
               className="text-center flex flex-col items-center gap-1"
             >
-              <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-9 opacity-90" />
+              <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-9 brightness-0 invert opacity-80" />
               <p className="text-xs text-zinc-500 uppercase tracking-[0.15em] font-bold">Pro DJ Full Course</p>
             </motion.div>
           </div>
@@ -265,7 +265,7 @@ export function Home({ onNavigate }: HomeProps) {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: 0.8, ease: "backOut" }}
                 >
-                  <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4" />
+                  <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-4 brightness-0 invert opacity-75" />
                 </motion.div>
               </div>
             </motion.div>
