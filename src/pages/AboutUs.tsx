@@ -152,14 +152,20 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
               La formazione è la tua <span className="text-brand-orange">garanzia</span>.
             </h2>
-            <p className="text-lg text-zinc-400 leading-relaxed mb-8">
-              <strong className="text-white">MAT Academy</strong> è l'accademia DJ e music production online di riferimento in Italia, fondata nel 2017 da Alex Tripi e Nello Greco (The ReLoud). Con oltre 10.000 studenti in 140 paesi, le sue certificazioni sono riconosciute nell'industria Pro-Audio.
+            <p className="text-lg text-zinc-400 leading-relaxed mb-4">
+              <strong className="text-white">MAT Academy</strong> è l'accademia DJ online di riferimento in Italia, fondata da Alex Tripi e Nello Greco (The ReLoud). Il <strong className="text-white">Pro DJ Full Course</strong> — 23 capitoli, 246 lezioni, 30+ ore — copre l'intero percorso professionale: dalla tecnica alla carriera.
+            </p>
+            <p className="text-sm text-zinc-500 leading-relaxed mb-8">
+              Mentori del corso: Pete Tong, Carl Cox, Adam Beyer, Jamie Jones e altri artisti internazionali.
             </p>
             <div className="space-y-3">
               {[
-                "Pro DJ Full Course completato (ID verificato: 176913)",
-                "Setup progettati con metodo ingegneristico",
-                "Consulenza basata su test reali, non marketing"
+                "Beatmatching, phrasing e transizioni professionali",
+                "Mixaggio avanzato: filtri, effetti, loop, hot cue e mix in chiave",
+                "Setup Pioneer CDJ, DDJ, controller e mixer — configurazione e ottimizzazione",
+                "Costruzione set per club, festival ed eventi — lettura del pubblico",
+                "Organizzazione record box e ricerca tracce (Beatport Streaming)",
+                "Aspetti professionali: carriera, social media, networking"
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-5 h-5 text-brand-orange shrink-0" />
