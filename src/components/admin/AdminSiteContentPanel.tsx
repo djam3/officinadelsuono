@@ -7,12 +7,12 @@ import { SiteContent } from '../../types/admin';
 
 export function AdminSiteContentPanel() {
   const [siteContent, setSiteContent] = useState<SiteContent>({
-    hero_badge: 'Sound Engineer Certificato MAT Academy',
+    hero_badge: 'DJ Certificato MAT Academy',
     hero_title: 'Massimo SPL. Zero Distorsione.',
     hero_subtitle: 'Setup Ingegnerizzati.',
     hero_body: 'Smetti di sprecare budget in attrezzatura sbilanciata. Progettiamo catene audio su misura per DJ, club ed eventi che esigono qualità acustica assoluta e performance reale.',
     hero_cta1: "Accedi all'Arsenale Pro-Audio",
-    hero_cta2: 'Parla con un Sound Engineer',
+    hero_cta2: 'Parla con un DJ Pro',
     features_title: "Oltre il manuale d'istruzioni.",
     features_subtitle: 'I grandi store ti spediscono scatole. Noi ti garantiamo una performance acustica impeccabile.',
     feat1_title: 'Ingegneria, non logistica.',

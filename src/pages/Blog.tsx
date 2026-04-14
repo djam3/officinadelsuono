@@ -484,7 +484,7 @@ export const MOCK_POSTS = [
 export function Blog({ onNavigate, showToast }: BlogProps) {
   useSEO({
     title: 'Blog — Guide tecniche e consigli per DJ e audio professionale',
-    description: 'Guide all\'acquisto, confronti tecnici e consigli pratici per DJ e sound engineer. Contenuti scritti da un esperto certificato MAT Academy.',
+    description: 'Guide all\'acquisto, confronti tecnici e consigli pratici scritti da un DJ certificato MAT Academy. Contenuti basati su esperienza reale, non algoritmi.',
     url: '/blog',
   });
 
@@ -598,7 +598,7 @@ export function Blog({ onNavigate, showToast }: BlogProps) {
               Officina del <span className="text-brand-orange">Suono</span> Blog
             </h1>
             <p className="text-xl text-zinc-400 max-w-2xl">
-              Guide tecniche, confronti e consigli pratici scritti da un sound engineer certificato — non da un copywriter. Qui trovi solo contenuti basati su esperienza reale.
+              Guide tecniche, confronti e consigli pratici scritti da un DJ certificato MAT Academy — non da un copywriter. Qui trovi solo contenuti basati su esperienza reale.
             </p>
           </div>
           {isAdmin && (

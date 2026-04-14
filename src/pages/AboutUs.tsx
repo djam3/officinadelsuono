@@ -13,7 +13,7 @@ interface AboutUsProps {
 export function AboutUs({ onNavigate }: AboutUsProps) {
   useSEO({
     title: 'Chi Siamo — La storia di Officina del Suono e di Amerigo De Cristofaro',
-    description: 'Amerigo De Cristofaro, sound engineer certificato MAT Academy, ha fondato Officina del Suono per offrire competenza reale, non solo un catalogo. Scopri la nostra storia.',
+    description: 'Amerigo De Cristofaro, DJ certificato MAT Academy, ha fondato Officina del Suono per offrire competenza reale, non solo un catalogo. Scopri la nostra storia.',
     url: '/chi-siamo',
   });
 
@@ -58,7 +58,7 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
                 Officina del Suono nasce dall'idea che chi compra attrezzatura audio meriti di più di un catalogo infinito e una scheda tecnica copiata.
               </p>
               <p>
-                <strong className="text-white">Amerigo De Cristofaro</strong>, sound engineer certificato MAT Academy, ha fondato questo progetto con una missione precisa: offrire competenza reale, selezione curata e supporto diretto a chi cerca un setup che funziona davvero.
+                <strong className="text-white">Amerigo De Cristofaro</strong>, DJ certificato MAT Academy, ha fondato questo progetto con una missione precisa: offrire competenza reale, selezione curata e supporto diretto a chi cerca un setup che funziona davvero.
               </p>
               <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
                 "Non ho aperto un e-commerce per riempire un catalogo. L'ho fatto perché quando cercavo attrezzatura trovavo tutto tranne risposte chiare."
@@ -82,7 +82,7 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
               />
               <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/60 to-transparent">
                 <p className="text-white font-bold text-xl">Amerigo De Cristofaro</p>
-                <p className="text-zinc-400 text-sm">Founder & Sound Engineer certificato MAT Academy</p>
+                <p className="text-zinc-400 text-sm">Founder & DJ certificato MAT Academy</p>
               </div>
             </div>
           </motion.div>
