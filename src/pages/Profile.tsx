@@ -235,7 +235,7 @@ export function Profile({ onNavigate }: ProfileProps) {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingPhoto}
-                className="absolute bottom-0 right-0 w-10 h-10 bg-brand-orange hover:bg-orange-500 rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
+                className="absolute bottom-0 right-0 w-10 h-10 bg-brand-orange hover:bg-orange-600 rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
                 title="Cambia immagine"
               >
                 {uploadingPhoto ? (

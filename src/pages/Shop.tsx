@@ -59,17 +59,6 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
         prods.push({ id: doc.id, ...doc.data() } as Product);
       });
 
-      // Add hardcoded product if not already present
-      if (!prods.find(p => p.id === 'bundle-start-dj-pro')) {
-        prods.push({
-          id: 'bundle-start-dj-pro',
-          name: "Bundle Start DJ Pro",
-          category: "Kit Pronti",
-          price: 1749.00,
-          image: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop",
-          badge: "Best Seller"
-        });
-      }
       setProducts(prods);
       setLoading(false);
     }, (error) => {
@@ -266,12 +255,22 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                   const categoryData = CATEGORIES_DATA.find(c => c.label === cat);
                   const Icon = categoryData ? categoryData.icon : LayoutGrid;
                   return (
-                    <button 
+                    <button
                       key={idx}
-                      onClick={() => setActiveCategory(cat)}
+                      aria-label={`Filtra per ${cat}`}
+                      aria-pressed={activeCategory === cat}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        // Su mobile scrolla ai prodotti dopo la selezione
+                        if (window.innerWidth < 1024) {
+                          setTimeout(() => {
+                            document.getElementById('product-grid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }, 100);
+                        }
+                      }}
                       className={`flex items-center justify-between px-4 py-2.5 lg:py-3 rounded-xl text-xs md:text-sm font-medium transition-all group whitespace-nowrap lg:whitespace-normal ${
-                        activeCategory === cat 
-                          ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20' 
+                        activeCategory === cat
+                          ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20'
                           : 'bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/10'
                       }`}
                     >
@@ -337,7 +336,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                   </div>
                 )}
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
                     <div key={product.id} className="group bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-brand-orange/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 transition-all duration-300 flex flex-col">
                       <div 
@@ -404,21 +403,35 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                         <div className="mt-auto flex items-center justify-between pt-4 border-t border-white/10">
                           <span className="text-xl font-black">€ {product.price.toFixed(2)}</span>
                           <div className="flex items-center gap-2">
-                            <button 
-                              onClick={() => toggleCompare(product)}
-                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${compareList.find(p => p.id === product.id) ? 'bg-brand-orange text-white' : 'bg-white/5 hover:bg-brand-orange hover:text-white'}`}
-                              title="Confronta"
-                            >
-                              <Search className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={(e) => handleAddToCart(e, product)}
-                              disabled={product.stock === 0}
-                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${product.stock === 0 ? 'bg-zinc-800 text-zinc-600 cursor-not-allowed' : 'bg-white/5 hover:bg-brand-orange hover:text-white'}`}
-                              title={product.stock === 0 ? 'Prodotto esaurito' : 'Acquista Ora'}
-                            >
-                              <ShoppingCart className="w-5 h-5" />
-                            </button>
+                            {product.stock === 0 ? (
+                              <a
+                                href={`https://wa.me/393477397016?text=Ciao!%20Sono%20interessato%20a%20*${encodeURIComponent(product.name)}*%20ma%20risulta%20esaurito.%20Puoi%20avvisarmi%20quando%20torna%20disponibile%3F`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Notificami quando ${product.name} torna disponibile`}
+                                className="flex items-center gap-2 px-3 py-2 rounded-full bg-zinc-800 hover:bg-green-600/20 border border-zinc-700 hover:border-green-500/40 text-zinc-400 hover:text-green-400 transition-all text-xs font-bold"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                Notificami
+                              </a>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => toggleCompare(product)}
+                                  aria-label={`Confronta ${product.name}`}
+                                  className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${compareList.find(p => p.id === product.id) ? 'bg-brand-orange text-white' : 'bg-white/5 hover:bg-brand-orange hover:text-white'}`}
+                                >
+                                  <Search className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={(e) => handleAddToCart(e, product)}
+                                  aria-label={`Aggiungi ${product.name} al carrello`}
+                                  className="w-12 h-12 rounded-full flex items-center justify-center transition-colors bg-white/5 hover:bg-brand-orange hover:text-white"
+                                >
+                                  <ShoppingCart className="w-5 h-5" />
+                                </button>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>

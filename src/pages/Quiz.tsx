@@ -7,6 +7,7 @@ import { useAIFeatures } from '../contexts/AIFeaturesContext';
 import { generateQuizRecommendation } from '../services/aiService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
+import { trackEvent } from '../utils/analytics';
 
 interface QuizProps {
   onNavigate: (page: string, productId?: string) => void;
@@ -43,6 +44,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
 
   const handleNext = () => {
     if (step === 3) {
+      trackEvent('quiz_complete', { level, genre, environment, budget });
       setIsAnalyzing(true);
       setAiRecommendation(null);
       (async () => {
@@ -213,7 +215,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                   ].map((item) => (
                     <button
                       key={item.id}
-                      onClick={() => { setLevel(item.id as Level); setTimeout(handleNext, 300); }}
+                      onClick={() => { if (step === 0) trackEvent('quiz_start'); setLevel(item.id as Level); setTimeout(handleNext, 300); }}
                       className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-4 ${level === item.id ? 'border-brand-orange bg-brand-orange/10' : 'border-white/5 bg-zinc-900 hover:border-white/20 hover:bg-zinc-800'}`}
                     >
                       <div className={level === item.id ? 'text-brand-orange' : 'text-zinc-400'}>

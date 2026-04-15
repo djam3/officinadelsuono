@@ -3,8 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '../store/cartStore';
 import { useCartSync } from '../hooks/useCartSync';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
 import { CATEGORIES_DATA } from '../constants';
@@ -20,14 +21,23 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [adminEmails, setAdminEmails] = useState<string[]>(['officinadelsuono99@gmail.com']);
   const cartItems = useCartStore((state) => state.items);
   const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
-  const isAdmin = user?.email?.toLowerCase() === 'officinadelsuono99@gmail.com';
+  const isAdmin = user?.email ? adminEmails.includes(user.email.toLowerCase()) : false;
 
   const shopRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useCartSync();
+
+  useEffect(() => {
+    getDoc(doc(db, 'settings', 'admin')).then((snap) => {
+      if (snap.exists() && Array.isArray(snap.data().adminEmails)) {
+        setAdminEmails(snap.data().adminEmails.map((e: string) => e.toLowerCase()));
+      }
+    }).catch(() => { /* usa fallback hardcoded */ });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {

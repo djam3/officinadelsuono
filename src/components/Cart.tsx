@@ -161,6 +161,21 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
       return;
     }
 
+    // Ordine via WhatsApp: non chiamare l'API, aprire WhatsApp direttamente
+    if (paymentMethod === 'whatsapp') {
+      const righe = items.map(i => `• ${i.name} x${i.quantity} — €${(i.price * i.quantity).toFixed(2)}`).join('\n');
+      const scontoRiga = discountApplied
+        ? `\nSconto (${discountApplied.code}): -€${discountAmount.toFixed(2)}`
+        : '';
+      const spedizioneRiga = spedizione.costo > 0 ? `\nSpedizione: €${spedizione.costo.toFixed(2)}` : '\nSpedizione: GRATUITA';
+      const testo = `Ciao Amerigo! Vorrei ordinare:\n\n${righe}${scontoRiga}${spedizioneRiga}\n\nTOTALE: €${totaleFinale.toFixed(2)}\n\nNome: ${customer.name.trim()}\nEmail: ${customer.email.trim()}\nTelefono: ${customer.phone.trim()}\nIndirizzo: ${customer.address.trim()}, ${customer.cap.trim()} ${customer.city.trim()} (${customer.province.trim().toUpperCase()})`;
+      window.open(`https://wa.me/393477397016?text=${encodeURIComponent(testo)}`, '_blank', 'noopener,noreferrer');
+      setStep('success');
+      clearCart();
+      trackEvent('purchase', { value: totaleFinale, method: 'whatsapp' });
+      return;
+    }
+
     setIsCheckingOut(true);
     try {
       const response = await fetch('/api/create-manual-order', {
@@ -208,10 +223,8 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
   };
 
   const methodNames = {
-    card: 'Carta di Debito / Credito',
-    google_pay: 'Google Pay',
-    apple_pay: 'Apple Pay',
-    bank_transfer: 'Bonifico Bancario'
+    bank_transfer: 'Bonifico Bancario',
+    whatsapp: 'Ordine via WhatsApp'
   };
 
   const stepLabel = {
@@ -385,35 +398,51 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
 
                     {/* Discount code */}
                     <div className="pt-4 border-t border-white/5">
-                      <div className="flex gap-2">
-                        <div className="flex-1 relative">
-                          <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-                          <input
-                            type="text"
-                            value={discountCode}
-                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-                            placeholder="Codice sconto"
-                            className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-brand-orange/50"
-                          />
-                        </div>
-                        <button
-                          onClick={handleApplyDiscount}
-                          disabled={isCheckingDiscount || !discountCode.trim()}
-                          className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
-                        >
-                          {isCheckingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Applica'}
-                        </button>
-                      </div>
-                      {discountError && <p className="text-red-400 text-xs mt-2">{discountError}</p>}
-                      {discountApplied && (
-                        <div className="flex items-center justify-between mt-2 px-3 py-2 bg-green-500/10 border border-green-500/20 rounded-lg">
-                          <span className="text-green-400 text-xs font-bold">
-                            {discountApplied.code}: -{discountApplied.type === 'percent' ? `${discountApplied.value}%` : `€${discountApplied.value}`}
-                          </span>
-                          <button onClick={() => { setDiscountApplied(null); setDiscountCode(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
-                            <X className="w-3 h-3" />
+                      {discountApplied ? (
+                        <div className="flex items-center justify-between px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-xl">
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shrink-0">
+                              <Check className="w-3 h-3 text-white" />
+                            </div>
+                            <div>
+                              <span className="text-green-400 text-xs font-black uppercase tracking-wider">Codice applicato</span>
+                              <p className="text-green-300 text-[10px] mt-0.5">
+                                {discountApplied.code} — {discountApplied.type === 'percent' ? `${discountApplied.value}% di sconto` : `€${discountApplied.value} di sconto`}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => { setDiscountApplied(null); setDiscountCode(''); setDiscountError(''); }}
+                            aria-label="Rimuovi codice sconto"
+                            className="w-7 h-7 flex items-center justify-center rounded-full bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-all"
+                          >
+                            <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-2">
+                            <div className="flex-1 relative">
+                              <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                              <input
+                                type="text"
+                                value={discountCode}
+                                onChange={(e) => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError(''); }}
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleApplyDiscount(); }}
+                                placeholder="Codice sconto"
+                                className="w-full pl-10 pr-4 py-3 bg-zinc-900 border border-white/10 rounded-xl text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-brand-orange/50"
+                              />
+                            </div>
+                            <button
+                              onClick={handleApplyDiscount}
+                              disabled={isCheckingDiscount || !discountCode.trim()}
+                              className="px-5 py-3 bg-zinc-800 hover:bg-zinc-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-colors"
+                            >
+                              {isCheckingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Applica'}
+                            </button>
+                          </div>
+                          {discountError && <p className="text-red-400 text-xs mt-2">{discountError}</p>}
+                        </>
                       )}
                     </div>
 
@@ -461,14 +490,12 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
               {/* ── STEP: PAYMENT ── */}
               {step === 'payment' && (
                 <div className="space-y-5 pb-6">
-                  <p className="text-zinc-400 text-sm">Seleziona il metodo di pagamento preferito.</p>
+                  <p className="text-zinc-400 text-sm">Seleziona il metodo di pagamento preferito. Pagamento sicuro — riceverai le istruzioni complete via email.</p>
 
                   <div className="grid gap-3">
                     {[
-                      { id: 'card', name: 'Carta di Debito / Credito', icon: '💳', desc: 'Pagamento immediato e sicuro' },
-                      { id: 'google_pay', name: 'Google Pay', icon: '📱', desc: 'Pagamento rapido' },
-                      { id: 'apple_pay', name: 'Apple Pay', icon: '🍎', desc: 'Pagamento rapido' },
-                      { id: 'bank_transfer', name: 'Bonifico Bancario', icon: '🏦', desc: 'Elaborazione in 1-2 giorni lavorativi' },
+                      { id: 'bank_transfer', name: 'Bonifico Bancario', icon: '🏦', desc: 'Ricevi i dati bancari completi via email' },
+                      { id: 'whatsapp', name: 'Ordine via WhatsApp', icon: '💬', desc: 'Invia il tuo ordine su WhatsApp e finalizza con noi' },
                     ].map((method) => (
                       <button
                         key={method.id}
@@ -576,6 +603,13 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                     </div>
                   )}
 
+                  {paymentMethod === 'whatsapp' && (
+                    <div className="p-5 bg-green-900/20 rounded-2xl border border-green-500/20 mb-8 w-full text-left">
+                      <p className="text-xs text-green-400 mb-1 font-bold">Ordine inviato su WhatsApp!</p>
+                      <p className="text-xs text-zinc-400">Amerigo risponderà al tuo messaggio per confermare l'ordine e comunicarti le modalità di pagamento.</p>
+                    </div>
+                  )}
+
                   <div className="flex flex-col gap-3 w-full">
                     <button
                       onClick={() => { setStep('cart'); setCustomer(EMPTY_CUSTOMER); setAcceptedTerms(false); setPaymentMethod(null); setDiscountApplied(null); onClose(); }}
@@ -583,14 +617,6 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                     >
                       Torna al Sito
                     </button>
-                    <a
-                      href={`https://wa.me/393477397016?text=${encodeURIComponent(`Ciao Amerigo! Ho appena effettuato l'ordine ${orderId || ''}. Volevo confermare.`)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl text-xs font-black uppercase tracking-[0.3em] transition-all text-center"
-                    >
-                      Conferma su WhatsApp
-                    </a>
                   </div>
                 </div>
               )}
