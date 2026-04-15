@@ -190,8 +190,9 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
 
               <div className="relative z-10">
                 <div className="text-center mb-10">
-                  <div className="inline-flex items-center justify-center mb-6">
-                    <img src="/mat-academy-logo.png" alt="MAT Academy" className="h-14 brightness-0 invert opacity-90" />
+                  <div className="inline-flex flex-col items-center justify-center gap-0.5 mb-6">
+                    <span className="text-4xl font-black tracking-[0.2em] text-white">MAT</span>
+                    <span className="text-[11px] font-black tracking-[0.5em] text-brand-orange uppercase">Academy</span>
                   </div>
                   <div className="flex items-center justify-center gap-4 mb-2">
                     <div className="h-[1px] w-8 bg-zinc-800"></div>
