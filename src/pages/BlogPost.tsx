@@ -573,7 +573,7 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
                     <button
                       type="submit"
                       disabled={isSubmitting || !privacyConsent || !email}
-                      className="w-full py-2.5 bg-brand-orange hover:bg-orange-500 text-white font-black text-sm rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full py-2.5 bg-brand-orange hover:bg-orange-600 text-white font-black text-sm rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {isSubmitting ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Invio…</> : 'Iscriviti gratis'}
                     </button>

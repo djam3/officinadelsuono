@@ -59,17 +59,6 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
         prods.push({ id: doc.id, ...doc.data() } as Product);
       });
 
-      // Add hardcoded product if not already present
-      if (!prods.find(p => p.id === 'bundle-start-dj-pro')) {
-        prods.push({
-          id: 'bundle-start-dj-pro',
-          name: "Bundle Start DJ Pro",
-          category: "Kit Pronti",
-          price: 1749.00,
-          image: "https://images.unsplash.com/photo-1571266028243-3716f02d2d2e?q=80&w=2071&auto=format&fit=crop",
-          badge: "Best Seller"
-        });
-      }
       setProducts(prods);
       setLoading(false);
     }, (error) => {

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSEO } from '../hooks/useSEO';
 import { motion } from 'framer-motion';
 import { ArrowRight, Calendar, Clock, User, ChevronRight, Loader2, Edit2, Plus, Search } from 'lucide-react';
-import { collection, addDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -503,28 +503,36 @@ export function Blog({ onNavigate, showToast }: BlogProps) {
       setIsAdmin(user?.email === 'amerigodecristofaro8@gmail.com');
     });
 
-    const q = query(collection(db, 'blog_posts'), orderBy('date', 'desc'));
-    const unsubscribePosts = onSnapshot(q, (snapshot) => {
-      const postsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      if (postsData.length === 0) {
+    const loadPosts = async () => {
+      try {
+        const q = query(
+          collection(db, 'blog_posts'),
+          orderBy('publishedAt', 'desc'),
+          limit(50)
+        );
+        const snapshot = await getDocs(q);
+        const postsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        if (postsData.length === 0) {
+          setPosts(MOCK_POSTS);
+        } else {
+          setPosts(postsData);
+        }
+      } catch (error) {
+        console.error("Errore caricamento articoli blog:", error);
         setPosts(MOCK_POSTS);
-      } else {
-        setPosts(postsData);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching blog posts:", error);
-      setPosts(MOCK_POSTS);
-      setLoading(false);
-    });
+    };
+
+    loadPosts();
 
     return () => {
       unsubscribeAuth();
-      unsubscribePosts();
     };
   }, []);
   
