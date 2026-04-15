@@ -48,7 +48,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
       ? (product.metaDescription || `Acquista ${product.name} da Officina del Suono. ${product.description?.slice(0, 100) || ''}`)
       : 'Attrezzatura DJ e audio professionale selezionata da esperti.',
     url: productId ? `/prodotto/${productId}` : '/shop',
-    image: product?.image || undefined,
+    image: product ? (product.images?.[0] || product.image || undefined) : undefined,
   });
 
   const [loading, setLoading] = useState(true);
@@ -119,6 +119,59 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
     });
     return () => unsubscribe();
   }, [activeProductId]);
+
+  // FIX 1 — Schema.org Product JSON-LD
+  useEffect(() => {
+    if (!product) return;
+
+    const productImage = product.images?.[0] || product.image || '';
+    const isInStock = product.stock === undefined || product.stock > 0;
+    const avgRating = reviews.length > 0
+      ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
+      : null;
+
+    const jsonLd: Record<string, unknown> = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description || product.metaDescription || '',
+      image: productImage,
+      brand: {
+        '@type': 'Brand',
+        name: 'Officina del Suono',
+      },
+      offers: {
+        '@type': 'Offer',
+        price: product.price ?? 0,
+        priceCurrency: 'EUR',
+        availability: isInStock
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        url: `https://officinadelsuono-87986.web.app/prodotto/${product.id || productId}`,
+      },
+    };
+
+    if (avgRating !== null) {
+      jsonLd.aggregateRating = {
+        '@type': 'AggregateRating',
+        ratingValue: avgRating.toFixed(1),
+        reviewCount: reviews.length,
+        bestRating: 5,
+        worstRating: 1,
+      };
+    }
+
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'product-jsonld';
+    script.textContent = JSON.stringify(jsonLd);
+    document.head.appendChild(script);
+
+    return () => {
+      const existing = document.getElementById('product-jsonld');
+      if (existing) existing.remove();
+    };
+  }, [product, reviews, productId]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     const itemToAdd = product ? {
