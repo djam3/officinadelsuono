@@ -16,6 +16,7 @@ import { useAIFeatures } from '../contexts/AIFeaturesContext';
 import { generateReviewSummary } from '../services/aiService';
 import { Product as ProductType } from '../types/admin';
 import { useSEO } from '../hooks/useSEO';
+import { trackEvent } from '../utils/analytics';
 
 
 interface ProductProps {
@@ -87,7 +88,9 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
         const docRef = doc(db, 'products', productId);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-          setProduct({ id: docSnap.id, ...docSnap.data() } as ProductType);
+          const p = { id: docSnap.id, ...docSnap.data() } as ProductType;
+          setProduct(p);
+          trackEvent('product_view', { productId: p.id, name: p.name, price: p.price, category: p.category });
         } else {
           setProduct(null);
         }
