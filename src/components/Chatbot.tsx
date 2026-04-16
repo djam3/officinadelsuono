@@ -134,7 +134,7 @@ export function Chatbot() {
           initial={{ opacity: 0, x: 10 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 1.5, duration: 0.4 }}
-          className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 shadow-xl backdrop-blur-sm mr-1 group-hover:opacity-0 transition-opacity duration-300"
+          className="glass rounded-xl px-3 py-2 shadow-xl mr-1 group-hover:opacity-0 transition-opacity duration-300"
         >
           <p className="text-[11px] font-bold text-white whitespace-nowrap">Chiedimi qualcosa! 🎧</p>
           <p className="text-[9px] text-zinc-500 whitespace-nowrap">AI su prodotti e guide</p>
@@ -186,7 +186,7 @@ export function Chatbot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 w-[350px] sm:w-[410px] h-[540px] bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden"
+            className="fixed bottom-6 right-6 w-[350px] sm:w-[410px] h-[540px] glass-strong rounded-2xl shadow-2xl flex flex-col z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="p-4 bg-black border-b border-white/10 flex items-center justify-between shrink-0">
@@ -241,7 +241,7 @@ export function Chatbot() {
                     className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm ${
                       msg.role === 'user'
                         ? 'bg-brand-orange text-white rounded-br-sm'
-                        : 'bg-zinc-800 text-zinc-200 border border-white/5 rounded-bl-sm'
+                        : 'glass-subtle text-zinc-200 rounded-bl-sm'
                     }`}
                   >
                     <div className="space-y-0.5">{formatText(msg.text)}</div>
@@ -270,7 +270,7 @@ export function Chatbot() {
 
               {isLoading && (
                 <div className="flex justify-start">
-                  <div className="bg-zinc-800 border border-white/5 rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2">
+                  <div className="glass-subtle rounded-2xl rounded-bl-sm px-4 py-3 flex items-center gap-2">
                     <Loader2 className="w-4 h-4 text-brand-orange animate-spin" />
                     <span className="text-xs text-zinc-400">Ricerca nel catalogo...</span>
                   </div>
@@ -280,7 +280,7 @@ export function Chatbot() {
             </div>
 
             {/* Input */}
-            <div className="p-3 bg-black border-t border-white/10 shrink-0">
+            <div className="p-3 glass-subtle border-t border-white/10 shrink-0">
               <div className="flex items-center gap-2">
                 <input
                   type="text"

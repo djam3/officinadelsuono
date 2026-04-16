@@ -95,7 +95,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
                     transition={{ duration: 0.15 }}
                     role="menu"
-                    className="absolute top-full left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    className="glass-strong absolute top-full left-0 mt-2 w-64 rounded-2xl z-50 overflow-hidden"
                   >
                     <div className="p-3 flex flex-col gap-1">
                       <button
@@ -140,7 +140,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   aria-expanded={isUserMenuOpen}
                   aria-haspopup="true"
-                  className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2.5 rounded-full text-sm font-bold transition-all border border-white/10"
+                  className="glass flex items-center gap-2 text-white px-4 py-2.5 rounded-full text-sm font-bold transition-all"
                 >
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" referrerPolicy="no-referrer" />
@@ -159,7 +159,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                       exit={{ opacity: 0, scale: 0.95, y: -5 }}
                       transition={{ duration: 0.15 }}
                       role="menu"
-                      className="absolute right-0 mt-2 w-52 bg-zinc-900 border border-white/10 rounded-xl shadow-xl z-50"
+                      className="glass-strong absolute right-0 mt-2 w-52 rounded-xl z-50"
                     >
                       <div className="p-2">
                         <button
@@ -196,7 +196,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
             ) : (
               <button
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-2 bg-white/5 hover:bg-brand-orange text-white px-4 py-2.5 rounded-full text-sm font-bold transition-all border border-white/10 hover:border-brand-orange shadow-sm"
+                className="glass flex items-center gap-2 hover:bg-brand-orange/30 text-white px-4 py-2.5 rounded-full text-sm font-bold transition-all"
               >
                 <User className="w-4 h-4" />
                 <span className="hidden sm:block">Accedi</span>

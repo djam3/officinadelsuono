@@ -271,7 +271,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                       className={`flex items-center justify-between px-4 py-2.5 lg:py-3 rounded-xl text-xs md:text-sm font-medium transition-all group whitespace-nowrap lg:whitespace-normal ${
                         activeCategory === cat
                           ? 'bg-brand-orange text-white shadow-lg shadow-brand-orange/20'
-                          : 'bg-zinc-900/50 text-zinc-400 hover:text-white hover:bg-white/5 border border-white/5 hover:border-white/10'
+                          : 'glass-subtle text-zinc-400 hover:text-white hover:border-brand-orange/30'
                       }`}
                     >
                       <div className="flex items-center gap-2 md:gap-3">
@@ -293,7 +293,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="appearance-none bg-zinc-900 border border-white/10 text-zinc-300 text-sm font-medium rounded-lg px-4 py-2 pr-10 hover:border-brand-orange focus:outline-none focus:border-brand-orange transition-colors cursor-pointer"
+                  className="appearance-none glass text-zinc-300 text-sm font-medium rounded-lg px-4 py-2 pr-10 hover:border-brand-orange focus:outline-none focus:border-brand-orange transition-colors cursor-pointer"
                 >
                   <option value="Popolarità">Ordina per: Popolarità</option>
                   <option value="Ultimi arrivi">Ordina per: Ultimi arrivi</option>
@@ -338,7 +338,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                 
                 <div id="product-grid" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
-                    <div key={product.id} className="group bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-brand-orange/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 transition-all duration-300 flex flex-col">
+                    <div key={product.id} className="group glass rounded-2xl overflow-hidden hover:border-brand-orange/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 transition-all duration-300 flex flex-col">
                       <div 
                         className="aspect-square relative overflow-hidden cursor-pointer bg-zinc-950"
                         onClick={() => onNavigate('product', product.id)}
@@ -409,7 +409,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={`Notificami quando ${product.name} torna disponibile`}
-                                className="flex items-center gap-2 px-3 py-2 rounded-full bg-zinc-800 hover:bg-green-600/20 border border-zinc-700 hover:border-green-500/40 text-zinc-400 hover:text-green-400 transition-all text-xs font-bold"
+                                className="flex items-center gap-2 px-3 py-2 rounded-full glass-subtle hover:bg-green-600/20 hover:border-green-500/40 text-zinc-400 hover:text-green-400 transition-all text-xs font-bold"
                               >
                                 <MessageCircle className="w-4 h-4" />
                                 Notificami

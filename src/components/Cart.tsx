@@ -368,7 +368,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                           <h3 className="font-bold text-white text-sm line-clamp-1 group-hover:text-brand-orange transition-colors">{item.name}</h3>
                           <p className="text-zinc-500 text-xs mb-3 uppercase tracking-wider font-medium">DJ Equipment</p>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 bg-zinc-900/50 border border-white/5 rounded-full px-3 py-2">
+                            <div className="flex items-center gap-3 glass-subtle rounded-full px-3 py-2">
                               <button
                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                 aria-label="Diminuisci quantità"
@@ -450,7 +450,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-6 rounded-2xl bg-zinc-900/30 border border-white/5 relative overflow-hidden"
+                      className="p-6 rounded-2xl glass-subtle relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 p-3">
                         <Sparkles className="w-4 h-4 text-brand-orange animate-pulse" />
@@ -500,10 +500,10 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                       <button
                         key={method.id}
                         onClick={() => setPaymentMethod(method.id)}
-                        className={`flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 text-left ${
+                        className={`flex items-center justify-between p-5 rounded-2xl transition-all duration-300 text-left ${
                           paymentMethod === method.id
-                            ? 'bg-brand-orange/10 border-brand-orange'
-                            : 'bg-zinc-900/50 border-white/5 hover:border-white/20'
+                            ? 'border border-brand-orange bg-brand-orange/10'
+                            : 'glass hover:border-white/20'
                         }`}
                       >
                         <div className="flex items-center gap-4">
@@ -528,7 +528,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                     <motion.div
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
-                      className="p-5 rounded-2xl bg-zinc-900 border border-white/10 space-y-3"
+                      className="p-5 rounded-2xl glass space-y-3"
                     >
                       <h5 className="text-xs font-black text-white uppercase tracking-widest">Dati per il Bonifico</h5>
                       <div className="space-y-2 text-sm">
@@ -548,7 +548,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                   )}
 
                   {/* T&C Acceptance */}
-                  <label className="flex items-start gap-3 p-4 rounded-xl bg-zinc-900/50 border border-white/5 cursor-pointer group">
+                  <label className="flex items-start gap-3 p-4 rounded-xl glass cursor-pointer group">
                     <input
                       type="checkbox"
                       checked={acceptedTerms}
@@ -569,7 +569,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                   </label>
 
                   {/* Order summary */}
-                  <div className="p-5 rounded-2xl bg-zinc-900/50 border border-white/5 space-y-2">
+                  <div className="p-5 rounded-2xl glass space-y-2">
                     <h5 className="text-xs font-black text-zinc-400 uppercase tracking-widest mb-3">Riepilogo spedizione</h5>
                     <p className="text-sm text-zinc-300">{customer.name}</p>
                     <p className="text-xs text-zinc-500">{customer.address}, {customer.cap} {customer.city} ({customer.province})</p>
@@ -598,7 +598,7 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
                   </p>
 
                   {paymentMethod === 'bank_transfer' && (
-                    <div className="p-5 bg-zinc-900 rounded-2xl border border-white/5 mb-8 w-full text-left">
+                    <div className="p-5 glass rounded-2xl mb-8 w-full text-left">
                       <p className="text-xs text-zinc-400 mb-2">Riceverai i dati per il bonifico via email. L'ordine verrà elaborato dopo l'accredito.</p>
                     </div>
                   )}

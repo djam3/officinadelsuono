@@ -75,7 +75,7 @@ export function Home({ onNavigate }: HomeProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-10"
+            className="glass-orange inline-flex items-center gap-2 px-6 py-2 rounded-full text-brand-orange mb-10"
           >
             <ShieldCheck className="w-5 h-5 shrink-0" />
             <span className="text-xs md:text-sm font-black tracking-[0.2em] uppercase">
@@ -217,7 +217,7 @@ export function Home({ onNavigate }: HomeProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6, delay: item.delay }}
-                className="p-8 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group"
+                className="glass p-8 rounded-2xl hover:border-brand-orange/30 transition-all duration-300 group"
               >
                 <div className="w-14 h-14 rounded-xl bg-brand-orange/10 flex items-center justify-center mb-6 group-hover:bg-brand-orange/20 transition-colors">
                   <item.icon className="w-7 h-7 text-brand-orange" />
@@ -260,7 +260,7 @@ export function Home({ onNavigate }: HomeProps) {
                   />
                 </div>
                 <motion.div
-                  className="absolute -bottom-3 -right-3 z-30 bg-black/90 border border-brand-orange/40 rounded-xl px-3 py-2 flex items-center gap-2 backdrop-blur-md"
+                  className="glass absolute -bottom-3 -right-3 z-30 rounded-xl px-3 py-2 flex items-center gap-2"
                   initial={{ opacity: 0, scale: 0, rotate: -10 }}
                   whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                   viewport={{ once: true }}

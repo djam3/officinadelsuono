@@ -138,7 +138,7 @@ export function Contact() {
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-24">
             {/* Contact Form */}
-            <div className="lg:col-span-3 bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+            <div className="lg:col-span-3 glass rounded-3xl p-8">
               <h2 className="text-2xl font-bold mb-6">Scrivici un messaggio</h2>
 
               {formStatus === 'success' ? (
@@ -276,7 +276,7 @@ export function Contact() {
 
             {/* Sidebar: company info + WhatsApp */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+              <div className="glass rounded-3xl p-8">
                 <h2 className="text-xl font-bold mb-6 text-brand-orange">Dati Aziendali</h2>
                 <div className="space-y-5">
                   <div className="flex items-start gap-3">
@@ -317,7 +317,7 @@ export function Contact() {
                 </div>
               </div>
 
-              <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl text-center">
+              <div className="glass rounded-3xl p-8 text-center">
                 <div className="w-14 h-14 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
                   <MessageCircle className="w-7 h-7 text-green-500" />
                 </div>
@@ -354,7 +354,7 @@ export function Contact() {
               </p>
             </div>
 
-            <div className="bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8 md:p-12 shadow-2xl max-w-4xl mx-auto">
+            <div className="glass rounded-[2rem] p-8 md:p-12 max-w-4xl mx-auto">
               <div className="divide-y divide-white/5">
                 {FAQS.map((faq, index) => (
                   <FAQItem

@@ -194,7 +194,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
         )}
 
         {/* Quiz Container */}
-        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-10 backdrop-blur-xl shadow-2xl relative min-h-[400px] flex flex-col justify-center">
+        <div className="glass-strong rounded-3xl p-6 md:p-10 relative min-h-[400px] flex flex-col justify-center">
           <AnimatePresence mode="wait">
             
             {/* Step 0: Level */}
@@ -216,7 +216,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                     <button
                       key={item.id}
                       onClick={() => { if (step === 0) trackEvent('quiz_start'); setLevel(item.id as Level); setTimeout(handleNext, 300); }}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-4 ${level === item.id ? 'border-brand-orange bg-brand-orange/10' : 'border-white/5 bg-zinc-900 hover:border-white/20 hover:bg-zinc-800'}`}
+                      className={`p-6 rounded-2xl transition-all flex flex-col items-center text-center gap-4 ${level === item.id ? 'border-2 border-brand-orange bg-brand-orange/10' : 'glass hover:border-white/20'}`}
                     >
                       <div className={level === item.id ? 'text-brand-orange' : 'text-zinc-400'}>
                         {item.icon}
@@ -251,7 +251,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                     <button
                       key={item.id}
                       onClick={() => { setGenre(item.id as Genre); setTimeout(handleNext, 300); }}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-3 ${genre === item.id ? 'border-brand-orange bg-brand-orange/10' : 'border-white/5 bg-zinc-900 hover:border-white/20 hover:bg-zinc-800'}`}
+                      className={`p-6 rounded-2xl transition-all flex flex-col items-center text-center gap-3 ${genre === item.id ? 'border-2 border-brand-orange bg-brand-orange/10' : 'glass hover:border-white/20'}`}
                     >
                       <div className={genre === item.id ? 'text-brand-orange' : 'text-zinc-400'}>
                         {item.icon}
@@ -282,7 +282,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                     <button
                       key={item.id}
                       onClick={() => { setEnvironment(item.id as Environment); setTimeout(handleNext, 300); }}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-4 ${environment === item.id ? 'border-brand-orange bg-brand-orange/10' : 'border-white/5 bg-zinc-900 hover:border-white/20 hover:bg-zinc-800'}`}
+                      className={`p-6 rounded-2xl transition-all flex flex-col items-center text-center gap-4 ${environment === item.id ? 'border-2 border-brand-orange bg-brand-orange/10' : 'glass hover:border-white/20'}`}
                     >
                       <div className={environment === item.id ? 'text-brand-orange' : 'text-zinc-400'}>
                         {item.icon}
@@ -316,7 +316,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                     <button
                       key={item.id}
                       onClick={() => { setBudget(item.id as Budget); setTimeout(handleNext, 300); }}
-                      className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center text-center gap-2 ${budget === item.id ? 'border-brand-orange bg-brand-orange/10' : 'border-white/5 bg-zinc-900 hover:border-white/20 hover:bg-zinc-800'}`}
+                      className={`p-6 rounded-2xl transition-all flex flex-col items-center text-center gap-2 ${budget === item.id ? 'border-2 border-brand-orange bg-brand-orange/10' : 'glass hover:border-white/20'}`}
                     >
                       <div className="font-black text-2xl text-white">{item.label}</div>
                       <div className="text-sm text-zinc-400">{item.desc}</div>
@@ -360,7 +360,7 @@ export function Quiz({ onNavigate, triggerFlyToCart, showToast }: QuizProps) {
                   <p className="text-zinc-400">Basato sul tuo profilo ({level}, {genre}, {environment}), ecco la nostra raccomandazione ingegnerizzata.</p>
                 </div>
 
-                <div className="bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden flex flex-col md:flex-row mb-8">
+                <div className="glass-strong rounded-2xl overflow-hidden flex flex-col md:flex-row mb-8">
                   <div className="w-full md:w-2/5 h-64 md:h-auto relative">
                     <img src={recommendation.image} alt={recommendation.name} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 to-transparent md:hidden"></div>
