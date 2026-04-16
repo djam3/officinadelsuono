@@ -1,11 +1,11 @@
-import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package } from 'lucide-react';
+import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package, Link2 } from 'lucide-react';
 import {
   calcolaQuoteTuttiCorrieri, loadCorreriAttivi, loadShippingSettings,
   mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA,
 } from '../services/shippingService';
 import type { Corriere, QuotaCorriere, ShippingSettings } from '../types/shipping';
 import { useState, useEffect } from 'react';
-import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useCartStore } from '../store/cartStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -70,6 +70,9 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const [shippingQuotes, setShippingQuotes] = useState<QuotaCorriere[]>([]);
   const [shippingSettings, setShippingSettings] = useState<ShippingSettings>({ sogliaGratuita: SOGLIA_SPEDIZIONE_GRATUITA, volumetricoDivisore: 5000, updatedAt: '' });
   const [showAllQuotes, setShowAllQuotes] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [relatedProducts, setRelatedProducts] = useState<ProductType[]>([]);
   const addItem = useCartStore((state) => state.addItem);
 
   const activeProductId = productId || 'bundle-start-dj-pro';
@@ -91,6 +94,22 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
           const p = { id: docSnap.id, ...docSnap.data() } as ProductType;
           setProduct(p);
           trackEvent('product_view', { productId: p.id, name: p.name, price: p.price, category: p.category });
+          // Fetch related products (same category, exclude current)
+          if (p.category) {
+            getDocs(query(
+              collection(db, 'products'),
+              where('category', '==', p.category),
+              where('draft', '==', false),
+              limit(5)
+            )).then(snap => {
+              setRelatedProducts(
+                snap.docs
+                  .map(d => ({ id: d.id, ...d.data() } as ProductType))
+                  .filter(rp => rp.id !== productId)
+                  .slice(0, 4)
+              );
+            }).catch(() => {});
+          }
         } else {
           setProduct(null);
         }
@@ -208,8 +227,22 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
     }
     if (!newReviewText.trim()) return;
 
+    setReviewError(null);
     setIsSubmittingReview(true);
     try {
+      // Anti-spam: verifica se l'utente ha già recensito questo prodotto
+      const existingQuery = query(
+        collection(db, 'reviews'),
+        where('productId', '==', activeProductId),
+        where('userId', '==', user.uid)
+      );
+      const existingSnap = await getDocs(existingQuery);
+      if (!existingSnap.empty) {
+        setReviewError('Hai già recensito questo prodotto.');
+        setIsSubmittingReview(false);
+        return;
+      }
+
       await addDoc(collection(db, 'reviews'), {
         productId: activeProductId,
         userId: user.uid,
@@ -222,7 +255,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
       setNewReviewRating(5);
     } catch (error) {
       console.error("Error adding review:", error);
-      alert("Errore durante l'invio della recensione.");
+      setReviewError("Errore durante l'invio della recensione.");
     } finally {
       setIsSubmittingReview(false);
     }
@@ -404,9 +437,9 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                     onClick={() => setSelectedImageIndex(index)}
                     className={`aspect-square rounded-xl bg-zinc-900 border overflow-hidden cursor-pointer transition-colors ${selectedImageIndex === index ? 'border-brand-orange' : 'border-white/10 hover:border-white/30'}`}
                   >
-                    <img 
-                      src={getDirectDriveUrl(img)} 
-                      alt={`Thumbnail ${index}`} 
+                    <img
+                      src={getDirectDriveUrl(img)}
+                      alt={`Vista ${index + 1} di ${displayProduct.name}`}
                       loading="lazy"
                       className={`w-full h-full object-cover transition-opacity ${selectedImageIndex === index ? 'opacity-100' : 'opacity-50 hover:opacity-80'}`}
                       referrerPolicy="no-referrer"
@@ -452,6 +485,30 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                   </button>
                 )}
               </p>
+            </div>
+
+            {/* Social Share */}
+            <div className="flex items-center gap-3 py-4 border-t border-white/5 mb-6">
+              <span className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Condividi:</span>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`${displayProduct.name} — €${displayProduct.price.toFixed(2)}\n${window.location.href}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="glass-subtle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-green-400 hover:text-green-300 transition-colors"
+              >
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="glass-subtle flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-zinc-300 hover:text-white transition-colors"
+              >
+                <Link2 className="w-3.5 h-3.5" />
+                {copied ? '✓ Copiato!' : 'Copia link'}
+              </button>
             </div>
 
             {/* Technical Specs */}
@@ -812,6 +869,10 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                     ></textarea>
                   </div>
                   
+                  {reviewError && (
+                    <p className="text-red-400 text-sm font-medium">{reviewError}</p>
+                  )}
+
                   <button
                     type="submit"
                     disabled={isSubmittingReview || !newReviewText.trim()}
@@ -845,6 +906,48 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             </div>
           </div>
         </div>
+
+        {/* Prodotti Correlati */}
+        {relatedProducts.length > 0 && (
+          <div className="mt-16 pt-16 border-t border-white/10">
+            <h2 className="text-3xl font-black uppercase tracking-tight mb-8">Potrebbero interessarti</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map((p) => (
+                <div
+                  key={p.id}
+                  className="glass hover:scale-[1.02] transition-transform rounded-2xl overflow-hidden cursor-pointer"
+                  onClick={() => {
+                    if (p.id) {
+                      sessionStorage.setItem('selectedProductId', p.id);
+                      onNavigate?.('product', p.id);
+                    }
+                  }}
+                >
+                  <div className="aspect-square bg-zinc-900 overflow-hidden">
+                    <img
+                      src={getDirectDriveUrl(
+                        p.images && p.images.length > 0
+                          ? p.images[0]
+                          : (p.image && p.image !== 'USE_IMAGES_ARRAY' ? p.image : '')
+                      )}
+                      alt={p.name}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <div className="p-4">
+                    <p className="font-bold text-sm text-white leading-tight mb-1 line-clamp-2">{p.name}</p>
+                    <p className="text-brand-orange font-black text-base mb-3">€{p.price.toFixed(2)}</p>
+                    <button className="w-full py-1.5 px-3 rounded-lg bg-white/10 hover:bg-brand-orange hover:text-white text-xs font-bold text-zinc-300 transition-colors">
+                      Vedi prodotto
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
       </div>
 
@@ -913,7 +1016,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                         onClick={() => setSelectedImageIndex(idx)}
                         className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx ? 'border-brand-orange scale-110 shadow-[0_0_15px_rgba(255,102,0,0.5)]' : 'border-white/20 opacity-50 hover:opacity-100 hover:scale-105'}`}
                       >
-                        <img src={getDirectDriveUrl(img)} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        <img src={getDirectDriveUrl(img)} alt={`${displayProduct.name} — immagine ${idx + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       </button>
                     ))}
                   </div>

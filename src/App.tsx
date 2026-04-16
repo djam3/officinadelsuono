@@ -34,6 +34,7 @@ const PAGE_TO_PATH: Record<string, string> = {
   'cookie-policy': '/cookie-policy',
   profile: '/profilo',
   admin: '/admin',
+  'order-confirmed': '/ordine-confermato',
 };
 
 function pathToPage(pathname: string): { page: string; id?: string } {
@@ -72,6 +73,7 @@ const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
 const NotFound = lazy(() => import('./pages/NotFound').then(m => ({ default: m.NotFound })));
+const OrderConfirmed = lazy(() => import('./pages/OrderConfirmed').then(m => ({ default: m.OrderConfirmed })));
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -315,6 +317,7 @@ export default function App() {
               {currentPage === 'privacy' && <Privacy />}
               {currentPage === 'cookie-policy' && <CookiePolicy />}
               {currentPage === '404' && <NotFound onNavigate={handleNavigate} />}
+              {currentPage === 'order-confirmed' && <OrderConfirmed onNavigate={handleNavigate} />}
             </motion.div>
           </AnimatePresence>
         </Suspense>

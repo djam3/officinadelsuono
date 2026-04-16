@@ -16,7 +16,11 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Heart,
+  X,
 } from 'lucide-react';
+import { useWishlistStore } from '../store/wishlistStore';
+import { getDirectDriveUrl } from '../utils/drive';
 import {
   onAuthStateChanged,
   updateProfile,
@@ -74,6 +78,9 @@ export function Profile({ onNavigate }: ProfileProps) {
   const [confirmPwd, setConfirmPwd] = useState('');
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdMessage, setPwdMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // Wishlist
+  const { items: wishlistItems, removeItem: removeFromWishlist } = useWishlistStore();
 
   // Orders
   const [orders, setOrders] = useState<Order[]>([]);
@@ -471,6 +478,69 @@ export function Profile({ onNavigate }: ProfileProps) {
             </form>
           </motion.div>
         )}
+
+        {/* I miei preferiti */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="bg-zinc-950 border border-white/10 rounded-3xl p-8 mb-8"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-brand-orange/10 rounded-xl flex items-center justify-center">
+              <Heart className="w-5 h-5 text-brand-orange" />
+            </div>
+            <h3 className="text-xl font-black">I miei preferiti</h3>
+          </div>
+
+          {wishlistItems.length === 0 ? (
+            <div className="text-center py-10">
+              <Heart className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <p className="text-zinc-400 mb-4">Nessun preferito ancora. Esplora il catalogo!</p>
+              <button
+                onClick={() => onNavigate('shop')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-brand-orange to-orange-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-orange-500 transition-all shadow-lg shadow-brand-orange/20 text-sm"
+              >
+                Vai allo shop
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {wishlistItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-4 border border-white/10 rounded-2xl p-4 bg-zinc-900/30 hover:bg-zinc-900/50 transition-colors"
+                >
+                  {item.image ? (
+                    <img
+                      src={getDirectDriveUrl(item.image)}
+                      alt={item.name}
+                      className="w-16 h-16 rounded-xl object-cover border border-white/10 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-zinc-800 flex items-center justify-center shrink-0">
+                      <Heart className="w-6 h-6 text-zinc-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white truncate">{item.name}</p>
+                    {item.category && (
+                      <p className="text-xs text-zinc-500 truncate">{item.category}</p>
+                    )}
+                    <p className="text-brand-orange font-black mt-1">€{item.price.toFixed(2)}</p>
+                  </div>
+                  <button
+                    onClick={() => removeFromWishlist(item.id)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 transition-all shrink-0"
+                    title="Rimuovi dai preferiti"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
 
         {/* I miei ordini */}
         <motion.div

@@ -170,9 +170,15 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
       const spedizioneRiga = spedizione.costo > 0 ? `\nSpedizione: €${spedizione.costo.toFixed(2)}` : '\nSpedizione: GRATUITA';
       const testo = `Ciao Amerigo! Vorrei ordinare:\n\n${righe}${scontoRiga}${spedizioneRiga}\n\nTOTALE: €${totaleFinale.toFixed(2)}\n\nNome: ${customer.name.trim()}\nEmail: ${customer.email.trim()}\nTelefono: ${customer.phone.trim()}\nIndirizzo: ${customer.address.trim()}, ${customer.cap.trim()} ${customer.city.trim()} (${customer.province.trim().toUpperCase()})`;
       window.open(`https://wa.me/393477397016?text=${encodeURIComponent(testo)}`, '_blank', 'noopener,noreferrer');
-      setStep('success');
       clearCart();
       trackEvent('purchase', { value: totaleFinale, method: 'whatsapp' });
+      setStep('cart');
+      setCustomer(EMPTY_CUSTOMER);
+      setAcceptedTerms(false);
+      setPaymentMethod(null);
+      setDiscountApplied(null);
+      onClose();
+      onNavigate('order-confirmed');
       return;
     }
 
@@ -210,9 +216,15 @@ export function Cart({ isOpen, onClose, onNavigate, showToast }: CartProps) {
 
       const data = await response.json();
       setOrderId(data.orderId);
-      setStep('success');
       clearCart();
       trackEvent('purchase', { value: totaleFinale, method: paymentMethod });
+      setStep('cart');
+      setCustomer(EMPTY_CUSTOMER);
+      setAcceptedTerms(false);
+      setPaymentMethod(null);
+      setDiscountApplied(null);
+      onClose();
+      onNavigate('order-confirmed');
     } catch (error: unknown) {
       const e = error as Error;
       console.error('Checkout error:', e);

@@ -1,5 +1,13 @@
 import { Timestamp } from 'firebase/firestore';
 
+export interface ProductVariant {
+  id: string;          // es. "color-nero", "bundle-pro"
+  label: string;       // es. "Nero", "Bundle Pro"
+  priceModifier: number; // differenza rispetto al prezzo base (0, +50, -20, ecc.)
+  stock: number;
+  sku?: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -43,6 +51,8 @@ export interface Product {
     verdict: string;
     disclaimer?: string;
   };
+  variants?: ProductVariant[];
+  hasVariants?: boolean;
 }
 
 export interface AdminUser {
