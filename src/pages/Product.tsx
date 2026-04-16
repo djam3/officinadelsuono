@@ -1,4 +1,4 @@
-import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package, Link2 } from 'lucide-react';
+import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package, Link2, Heart } from 'lucide-react';
 import {
   calcolaQuoteTuttiCorrieri, loadCorreriAttivi, loadShippingSettings,
   mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA,
@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, collection, query, where, onSnapshot, addDoc, serverTimestamp, orderBy, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { useCartStore } from '../store/cartStore';
+import { useWishlistStore } from '../store/wishlistStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import React from 'react';
 import { getDirectDriveUrl } from '../utils/drive';
@@ -74,6 +75,13 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const [copied, setCopied] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<ProductType[]>([]);
   const addItem = useCartStore((state) => state.addItem);
+  const { toggleItem: toggleWishlist, isInWishlist } = useWishlistStore();
+  const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
+
+  const inWishlist = product ? isInWishlist(product.id!) : false;
+  const variantPrice = selectedVariant && product?.variants
+    ? product.price + (product.variants.find(v => v.id === selectedVariant)?.priceModifier || 0)
+    : product?.price || 0;
 
   const activeProductId = productId || 'bundle-start-dj-pro';
 
@@ -196,10 +204,13 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   }, [product, reviews, productId]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
+    const variantLabel = selectedVariant && product?.variants
+      ? product.variants.find(v => v.id === selectedVariant)?.label
+      : undefined;
     const itemToAdd = product ? {
       id: product.id || activeProductId,
-      name: product.name,
-      price: product.price || 0,
+      name: variantLabel ? `${product.name} — ${variantLabel}` : product.name,
+      price: variantPrice || product.price || 0,
       image: product.image === 'USE_IMAGES_ARRAY' && product.images && product.images.length > 0
         ? product.images[0]
         : (product.image || 'https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?auto=format&fit=crop&q=80'),
@@ -470,7 +481,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             </div>
 
             <div className="text-4xl font-black text-white mb-8">
-              € {displayProduct.price.toFixed(2)} <span className="text-lg text-zinc-500 font-normal tracking-normal">IVA inclusa</span>
+              € {product ? variantPrice.toFixed(2) : displayProduct.price.toFixed(2)} <span className="text-lg text-zinc-500 font-normal tracking-normal">IVA inclusa</span>
             </div>
 
             <div className="prose prose-invert prose-zinc max-w-none mb-10">
@@ -578,19 +589,71 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
               </div>
             )}
 
+            {/* Variant Selector */}
+            {product?.hasVariants && product.variants && product.variants.length > 0 && (
+              <div className="space-y-2 mb-6">
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
+                  Seleziona variante:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map(variant => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setSelectedVariant(variant.id === selectedVariant ? null : variant.id)}
+                      disabled={variant.stock === 0}
+                      className={`px-4 py-2 rounded-full text-sm font-bold border transition-all ${
+                        selectedVariant === variant.id
+                          ? 'bg-brand-orange border-brand-orange text-white'
+                          : variant.stock === 0
+                          ? 'border-white/5 text-zinc-600 cursor-not-allowed line-through'
+                          : 'glass border-white/10 text-zinc-300 hover:border-brand-orange/50 hover:text-white'
+                      }`}
+                    >
+                      {variant.label}
+                      {variant.priceModifier !== 0 && (
+                        <span className="ml-1 text-xs opacity-70">
+                          {variant.priceModifier > 0 ? `+€${variant.priceModifier}` : `-€${Math.abs(variant.priceModifier)}`}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <button 
+              <button
                 onClick={(e) => handleAddToCart(e)}
-                className="flex-1 py-4 px-6 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-black text-lg uppercase tracking-wide transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:shadow-[0_0_40px_rgba(255,102,0,0.5)] hover:-translate-y-1"
+                disabled={!!(product?.hasVariants && !selectedVariant)}
+                className="flex-1 py-4 px-6 bg-brand-orange hover:bg-orange-600 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed disabled:shadow-none text-white rounded-xl font-black text-lg uppercase tracking-wide transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:shadow-[0_0_40px_rgba(255,102,0,0.5)] hover:-translate-y-1"
               >
                 <ShoppingCart className="w-6 h-6" />
                 Aggiungi al Setup
               </button>
-              
-              <a 
-                href={`https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Sto%20valutando%20${displayProduct.name}.%20Vorrei%20il%20parere%20di%20un%20Sound%20Engineer.`} 
-                target="_blank" 
+
+              <button
+                onClick={() => product && toggleWishlist({
+                  id: product.id!,
+                  name: product.name,
+                  price: product.price,
+                  image: product.images?.[0] || product.image,
+                  category: product.category,
+                })}
+                className={`p-3 rounded-full border transition-all ${
+                  inWishlist
+                    ? 'bg-red-500/20 border-red-500/50 text-red-400'
+                    : 'glass border-white/10 text-zinc-400 hover:text-red-400 hover:border-red-500/30'
+                }`}
+                aria-label={inWishlist ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
+                title={inWishlist ? 'Rimuovi dai preferiti' : 'Aggiungi ai preferiti'}
+              >
+                <Heart className={`w-5 h-5 ${inWishlist ? 'fill-red-400' : ''}`} />
+              </button>
+
+              <a
+                href={`https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Sto%20valutando%20${displayProduct.name}.%20Vorrei%20il%20parere%20di%20un%20Sound%20Engineer.`}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 py-4 px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 hover:-translate-y-1"
               >
@@ -598,6 +661,11 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                 Parla con un Ingegnere
               </a>
             </div>
+
+            {/* Variant selection note */}
+            {product?.hasVariants && !selectedVariant && (
+              <p className="text-xs text-zinc-500 mt-2">* Seleziona una variante per procedere</p>
+            )}
 
             {/* Trust Badges + Spedizione dinamica */}
             <div className="mt-8 pt-8 border-t border-white/10 space-y-4">
