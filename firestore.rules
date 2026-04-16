@@ -122,7 +122,9 @@ service cloud.firestore {
     // Chiunque può iscriversi, solo admin può gestire
 
     match /newsletter_subscribers/{docId} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasAll(['email', 'subscribedAt', 'source'])
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254;
       allow read, update, delete: if isAdmin();
     }
 
@@ -144,7 +146,7 @@ service cloud.firestore {
 
     match /chatbot_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if isAuthenticated() || true; // chatbot funziona anche anonimo
+      allow create: if true; // chatbot funziona anche anonimo
       allow update: if false;
       allow delete: if isAdmin();
     }
