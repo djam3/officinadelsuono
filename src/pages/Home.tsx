@@ -3,7 +3,7 @@ import { useSEO } from '../hooks/useSEO';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, addDoc, collection } from 'firebase/firestore';
 import { getDirectDriveUrl } from '../utils/drive';
 import { Logo } from '../components/Logo';
 import { EditableText } from '../components/builder/EditableText';
@@ -26,6 +26,25 @@ export function Home({ onNavigate }: HomeProps) {
 
   const [profileImage, setProfileImage] = useState('/profile_new.jpg');
   const containerRef = useRef<HTMLDivElement>(null);
+  const [homeNlEmail, setHomeNlEmail] = useState('');
+  const [homeNlStatus, setHomeNlStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+
+  const handleHomeNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!homeNlEmail.includes('@')) return;
+    setHomeNlStatus('loading');
+    try {
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: homeNlEmail.trim().toLowerCase(),
+        subscribedAt: new Date().toISOString(),
+        source: 'home'
+      });
+      setHomeNlStatus('done');
+      setHomeNlEmail('');
+    } catch {
+      setHomeNlStatus('error');
+    }
+  };
 
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
@@ -430,6 +449,56 @@ export function Home({ onNavigate }: HomeProps) {
                 Oppure compila il form
               </button>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ── Newsletter Section ── */}
+      <section className="py-16 bg-brand-orange/5 border-y border-brand-orange/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,95,0,0.04),transparent_70%)]" />
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-6">
+              <Mail className="w-4 h-4" />
+              <span className="text-xs font-black uppercase tracking-[0.2em]">Newsletter</span>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tighter mb-3">
+              Resta aggiornato sulle ultime novità
+            </h2>
+            <p className="text-zinc-400 text-base md:text-lg mb-8">
+              Offerte esclusive, guide DJ e nuovi prodotti — direttamente nella tua inbox.
+            </p>
+            {homeNlStatus === 'done' ? (
+              <p className="text-green-400 text-lg font-bold">✓ Iscritto! Grazie.</p>
+            ) : (
+              <>
+                <form onSubmit={handleHomeNewsletter} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                  <input
+                    type="email"
+                    value={homeNlEmail}
+                    onChange={e => setHomeNlEmail(e.target.value)}
+                    placeholder="La tua email"
+                    required
+                    className="flex-1 bg-black border border-white/10 rounded-full px-5 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand-orange/50"
+                  />
+                  <button
+                    type="submit"
+                    disabled={homeNlStatus === 'loading'}
+                    className="bg-brand-orange hover:bg-orange-600 disabled:opacity-60 rounded-full px-6 py-3 text-sm font-black text-white transition-colors shadow-[0_8px_24px_rgba(255,95,0,0.25)] hover:scale-105 active:scale-95 shrink-0"
+                  >
+                    {homeNlStatus === 'loading' ? '...' : 'Iscriviti Gratis'}
+                  </button>
+                </form>
+                {homeNlStatus === 'error' && (
+                  <p className="text-red-400 text-sm mt-3">Errore, riprova.</p>
+                )}
+              </>
+            )}
           </motion.div>
         </div>
       </section>

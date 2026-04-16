@@ -12,6 +12,10 @@ import {
   Save,
   LogOut,
   Trash2,
+  Package,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
 } from 'lucide-react';
 import {
   onAuthStateChanged,
@@ -24,7 +28,28 @@ import {
   sendEmailVerification,
 } from 'firebase/auth';
 import { ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { auth, storage } from '../firebase';
+import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { auth, storage, db } from '../firebase';
+
+interface OrderItem {
+  name: string;
+  quantity: number;
+  price: number;
+  image?: string;
+}
+
+interface Order {
+  id?: string;
+  userId: string;
+  items: OrderItem[];
+  total: number;
+  discount?: number;
+  status: string;
+  createdAt: string | { toDate: () => Date };
+  paymentMethod?: string;
+  customerName?: string;
+  shippingAddress?: string;
+}
 
 interface ProfileProps {
   onNavigate: (page: string) => void;
@@ -50,12 +75,28 @@ export function Profile({ onNavigate }: ProfileProps) {
   const [savingPwd, setSavingPwd] = useState(false);
   const [pwdMessage, setPwdMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Orders
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setDisplayName(u?.displayName || '');
       setLoading(false);
-      if (!u) onNavigate('home');
+      if (!u) {
+        onNavigate('home');
+      } else {
+        setLoadingOrders(true);
+        getDocs(query(
+          collection(db, 'orders'),
+          where('userId', '==', u.uid),
+          orderBy('createdAt', 'desc')
+        )).then(snap => {
+          setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order)));
+        }).catch(console.error).finally(() => setLoadingOrders(false));
+      }
     });
     return () => unsub();
   }, [onNavigate]);
@@ -431,11 +472,142 @@ export function Profile({ onNavigate }: ProfileProps) {
           </motion.div>
         )}
 
-        {/* Logout */}
+        {/* I miei ordini */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="bg-zinc-950 border border-white/10 rounded-3xl p-8 mb-8"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-brand-orange/10 rounded-xl flex items-center justify-center">
+              <Package className="w-5 h-5 text-brand-orange" />
+            </div>
+            <h3 className="text-xl font-black">I miei ordini</h3>
+          </div>
+
+          {loadingOrders ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-brand-orange animate-spin" />
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-10">
+              <Package className="w-12 h-12 text-zinc-700 mx-auto mb-4" />
+              <p className="text-zinc-400 mb-4">Nessun ordine ancora. Inizia a esplorare il nostro catalogo!</p>
+              <button
+                onClick={() => onNavigate('shop')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-brand-orange to-orange-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-orange-500 transition-all shadow-lg shadow-brand-orange/20 text-sm"
+              >
+                Vai allo shop
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => {
+                const orderId = order.id ?? '';
+                const isExpanded = expandedOrder === orderId;
+
+                const rawDate = order.createdAt;
+                const dateObj = rawDate && typeof rawDate === 'object' && 'toDate' in rawDate
+                  ? rawDate.toDate()
+                  : typeof rawDate === 'string'
+                    ? new Date(rawDate)
+                    : null;
+                const dateStr = dateObj
+                  ? dateObj.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
+                  : '—';
+
+                const statusMap: Record<string, { label: string; className: string }> = {
+                  pending:   { label: 'In attesa',  className: 'bg-zinc-700/50 text-zinc-300 border-zinc-600/50' },
+                  confirmed: { label: 'Confermato', className: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+                  shipped:   { label: 'Spedito',    className: 'bg-brand-orange/10 text-brand-orange border-brand-orange/20' },
+                  delivered: { label: 'Consegnato', className: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+                  cancelled: { label: 'Annullato',  className: 'bg-red-500/10 text-red-400 border-red-500/20' },
+                };
+                const statusInfo = statusMap[order.status] ?? { label: order.status, className: 'bg-zinc-700/50 text-zinc-300 border-zinc-600/50' };
+
+                return (
+                  <div key={orderId} className="border border-white/10 rounded-2xl overflow-hidden">
+                    {/* Header — clickable toggle */}
+                    <button
+                      onClick={() => setExpandedOrder(isExpanded ? null : orderId)}
+                      className="w-full flex items-center justify-between gap-4 px-5 py-4 hover:bg-white/5 transition-colors text-left"
+                    >
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <span className="text-sm text-zinc-400">{dateStr}</span>
+                        <span className="font-bold text-white">€{order.total.toFixed(2)}</span>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold border ${statusInfo.className}`}>
+                          {statusInfo.label}
+                        </span>
+                      </div>
+                      {isExpanded
+                        ? <ChevronUp className="w-4 h-4 text-zinc-500 shrink-0" />
+                        : <ChevronDown className="w-4 h-4 text-zinc-500 shrink-0" />
+                      }
+                    </button>
+
+                    {/* Expanded details */}
+                    {isExpanded && (
+                      <div className="border-t border-white/10 px-5 py-4 space-y-4 bg-zinc-900/30">
+                        {/* Items list */}
+                        <div className="space-y-2">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex items-center gap-3">
+                              {item.image && (
+                                <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover border border-white/10 shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{item.name}</p>
+                                <p className="text-xs text-zinc-500">Qtà: {item.quantity}</p>
+                              </div>
+                              <span className="text-sm font-bold text-white shrink-0">€{(item.price * item.quantity).toFixed(2)}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Discount */}
+                        {order.discount != null && order.discount > 0 && (
+                          <div className="flex justify-between text-sm pt-1 border-t border-white/5">
+                            <span className="text-zinc-400">Sconto applicato</span>
+                            <span className="text-emerald-400 font-bold">-€{order.discount.toFixed(2)}</span>
+                          </div>
+                        )}
+
+                        {/* Total */}
+                        <div className="flex justify-between text-sm pt-1 border-t border-white/10">
+                          <span className="text-zinc-400">Totale</span>
+                          <span className="font-black text-white">€{order.total.toFixed(2)}</span>
+                        </div>
+
+                        {/* Payment method */}
+                        {order.paymentMethod && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-zinc-400">Metodo di pagamento</span>
+                            <span className="text-zinc-300">{order.paymentMethod}</span>
+                          </div>
+                        )}
+
+                        {/* Shipping address */}
+                        {order.shippingAddress && (
+                          <div className="text-sm">
+                            <span className="text-zinc-400 block mb-1">Indirizzo di spedizione</span>
+                            <span className="text-zinc-300">{order.shippingAddress}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Logout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
           className="text-center"
         >
           <button

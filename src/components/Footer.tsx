@@ -1,4 +1,7 @@
 import { Truck, ShieldCheck, MessageCircle, Award } from 'lucide-react';
+import { useState } from 'react';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../firebase';
 import { PaymentLogos } from './PaymentLogos';
 import { Logo } from './Logo';
 
@@ -7,6 +10,26 @@ interface FooterProps {
 }
 
 export function Footer({ onNavigate }: FooterProps) {
+  const [nlEmail, setNlEmail] = useState('');
+  const [nlStatus, setNlStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+
+  const handleNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nlEmail.includes('@')) return;
+    setNlStatus('loading');
+    try {
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: nlEmail.trim().toLowerCase(),
+        subscribedAt: new Date().toISOString(),
+        source: 'footer'
+      });
+      setNlStatus('done');
+      setNlEmail('');
+    } catch {
+      setNlStatus('error');
+    }
+  };
+
   return (
     <footer className="bg-black border-t border-white/10">
       {/* Trust Signals Bar */}
@@ -45,6 +68,37 @@ export function Footer({ onNavigate }: FooterProps) {
             <p className="text-zinc-400 max-w-sm mb-6">
               Setup DJ e audio professionale, configurati da un DJ certificato MAT Academy. Non un catalogo: una selezione curata con consulenza gratuita inclusa.
             </p>
+
+            {/* Newsletter mini-form */}
+            <div className="max-w-sm">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3">Ricevi aggiornamenti e offerte esclusive</p>
+              {nlStatus === 'done' ? (
+                <p className="text-green-400 text-sm font-bold">✓ Iscritto! Grazie.</p>
+              ) : (
+                <>
+                  <form onSubmit={handleNewsletter} className="flex gap-2">
+                    <input
+                      type="email"
+                      value={nlEmail}
+                      onChange={e => setNlEmail(e.target.value)}
+                      placeholder="La tua email"
+                      required
+                      className="flex-1 bg-black border border-white/10 rounded-full px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-brand-orange/50 min-w-0"
+                    />
+                    <button
+                      type="submit"
+                      disabled={nlStatus === 'loading'}
+                      className="bg-brand-orange hover:bg-orange-600 disabled:opacity-60 rounded-full px-4 py-2 text-sm font-bold text-white transition-colors shrink-0"
+                    >
+                      {nlStatus === 'loading' ? '...' : 'Iscriviti'}
+                    </button>
+                  </form>
+                  {nlStatus === 'error' && (
+                    <p className="text-red-400 text-xs mt-2">Errore, riprova.</p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           
           <div>
