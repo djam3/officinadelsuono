@@ -630,7 +630,7 @@ export function Blog({ onNavigate, showToast }: BlogProps) {
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   activeCategory === category
                     ? 'bg-brand-orange text-white'
-                    : 'bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800 hover:text-white border border-white/5'
+                    : 'glass-subtle text-zinc-400 hover:text-white hover:border-brand-orange/30'
                 }`}
               >
                 {category}
@@ -721,7 +721,7 @@ export function Blog({ onNavigate, showToast }: BlogProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-zinc-900/50 border border-white/5 rounded-2xl overflow-hidden group cursor-pointer hover:border-brand-orange/30 transition-colors flex flex-col"
+              className="glass rounded-2xl overflow-hidden group cursor-pointer hover:border-brand-orange/30 hover:scale-[1.01] transition-all duration-300 flex flex-col"
               onClick={() => onNavigate('blog-post', post.id)}
             >
               <div className="relative h-48 overflow-hidden">
@@ -770,7 +770,7 @@ export function Blog({ onNavigate, showToast }: BlogProps) {
                       <span>{post.readTime}</span>
                     </div>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center group-hover:bg-brand-orange transition-colors">
+                  <div className="w-8 h-8 rounded-full glass-subtle flex items-center justify-center group-hover:bg-brand-orange transition-colors">
                     <ArrowRight className="w-4 h-4 text-white" />
                   </div>
                 </div>

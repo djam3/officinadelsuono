@@ -125,7 +125,7 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-8 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300"
+                className="glass p-8 rounded-2xl hover:border-brand-orange/30 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center mb-5">
                   <item.icon className="w-6 h-6 text-brand-orange" />
@@ -138,7 +138,7 @@ export function AboutUs({ onNavigate }: AboutUsProps) {
         </div>
 
         {/* ── MAT Certificate ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24 bg-zinc-900/30 rounded-3xl p-8 md:p-16 border border-white/5">
+        <div className="glass-strong grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24 rounded-3xl p-8 md:p-16">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

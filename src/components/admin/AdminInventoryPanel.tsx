@@ -3,7 +3,7 @@ import { db } from '../../firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import {
   Plus, Edit2, Trash2, Save, X, Image as ImageIcon, Upload,
-  Sparkles, Loader2, Check, Package, Truck
+  Sparkles, Loader2, Check, Package, Truck, Minus
 } from 'lucide-react';
 import { calcolaSpedizioneProdotto, formatCostoSpedizione, SOGLIA_SPEDIZIONE_GRATUITA } from '../../services/shippingService';
 import { useDropzone } from 'react-dropzone';
@@ -38,6 +38,10 @@ export function AdminInventoryPanel({ products, categories, manualApiKey }: Admi
   const [seoModal, setSeoModal] = useState<{ product: Product; result: { seoTitle: string; metaDescription: string; description: string; bullets: string[] } } | null>(null);
   const [isGeneratingSEO, setIsGeneratingSEO] = useState(false);
   const [isSavingSEO, setIsSavingSEO] = useState(false);
+
+  // Inline stock editing
+  const [stockValues, setStockValues] = useState<Record<string, number>>({});
+  const [stockSaving, setStockSaving] = useState<Record<string, boolean>>({});
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setIsUploading(true);
@@ -217,6 +221,19 @@ Rispondi ESCLUSIVAMENTE in JSON:
     }
   };
 
+  const handleQuickStock = async (productId: string, newStock: number) => {
+    if (newStock < 0) return;
+    setStockSaving(prev => ({ ...prev, [productId]: true }));
+    try {
+      await updateDoc(doc(db, 'products', productId), { stock: newStock });
+      setStockValues(prev => { const n = { ...prev }; delete n[productId]; return n; });
+    } catch (err) {
+      alert('Errore aggiornamento stock: ' + (err as Error).message);
+    } finally {
+      setStockSaving(prev => ({ ...prev, [productId]: false }));
+    }
+  };
+
   const handleGenerateSEO = async (product: Product) => {
     setIsGeneratingSEO(true);
     setSeoModal(null);
@@ -275,13 +292,14 @@ Rispondi ESCLUSIVAMENTE in JSON:
               <th className="px-6 py-4">Categoria</th>
               <th className="px-6 py-4">Prezzo</th>
               <th className="px-6 py-4">Badge</th>
+              <th className="px-6 py-4 text-center">Stock</th>
               <th className="px-6 py-4 text-right">Azioni</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {(isAdding || isEditing) && (
               <tr className="bg-zinc-800/50">
-                <td colSpan={6} className="px-6 py-8">
+                <td colSpan={7} className="px-6 py-8">
                   <div className="space-y-8">
                     {/* Media Upload */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -503,6 +521,49 @@ Rispondi ESCLUSIVAMENTE in JSON:
                 <td className="px-6 py-4 font-mono">€{p.price.toFixed(2)}</td>
                 <td className="px-6 py-4">
                   {p.badge && <span className="px-2 py-0.5 bg-brand-orange/10 text-brand-orange text-[10px] font-bold rounded-full border border-brand-orange/20">{p.badge}</span>}
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-center gap-1">
+                    <button
+                      onClick={() => {
+                        const cur = stockValues[p.id!] ?? (p.stock ?? 0);
+                        setStockValues(prev => ({ ...prev, [p.id!]: Math.max(0, cur - 1) }));
+                      }}
+                      className="w-6 h-6 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+                    >
+                      <Minus className="w-3 h-3" />
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      value={stockValues[p.id!] ?? (p.stock ?? 0)}
+                      onChange={e => setStockValues(prev => ({ ...prev, [p.id!]: Math.max(0, parseInt(e.target.value) || 0) }))}
+                      className={`w-12 text-center text-xs font-bold bg-zinc-950 border rounded py-1 focus:outline-none focus:border-brand-orange transition-colors ${
+                        (stockValues[p.id!] ?? p.stock ?? 0) === 0
+                          ? 'border-red-500/50 text-red-400'
+                          : 'border-white/10 text-white'
+                      }`}
+                    />
+                    <button
+                      onClick={() => {
+                        const cur = stockValues[p.id!] ?? (p.stock ?? 0);
+                        setStockValues(prev => ({ ...prev, [p.id!]: cur + 1 }));
+                      }}
+                      className="w-6 h-6 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded text-zinc-400 hover:text-white transition-colors"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                    {stockValues[p.id!] !== undefined && stockValues[p.id!] !== (p.stock ?? 0) && (
+                      <button
+                        onClick={() => handleQuickStock(p.id!, stockValues[p.id!])}
+                        disabled={stockSaving[p.id!]}
+                        className="ml-1 w-6 h-6 flex items-center justify-center bg-brand-orange hover:bg-orange-600 rounded text-white transition-colors disabled:opacity-50"
+                        title="Salva stock"
+                      >
+                        {stockSaving[p.id!] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex justify-end gap-2">

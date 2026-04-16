@@ -187,7 +187,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-4xl bg-zinc-950 border border-white/10 rounded-3xl shadow-2xl flex flex-col md:flex-row my-auto"
+          className="relative w-full max-w-4xl glass-strong rounded-3xl flex flex-col md:flex-row my-auto"
         >
           {/* Left Side - Image */}
           <div className="hidden md:block md:w-1/2 relative">

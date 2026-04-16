@@ -455,7 +455,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             </div>
 
             {/* Technical Specs */}
-            <div className="bg-zinc-900/30 rounded-3xl border border-white/5 p-8 mb-10 overflow-hidden relative">
+            <div className="glass rounded-3xl p-8 mb-10 overflow-hidden relative">
               <div className="absolute top-0 right-0 w-32 h-32 bg-brand-orange/5 blur-3xl rounded-full -mr-16 -mt-16"></div>
               <h3 className="text-xl font-black uppercase tracking-widest mb-8 flex items-center gap-3">
                 <div className="p-2 bg-brand-orange/20 rounded-lg">
@@ -473,7 +473,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                     { label: 'Dimensioni', value: product.specs.dimensions, icon: <BoxIcon className="w-4 h-4" /> },
                     { label: 'Peso', value: product.specs.weight, icon: <BoxIcon className="w-4 h-4" /> },
                   ].filter(s => s.value).map((spec, idx) => (
-                    <div key={idx} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 hover:border-brand-orange/30 transition-colors group">
+                    <div key={idx} className="glass-subtle rounded-2xl p-4 hover:border-brand-orange/30 transition-colors group">
                       <div className="flex items-center gap-3 mb-1">
                         <div className="text-zinc-500 group-hover:text-brand-orange transition-colors">
                           {spec.icon}
@@ -741,14 +741,14 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             {/* Reviews List */}
             <div className="lg:col-span-2 space-y-8">
               {reviews.length === 0 ? (
-                <div className="bg-zinc-900/50 rounded-2xl border border-white/5 p-8 text-center">
+                <div className="glass rounded-2xl p-8 text-center">
                   <MessageCircle className="w-12 h-12 text-zinc-600 mx-auto mb-4" />
                   <h3 className="text-xl font-bold mb-2">Nessuna recensione</h3>
                   <p className="text-zinc-400">Sii il primo a recensire questo prodotto!</p>
                 </div>
               ) : (
                 reviews.map((review) => (
-                  <div key={review.id} className="bg-zinc-900/50 rounded-2xl border border-white/5 p-6">
+                  <div key={review.id} className="glass rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-gradient-to-br from-brand-orange to-orange-600 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg">
@@ -779,7 +779,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             </div>
 
             {/* Add Review Form */}
-            <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 h-fit sticky top-28">
+            <div className="glass rounded-2xl p-6 h-fit sticky top-28">
               <h3 className="text-xl font-bold mb-6">Scrivi una recensione</h3>
               
               {user ? (
