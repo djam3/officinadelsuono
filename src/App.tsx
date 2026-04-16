@@ -17,6 +17,7 @@ import { AIFeaturesProvider } from './contexts/AIFeaturesContext';
 import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Product as ProductType } from './types/admin';
 
 // ─── URL ↔ page mapping ───────────────────────────────────────────────────────
@@ -288,6 +289,7 @@ export default function App() {
       {!isAdminPage && <Navbar onNavigate={handleNavigate} onOpenCart={() => setIsCartOpen(true)} />}
       
       <main className="flex-grow relative">
+        <ErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -316,6 +318,7 @@ export default function App() {
             </motion.div>
           </AnimatePresence>
         </Suspense>
+        </ErrorBoundary>
       </main>
 
       {!isAdminPage && <Footer onNavigate={handleNavigate} />}
