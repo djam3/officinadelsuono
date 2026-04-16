@@ -109,10 +109,20 @@ service cloud.firestore {
 
     // ─── Orders ──────────────────────────────────────────────────────────────
     // Chiunque può creare un ordine valido (checkout anonimo)
-    // Solo admin può leggere, aggiornare, eliminare
+    // Admin può leggere/modificare/eliminare tutti gli ordini
+    // Utente autenticato può leggere i propri ordini
 
     match /orders/{orderId} {
       allow create: if isValidOrder();
+      allow read: if isAdmin() || (request.auth != null && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // ─── Newsletter Subscribers ───────────────────────────────────────────────
+    // Chiunque può iscriversi, solo admin può gestire
+
+    match /newsletter_subscribers/{docId} {
+      allow create: if true;
       allow read, update, delete: if isAdmin();
     }
 
