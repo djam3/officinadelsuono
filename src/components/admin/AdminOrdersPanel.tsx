@@ -11,7 +11,8 @@ import {
 import {
   ShoppingBag, Package, Truck, CheckCircle, XCircle,
   Clock, Eye, ChevronDown, ChevronUp, Search,
-  RefreshCw, AlertCircle, Copy, ExternalLink
+  RefreshCw, AlertCircle, Copy, ExternalLink,
+  TrendingUp, ShoppingCart, BarChart2, Hourglass,
 } from 'lucide-react';
 
 // ─── Tipi ────────────────────────────────────────────────────────────────────
@@ -128,17 +129,12 @@ export function AdminOrdersPanel() {
 
   // ── KPI ─────────────────────────────────────────────────────────────────────
 
-  const kpi = {
-    nuovi:     orders.filter(o => o.status === 'nuovo').length,
-    spediti:   orders.filter(o => o.status === 'spedito').length,
-    totaleOggi: orders
-      .filter(o => {
-        const d = o.createdAt?.toDate?.() || new Date(o.createdAt);
-        return d.toDateString() === new Date().toDateString();
-      })
-      .reduce((s, o) => s + (o.total || 0), 0),
-    totaleAll: orders.reduce((s, o) => s + (o.total || 0), 0),
-  };
+  const activeOrders = orders.filter(o => o.status !== 'annullato');
+  const fatturatoTotale = activeOrders.reduce((s, o) => s + (o.total || 0), 0);
+  const ordiniTotali = orders.length;
+  const ordineMedio = ordiniTotali > 0 ? fatturatoTotale / ordiniTotali : 0;
+  const ordiniInAttesa = orders.filter(o => o.status === 'nuovo').length;
+
 
   const fmt = (n: number) => `€${n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const fmtDate = (ts: any) => {
@@ -175,19 +171,51 @@ export function AdminOrdersPanel() {
         </div>
       )}
 
-      {/* KPI */}
+      {/* Mini dashboard KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Nuovi da gestire', value: kpi.nuovi, color: 'text-blue-400', urgent: kpi.nuovi > 0 },
-          { label: 'In spedizione', value: kpi.spediti, color: 'text-purple-400', urgent: false },
-          { label: 'Incasso oggi', value: fmt(kpi.totaleOggi), color: 'text-emerald-400', urgent: false },
-          { label: 'Totale ricavi', value: fmt(kpi.totaleAll), color: 'text-brand-orange', urgent: false },
-        ].map(k => (
-          <div key={k.label} className={`bg-zinc-900 border rounded-xl p-5 ${k.urgent ? 'border-blue-500/40' : 'border-zinc-800'}`}>
-            <p className="text-xs text-zinc-500 uppercase tracking-wide mb-2">{k.label}</p>
-            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+        <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Fatturato Totale</p>
+            <div className="w-8 h-8 rounded-lg bg-brand-orange/10 flex items-center justify-center flex-shrink-0">
+              <TrendingUp className="w-4 h-4 text-brand-orange" />
+            </div>
           </div>
-        ))}
+          <p className="text-2xl font-black text-brand-orange">{fmt(fatturatoTotale)}</p>
+          <p className="text-xs text-zinc-500">Esclusi ordini annullati</p>
+        </div>
+
+        <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Ordini Totali</p>
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+              <ShoppingCart className="w-4 h-4 text-blue-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-brand-orange">{ordiniTotali}</p>
+          <p className="text-xs text-zinc-500">Tutti gli ordini ricevuti</p>
+        </div>
+
+        <div className="bg-zinc-900/80 backdrop-blur border border-zinc-800 rounded-xl p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">Ordine Medio</p>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+              <BarChart2 className="w-4 h-4 text-emerald-400" />
+            </div>
+          </div>
+          <p className="text-2xl font-black text-brand-orange">{fmt(ordineMedio)}</p>
+          <p className="text-xs text-zinc-500">Valore medio per ordine</p>
+        </div>
+
+        <div className={`bg-zinc-900/80 backdrop-blur border rounded-xl p-5 flex flex-col gap-3 ${ordiniInAttesa > 0 ? 'border-yellow-500/40' : 'border-zinc-800'}`}>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-zinc-400 uppercase tracking-wide font-semibold">In attesa</p>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ordiniInAttesa > 0 ? 'bg-yellow-500/10' : 'bg-zinc-800'}`}>
+              <Hourglass className={`w-4 h-4 ${ordiniInAttesa > 0 ? 'text-yellow-400' : 'text-zinc-500'}`} />
+            </div>
+          </div>
+          <p className={`text-2xl font-black ${ordiniInAttesa > 0 ? 'text-yellow-400' : 'text-brand-orange'}`}>{ordiniInAttesa}</p>
+          <p className="text-xs text-zinc-500">Ordini da gestire</p>
+        </div>
       </div>
 
       {/* Filtri */}

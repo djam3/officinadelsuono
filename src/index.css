@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+/* Garantisce font-display swap per Inter se caricato via Google Fonts */
+/* La stringa &display=swap nell'URL sopra lo gestisce automaticamente */
 @import "tailwindcss";
 
 @theme {

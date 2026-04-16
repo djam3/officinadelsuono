@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useSEO } from '../hooks/useSEO';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, Clock, Share2, ChevronRight, ShoppingCart, Loader2, MessageCircle, Award, Bookmark, ArrowUp } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Share2, ChevronRight, ShoppingCart, Loader2, MessageCircle, Award, Bookmark, ArrowUp, Link2 } from 'lucide-react';
 import { MOCK_POSTS } from './Blog';
 import { collection, getDocs, query, limit, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -165,6 +165,7 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showBackTop, setShowBackTop] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const update = () => {
@@ -177,6 +178,40 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     window.addEventListener('scroll', update, { passive: true });
     return () => window.removeEventListener('scroll', update);
   }, []);
+
+  useEffect(() => {
+    if (!post) return;
+    const existing = document.getElementById('blogpost-jsonld');
+    if (existing) existing.remove();
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.id = 'blogpost-jsonld';
+    script.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'BlogPosting',
+      headline: post.title,
+      description: post.excerpt || post.title,
+      image: post.image || '',
+      author: {
+        '@type': 'Person',
+        name: post.author || 'Amerigo De Cristofaro',
+        jobTitle: 'DJ Certificato MAT Academy',
+      },
+      publisher: {
+        '@type': 'Organization',
+        name: 'Officina del Suono',
+        url: 'https://officinadelsuono-87986.web.app',
+      },
+      datePublished: post.createdAt || post.date || new Date().toISOString(),
+      dateModified: post.updatedAt || post.createdAt || post.date || new Date().toISOString(),
+      mainEntityOfPage: {
+        '@type': 'WebPage',
+        '@id': `https://officinadelsuono-87986.web.app/blog/${post.id}`,
+      },
+    });
+    document.head.appendChild(script);
+    return () => { document.getElementById('blogpost-jsonld')?.remove(); };
+  }, [post]);
 
   useEffect(() => {
     if (!postId) return;
@@ -229,6 +264,13 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
       navigator.clipboard.writeText(window.location.href);
       showToast?.('Link copiato!', 'success');
     }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => {});
   };
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
@@ -383,6 +425,38 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
               className="article-body"
               dangerouslySetInnerHTML={{ __html: post.content || '<p>Contenuto in arrivo…</p>' }}
             />
+
+            {/* ── Social share ── */}
+            <div className="my-10 flex flex-col gap-3">
+              <p className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em]">Condividi questo articolo</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(post.title + ' — ' + window.location.href)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20 transition-colors text-sm font-bold"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </a>
+                <button
+                  onClick={handleCopyLink}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white hover:border-white/20 transition-colors text-sm font-bold"
+                >
+                  <Link2 className="w-4 h-4" />
+                  {copied ? '✓ Link copiato!' : 'Copia link'}
+                </button>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(window.location.href)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-800 border border-white/10 text-zinc-300 hover:text-white hover:border-white/20 transition-colors text-sm font-bold"
+                >
+                  <Share2 className="w-4 h-4" />
+                  X / Twitter
+                </a>
+              </div>
+            </div>
 
             {/* ── Mid-content CTA WhatsApp ── */}
             <div className="my-14 overflow-hidden rounded-2xl border border-green-500/20 bg-gradient-to-r from-green-950/40 via-zinc-900/60 to-zinc-900/40 relative">

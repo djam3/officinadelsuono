@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getDirectDriveUrl } from '../../utils/drive';
 import { generateSEOContent } from '../../services/aiService';
 
-import { Product } from '../../types/admin';
+import { Product, ProductVariant } from '../../types/admin';
 
 interface AdminInventoryPanelProps {
   products: Product[];
@@ -190,6 +190,8 @@ Rispondi ESCLUSIVAMENTE in JSON:
         specs: editForm.specs || {},
         badge: editForm.badge || '',
         stock: editForm.stock !== undefined ? editForm.stock : null,
+        hasVariants: editForm.hasVariants || false,
+        variants: editForm.variants || [],
       };
       if (editForm.weightKg !== undefined && editForm.weightKg > 0) {
         productData.weightKg = editForm.weightKg;
@@ -498,6 +500,83 @@ Rispondi ESCLUSIVAMENTE in JSON:
                           })()}
                         </div>
                       )}
+                    </div>
+
+                    {/* Varianti */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={editForm.hasVariants || false}
+                            onChange={e => setEditForm(prev => ({ ...prev, hasVariants: e.target.checked, variants: e.target.checked ? (prev.variants || []) : [] }))}
+                            className="rounded"
+                          />
+                          Abilita Varianti (colori, bundle, configurazioni)
+                        </label>
+                        {editForm.hasVariants && (
+                          <button
+                            type="button"
+                            onClick={() => setEditForm(prev => ({
+                              ...prev,
+                              variants: [...(prev.variants || []), { id: `variant-${Date.now()}`, label: '', priceModifier: 0, stock: 0 }]
+                            }))}
+                            className="flex items-center gap-1 text-xs text-brand-orange hover:text-white px-3 py-1 bg-brand-orange/10 border border-brand-orange/30 rounded-full transition-colors"
+                          >
+                            <Plus className="w-3 h-3" /> Aggiungi variante
+                          </button>
+                        )}
+                      </div>
+
+                      {editForm.hasVariants && (editForm.variants || []).map((variant: ProductVariant, idx: number) => (
+                        <div key={variant.id} className="bg-zinc-900/60 border border-white/10 rounded-xl p-3 flex items-center gap-3 flex-wrap">
+                          <input
+                            placeholder="Nome variante (es. Nero, Bundle Pro)"
+                            value={variant.label}
+                            onChange={e => {
+                              const newVariants = [...(editForm.variants || [])];
+                              newVariants[idx] = { ...newVariants[idx], label: e.target.value };
+                              setEditForm(prev => ({ ...prev, variants: newVariants }));
+                            }}
+                            className="flex-1 min-w-32 bg-black border border-white/10 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-brand-orange"
+                          />
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-zinc-500">±€</span>
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={variant.priceModifier}
+                              onChange={e => {
+                                const newVariants = [...(editForm.variants || [])];
+                                newVariants[idx] = { ...newVariants[idx], priceModifier: parseFloat(e.target.value) || 0 };
+                                setEditForm(prev => ({ ...prev, variants: newVariants }));
+                              }}
+                              className="w-20 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand-orange"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-zinc-500">Stock:</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={variant.stock}
+                              onChange={e => {
+                                const newVariants = [...(editForm.variants || [])];
+                                newVariants[idx] = { ...newVariants[idx], stock: parseInt(e.target.value) || 0 };
+                                setEditForm(prev => ({ ...prev, variants: newVariants }));
+                              }}
+                              className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:border-brand-orange"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditForm(prev => ({ ...prev, variants: (prev.variants || []).filter((_, i) => i !== idx) }))}
+                            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
 
                     <div className="flex justify-end gap-3 border-t border-white/5 pt-6">
