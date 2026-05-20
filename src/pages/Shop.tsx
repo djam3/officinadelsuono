@@ -174,22 +174,22 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-12 gap-6">
           <div>
             <h1 className="text-3xl md:text-5xl font-black tracking-tight mb-4 uppercase leading-tight">
-              Attrezzatura DJ e <span className="text-brand-orange">Audio Professionale</span>
+              Non Comprare <span className="text-brand-orange">A Caso</span>
             </h1>
             <p className="text-sm md:text-base text-zinc-400 max-w-2xl">
-              Più di un semplice Audio Pro Store: Officinadelsuono è il tuo laboratorio tecnico d'élite. Scegli le migliori configurazioni per il tuo sound.
+              Scegli le configurazioni blindate che non ti lasceranno mai a piedi in mezzo a un DJ Set. Catalogo spietatamente selezionato da Amerigo.
             </p>
           </div>
           
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <a 
-              href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Ti%20scrivo%20dal%20sito%20Officinadelsuono.%20Vorrei%20un%20consiglio%20su%20quale%20attrezzatura%20acquistare." 
+              href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Sono%20indeciso%20su%20cosa%20comprare.%20Mi%20aiuti%20a%20non%20buttare%20soldi?" 
               target="_blank" 
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white px-6 py-4 md:py-3 rounded-xl text-sm font-bold transition-all w-full md:w-auto"
             >
               <MessageCircle className="w-5 h-5 text-green-500" />
-              Serve aiuto per scegliere?
+              Sei Indeciso? Chiedi ad Amerigo.
             </a>
           </div>
         </div>
@@ -202,8 +202,8 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                 <Package className="w-5 h-5 text-brand-orange" />
               </div>
               <div>
-                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">Setup Curati <span className="text-brand-orange">by Amerigo</span></h2>
-                <p className="text-xs text-zinc-500">Pacchetti pre-configurati con compatibilita garantita</p>
+                <h2 className="text-xl md:text-2xl font-black uppercase tracking-tight">Setup Garantiti <span className="text-brand-orange">by Amerigo</span></h2>
+                <p className="text-xs text-zinc-500">Pacchetti blindati: zero problemi di compatibilità, 100% plug & play.</p>
               </div>
             </div>
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-orange/10 border border-brand-orange/20">
@@ -441,10 +441,10 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
               </div>
               <div>
                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight mb-2">
-                  Usato <span className="text-green-500">Certificato</span>
+                  Usato <span className="text-green-500">Blindato e Certificato</span>
                 </h3>
                 <p className="text-zinc-400 text-sm md:text-base max-w-xl">
-                  Hai attrezzatura DJ da vendere o vuoi risparmiare con gear ricondizionato e testato da un esperto? Ogni pezzo viene verificato personalmente prima della vendita.
+                  Il mercato dell'usato è una giungla. Noi testiamo e certifichiamo ogni singolo fader e condensatore. Risparmia subito senza l'ansia della fregatura.
                 </p>
               </div>
             </div>

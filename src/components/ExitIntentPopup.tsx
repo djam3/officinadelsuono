@@ -79,10 +79,10 @@ export function ExitIntentPopup() {
             </div>
             
             <h2 className="text-3xl font-black text-white mb-2 tracking-tight">
-              Aspetta! <span className="text-brand-orange">🎧</span>
+              Stai per fare un errore. <span className="text-brand-orange">🛑</span>
             </h2>
             <p className="text-zinc-400 mb-8 leading-relaxed">
-              Stai per perderti qualcosa di speciale. Inserisci la tua email e ricevi subito un <strong className="text-white">codice sconto del 10%</strong> per il tuo primo ordine.
+              Stai per andartene e comprare altrove a scatola chiusa. Non farlo. Lasciaci la tua email: ti mandiamo subito un <strong className="text-white">codice sconto del 10% reale</strong> (nessun trucchetto) sul tuo primo ordine e i nostri contatti diretti per qualsiasi dubbio tecnico.
             </p>
             
             {status === 'success' ? (
@@ -125,7 +125,7 @@ export function ExitIntentPopup() {
               onClick={() => setIsVisible(false)}
               className="mt-6 text-xs text-zinc-600 hover:text-zinc-400 underline"
             >
-              No grazie, preferisco pagare a prezzo pieno
+              No grazie, preferisco rischiare di comprare l'attrezzatura sbagliata.
             </button>
           </motion.div>
         </div>

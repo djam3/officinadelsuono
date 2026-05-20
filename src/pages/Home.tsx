@@ -103,13 +103,13 @@ export function Home({ onNavigate }: HomeProps) {
             <EditableText 
               as="span" 
               contentKey="hero_title" 
-              fallback="Massimo SPL." 
+              fallback="Il Suono Perfetto." 
             /><br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500 drop-shadow-[0_0_20px_rgba(255,100,0,0.3)]">
               <EditableText 
                 as="span" 
                 contentKey="hero_subtitle" 
-                fallback="Zero Distorsione." 
+                fallback="Zero Soldi Buttati." 
               />
             </span>
           </motion.h1>
@@ -123,7 +123,7 @@ export function Home({ onNavigate }: HomeProps) {
             <EditableText 
               as="p" 
               contentKey="hero_body" 
-              fallback="Setup Ingegnerizzati. Progettiamo catene audio su misura per chi esige performance reali e qualità acustica d'élite." 
+              fallback="Smettila di indovinare quale attrezzatura comprare. Ti ingegnerizziamo il setup definitivo per il tuo budget, testato sul campo da un Sound Engineer certificato. Nessuna scatola a sorpresa, solo performance reale." 
               multiline
             />
           </motion.div>
@@ -138,7 +138,7 @@ export function Home({ onNavigate }: HomeProps) {
               onClick={() => onNavigate('shop')}
               className="w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95"
             >
-              Trova il tuo Setup
+              Scopri i Setup Garantiti
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform shrink-0" />
             </button>
 
@@ -149,7 +149,7 @@ export function Home({ onNavigate }: HomeProps) {
               className="w-full sm:w-auto px-12 py-5 bg-zinc-900/50 hover:bg-zinc-800 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 border border-white/10 backdrop-blur-md"
             >
               <MessageCircle className="w-6 h-6 text-green-500 shrink-0" />
-              Consulenza Gratuita
+              Evita Errori: Parla con Amerigo (Gratis)
             </a>
           </motion.div>
         </div>
@@ -197,10 +197,10 @@ export function Home({ onNavigate }: HomeProps) {
               <span className="text-xs font-black uppercase tracking-[0.2em]">Cosa Ci Rende Diversi</span>
             </div>
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 uppercase">
-              Non un Altro <span className="text-brand-orange">Negozio Online</span>.
+              Siamo l'Antidoto ai <span className="text-brand-orange">Megastore Online</span>.
             </h2>
             <p className="text-zinc-500 text-lg md:text-xl max-w-3xl mx-auto font-medium">
-              Qui trovi un esperto certificato che ha <strong className="text-white">testato ogni prodotto sul campo</strong> e ti dice esattamente cosa comprare, perché e come configurarlo.
+              Non troverai un catalogo infinito di prodotti scadenti. Testiamo ogni singola attrezzatura sul campo. <strong className="text-white">Se non suona come diciamo noi, non te la vendiamo.</strong> Trasparenza brutale.
             </p>
           </motion.div>
 
@@ -270,22 +270,22 @@ export function Home({ onNavigate }: HomeProps) {
               {[
                 {
                   icon: Award,
-                  title: "Esperto Certificato",
-                  body: "Non un algoritmo, ma un professionista certificato MAT Academy che ha testato ogni prodotto sul campo.",
+                  title: "Ingegneria, non Chiacchiere",
+                  body: "Non un algoritmo, ma un tecnico certificato MAT Academy che si prende la responsabilità di ciò che compri.",
                   highlight: "Certificazione MAT Academy",
                   delay: 0
                 },
                 {
                   icon: Package,
-                  title: "Catalogo Curato",
-                  body: "Non 100.000 prodotti a caso. Solo attrezzatura selezionata e approvata personalmente da un esperto.",
+                  title: "Selezione Spietata",
+                  body: "Abbiamo scartato il 70% dei prodotti sul mercato. Ti offriamo solo l'attrezzatura che usiamo noi stessi nei live.",
                   highlight: "Solo il meglio, testato da noi",
                   delay: 0.15
                 },
                 {
                   icon: MessageCircle,
-                  title: "Consulenza Gratuita",
-                  body: "15 minuti di consulenza gratuita su WhatsApp per scegliere il setup perfetto per te.",
+                  title: "Zero Resi, Zero Stress",
+                  body: "Perché la consulenza è gratis? Perché un cliente che compra il setup giusto al primo colpo è un cliente che torna. Niente fregature.",
                   highlight: "15 min gratis su WhatsApp",
                   delay: 0.3
                 }
@@ -335,7 +335,7 @@ export function Home({ onNavigate }: HomeProps) {
                     <span className="text-brand-orange"><EditableText as="span" contentKey="quiz_title_highlight" fallback="AI Setup Architect" /></span>.
                   </h2>
                   <div className="text-zinc-400 text-xl max-w-xl mx-auto md:mx-0 leading-relaxed">
-                    <EditableText as="p" multiline contentKey="quiz_body" fallback="Rispondi a 4 brevi domande sul tuo stile e budget. La nostra intelligenza artificiale ingegnerizzerà il setup perfetto per te in pochi secondi." />
+                    <EditableText as="p" multiline contentKey="quiz_body" fallback="Non farti fregare dal marketing dei brand. Rispondi a 4 domande e il nostro sistema (addestrato da veri Sound Engineer) ti dirà esattamente cosa ti serve per il tuo budget, senza farti spendere un euro di troppo." />
                   </div>
                 </div>
                 <div className="shrink-0">
@@ -344,7 +344,7 @@ export function Home({ onNavigate }: HomeProps) {
                     className="px-12 py-6 bg-white text-black hover:bg-zinc-100 rounded-[1.5rem] font-black text-2xl transition-all flex items-center justify-center gap-4 shadow-[0_30px_70px_rgba(255,255,255,0.2)] hover:-translate-y-2 active:scale-95"
                   >
                     <SlidersHorizontal className="w-8 h-8" />
-                    <EditableText as="span" contentKey="quiz_cta" fallback="Inizia il Test" />
+                    <EditableText as="span" contentKey="quiz_cta" fallback="Dimmi Cosa Comprare" />
                   </button>
                 </div>
               </div>

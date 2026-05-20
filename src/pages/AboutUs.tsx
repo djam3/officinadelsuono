@@ -46,19 +46,18 @@ export function AboutUs() {
             </div>
             
             <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">
-              Oltre il Negozio:<br />
-              Un <span className="text-brand-orange">Laboratorio</span> di Passione.
+              Il Negozio Nato per <span className="text-brand-orange">Salvare i Tuoi Soldi</span>.
             </h1>
             
             <div className="space-y-6 text-lg text-zinc-400 leading-relaxed">
               <p>
-                Tutto inizia con una console e un'ossessione: capire perché alcuni setup suonano "bene" e altri semplicemente "forte". <strong>Amerigo De Cristofaro</strong> non ha fondato Officinadelsuono solo per vendere hardware, ma per colmare il vuoto tra il manuale d'istruzioni e la performance reale.
+                Tutto inizia con un'ossessione: vedere troppi DJ e producer sprecare migliaia di euro in attrezzatura sbagliata, consigliati da commessi incompetenti o da algoritmi senza volto. <strong>Amerigo De Cristofaro</strong> ha fondato Officinadelsuono non per venderti l'ennesimo cavo, ma per offrirti la consulenza ingegneristica che ti salva dal fare l'acquisto sbagliato.
               </p>
               <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
-                "Mentre gli altri leggono un manuale, io ho studiato l'ingegneria del suono per darti solo setup che funzionano davvero, testati sul campo e ottimizzati per la tua visione artistica."
+                "Ho visto troppi artisti rovinare la propria performance a causa di un setup non idoneo. Io testo tutto sul campo e studio l'ingegneria dietro ogni prodotto, per garantirti zero compromessi e zero sorprese."
               </p>
               <p>
-                Nata a <strong>Forino (AV)</strong>, nel cuore dell'Irpinia, Officinadelsuono è oggi il punto di riferimento per chi cerca competenza tecnica reale, supportata da certificazioni internazionali e una selezione maniacale dei brand leader.
+                Nata a <strong>Forino (AV)</strong>, Officinadelsuono è oggi il punto di riferimento per chi cerca competenza reale, supportata da certificazioni internazionali. Trasparenza totale: se un prodotto fa schifo, noi non lo vendiamo.
               </p>
             </div>
           </motion.div>
