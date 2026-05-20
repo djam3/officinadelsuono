@@ -18,6 +18,9 @@ import { BuilderToolbar } from './components/builder/BuilderToolbar';
 import { CookieBanner } from './components/CookieBanner';
 import { installErrorLogger } from './utils/errorLogger';
 import { Product as ProductType } from './types/admin';
+import { trackPageView } from './utils/analytics';
+import { captureUTMs } from './utils/utm';
+import { ExitIntentPopup } from './components/ExitIntentPopup';
 
 // ─── URL ↔ page mapping ───────────────────────────────────────────────────────
 const PAGE_TO_PATH: Record<string, string> = {
@@ -136,6 +139,9 @@ export default function App() {
   };
 
   useEffect(() => {
+    // Capture UTM parameters from the landing URL (persists to localStorage)
+    captureUTMs();
+
     // Check URL parameters for payment redirect status
     const query = new URLSearchParams(window.location.search);
     if (query.get('success')) {
@@ -158,6 +164,7 @@ export default function App() {
       const route = pathToPage(window.location.pathname);
       setCurrentPage(route.page);
       setSelectedProductId(route.id || null);
+      trackPageView(window.location.pathname);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     window.addEventListener('popstate', onPopState);
@@ -172,6 +179,7 @@ export default function App() {
     if (page === 'product' && productId) path = `/prodotto/${productId}`;
     if (page === 'blog-post' && productId) path = `/blog/${productId}`;
     window.history.pushState({ page, productId }, '', path);
+    trackPageView(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -320,6 +328,7 @@ export default function App() {
       {!isAdminPage && <Chatbot />}
       {!isAdminPage && <Cart isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onNavigate={handleNavigate} />}
       {!isAdminPage && <CookieBanner onNavigate={handleNavigate} />}
+      {!isAdminPage && <ExitIntentPopup />}
       </div>
     </BuilderProvider>
     </AIFeaturesProvider>

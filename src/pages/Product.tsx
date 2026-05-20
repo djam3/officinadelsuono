@@ -1,4 +1,4 @@
-import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, Play, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package } from 'lucide-react';
+import { Check, MessageCircle, Shield, Truck, Zap, ShoppingCart, Star, UserCircle, Box as BoxIcon, X, PlusCircle, LogOut, Sparkles, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown, Minus, Package, Share2, Facebook, Twitter, Link } from 'lucide-react';
 import {
   calcolaQuoteTuttiCorrieri, loadCorreriAttivi, loadShippingSettings,
   mancaAllaGratuita, SOGLIA_SPEDIZIONE_GRATUITA,
@@ -300,8 +300,65 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
   const productDescription = displayProduct.description || (product ? "Prodotto professionale selezionato dai nostri esperti per garantirti le migliori performance audio." : "Dimentica l'ansia della compatibilità e i cavi sbagliati. Il Bundle Start DJ Pro è la soluzione \"Ready-to-Play\" progettata e testata da un professionista certificato MAT Academy. Apri i flight case, collega i cavi Roland Pro inclusi e sei pronto a far tremare la pista. Nessun compromesso, solo pura performance.");
   const isLong = productDescription.length > 250;
 
+  // Generate Schema.org JSON-LD data
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": displayProduct.name,
+    "image": productImages.map(img => getDirectDriveUrl(img)),
+    "description": productDescription,
+    "brand": {
+      "@type": "Brand",
+      "name": displayProduct.category // We don't have explicit brand, use category or default
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "EUR",
+      "price": displayProduct.price,
+      "availability": "https://schema.org/InStock",
+      "itemCondition": "https://schema.org/NewCondition"
+    },
+    ...(reviews.length > 0 && {
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": averageRating.toFixed(1),
+        "reviewCount": reviews.length
+      }
+    })
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://officinadelsuono-87986.web.app/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": displayProduct.category,
+        "item": `https://officinadelsuono-87986.web.app/shop?category=${encodeURIComponent(displayProduct.category)}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": displayProduct.name,
+        "item": window.location.href
+      }
+    ]
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white pt-8 pb-24">
+      {/* JSON-LD Structured Data */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Breadcrumbs */}
@@ -484,6 +541,50 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                 <MessageCircle className="w-6 h-6" />
                 Parla con un Ingegnere
               </a>
+            </div>
+
+            {/* Social Sharing */}
+            <div className="mt-6 flex items-center gap-4">
+              <span className="text-sm font-bold text-zinc-500 uppercase flex items-center gap-2">
+                <Share2 className="w-4 h-4" /> Condividi:
+              </span>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Guarda questo prodotto: ${displayProduct.name} - ${window.location.href}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-[#25D366] hover:border-[#25D366] hover:bg-[#25D366]/10 transition-all"
+                title="Condividi su WhatsApp"
+              >
+                <MessageCircle className="w-5 h-5" />
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-[#1877F2] hover:border-[#1877F2] hover:bg-[#1877F2]/10 transition-all"
+                title="Condividi su Facebook"
+              >
+                <Facebook className="w-5 h-5" />
+              </a>
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(`Scopri ${displayProduct.name} su Officina del Suono!`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-white hover:border-white hover:bg-white/10 transition-all"
+                title="Condividi su X (Twitter)"
+              >
+                <Twitter className="w-5 h-5" />
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  if (showToast) showToast('Link copiato negli appunti!', 'success');
+                }}
+                className="w-10 h-10 rounded-full bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 hover:text-brand-orange hover:border-brand-orange hover:bg-brand-orange/10 transition-all"
+                title="Copia Link"
+              >
+                <Link className="w-5 h-5" />
+              </button>
             </div>
 
             {/* Trust Badges + Spedizione dinamica */}

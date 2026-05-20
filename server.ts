@@ -449,6 +449,96 @@ async function startServer() {
     }
   });
 
+  // ─── Dynamic Sitemap ──────────────────────────────────────────────────────────
+  // Replaces the static public/sitemap.xml with a live version that includes
+  // every published product and blog post fetched from Firestore.
+  app.get("/sitemap.xml", async (req, res) => {
+    const BASE = "https://officinadelsuono-87986.web.app";
+    const now = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+    // Static pages with their priorities
+    const staticUrls = [
+      { loc: `${BASE}/`,           changefreq: "weekly",  priority: "1.0", lastmod: now },
+      { loc: `${BASE}/shop`,       changefreq: "daily",   priority: "0.9", lastmod: now },
+      { loc: `${BASE}/blog`,       changefreq: "weekly",  priority: "0.8", lastmod: now },
+      { loc: `${BASE}/quiz`,       changefreq: "monthly", priority: "0.7", lastmod: now },
+      { loc: `${BASE}/chi-siamo`,  changefreq: "monthly", priority: "0.6", lastmod: now },
+      { loc: `${BASE}/contatti`,   changefreq: "monthly", priority: "0.6", lastmod: now },
+      { loc: `${BASE}/confronta`,  changefreq: "monthly", priority: "0.5", lastmod: now },
+    ];
+
+    let dynamicUrls: Array<{ loc: string; changefreq: string; priority: string; lastmod: string }> = [];
+
+    try {
+      const db = getFirestore();
+
+      // Products — only published (draft !== true)
+      const productsSnap = await db.collection("products")
+        .where("draft", "!=", true)
+        .get();
+
+      productsSnap.forEach((doc) => {
+        const data = doc.data();
+        const updatedAt = data.updatedAt
+          ? (typeof data.updatedAt === "string"
+              ? data.updatedAt.split("T")[0]
+              : data.updatedAt.toDate?.()?.toISOString().split("T")[0] ?? now)
+          : now;
+        dynamicUrls.push({
+          loc: `${BASE}/prodotto/${doc.id}`,
+          changefreq: "weekly",
+          priority: "0.8",
+          lastmod: updatedAt,
+        });
+      });
+
+      // Blog posts
+      const blogSnap = await db.collection("blog_posts").get();
+      blogSnap.forEach((doc) => {
+        const data = doc.data();
+        const updatedAt = data.updatedAt
+          ? (typeof data.updatedAt === "string"
+              ? data.updatedAt.split("T")[0]
+              : data.updatedAt.toDate?.()?.toISOString().split("T")[0] ?? now)
+          : now;
+        dynamicUrls.push({
+          loc: `${BASE}/blog/${doc.id}`,
+          changefreq: "monthly",
+          priority: "0.7",
+          lastmod: updatedAt,
+        });
+      });
+
+      console.log(`[Sitemap] Generated with ${staticUrls.length} static + ${dynamicUrls.length} dynamic URLs`);
+    } catch (err) {
+      console.error("[Sitemap] Firestore error, serving static-only sitemap:", err);
+      // Fall back gracefully to static-only — don't crash
+    }
+
+    const allUrls = [...staticUrls, ...dynamicUrls];
+
+    const xmlEntries = allUrls
+      .map(
+        (u) => `  <url>
+    <loc>${u.loc}</loc>
+    <lastmod>${u.lastmod}</lastmod>
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>
+  </url>`
+      )
+      .join("\n");
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${xmlEntries}
+</urlset>`;
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600"); // 1 h cache
+    res.send(xml);
+  });
+
+
   // API routes FIRST
   app.post("/api/create-manual-order", async (req, res) => {
     try {

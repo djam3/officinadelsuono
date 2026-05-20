@@ -13,6 +13,10 @@
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://officinadelsuono-87986.web.app/" />
 
+    <!-- Google Search Console Verification -->
+    <!-- Replace PLACEHOLDER with your actual verification code from Search Console -->
+    <!-- <meta name="google-site-verification" content="PLACEHOLDER" /> -->
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://officinadelsuono-87986.web.app/" />
@@ -33,6 +37,44 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+
+    <!-- Google Analytics 4
+         Set VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX in your .env file.
+         The snippet is inert (no-op) when the variable is not provided. -->
+    <script>
+      window.__GA_ID = '%VITE_GA4_MEASUREMENT_ID%';
+      if (window.__GA_ID && window.__GA_ID !== '%VITE_GA4_MEASUREMENT_ID%') {
+        (function(G){
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=' + G;
+          document.head.appendChild(s);
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){window.dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('js', new Date());
+          gtag('config', G, { anonymize_ip: true, cookie_flags: 'SameSite=None;Secure' });
+        })(window.__GA_ID);
+      }
+    </script>
+
+    <!-- Meta Pixel Code -->
+    <script>
+      window.__META_ID = '%VITE_META_PIXEL_ID%';
+      if (window.__META_ID && window.__META_ID !== '%VITE_META_PIXEL_ID%') {
+        !function(f,b,e,v,n,t,s)
+        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+        n.queue=[];t=b.createElement(e);t.async=!0;
+        t.src=v;s=b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t,s)}(window, document,'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', window.__META_ID);
+        fbq('track', 'PageView');
+      }
+    </script>
+    <!-- End Meta Pixel Code -->
 
     <!-- Structured Data: Organization -->
     <script type="application/ld+json">
@@ -78,6 +120,11 @@
     </script>
   </head>
   <body>
+    <noscript>
+      <img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=%VITE_META_PIXEL_ID%&ev=PageView&noscript=1"
+      />
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

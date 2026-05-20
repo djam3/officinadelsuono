@@ -264,8 +264,57 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
     }
   };
 
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": post.title,
+    "image": [
+      post.image
+    ],
+    "author": {
+      "@type": "Person",
+      "name": post.author
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Officina del Suono",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://officinadelsuono-87986.web.app/logo.png"
+      }
+    },
+    "description": post.excerpt
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://officinadelsuono-87986.web.app/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Blog",
+        "item": "https://officinadelsuono-87986.web.app/blog"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": post.title,
+        "item": window.location.href
+      }
+    ]
+  };
+
   return (
     <article className="min-h-screen bg-zinc-950 text-white">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <style dangerouslySetInnerHTML={{ __html: BLOG_STYLES }} />
 
       {/* ── Reading Progress ── */}

@@ -1,12 +1,38 @@
-import { Truck, ShieldCheck, MessageCircle, Award } from 'lucide-react';
+import { Truck, ShieldCheck, MessageCircle, Award, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import { PaymentLogos } from './PaymentLogos';
 import { Logo } from './Logo';
+import { useState } from 'react';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 interface FooterProps {
   onNavigate?: (page: string) => void;
 }
 
 export function Footer({ onNavigate }: FooterProps) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setStatus('loading');
+    try {
+      await addDoc(collection(db, 'newsletter_subscribers'), {
+        email: email.trim(),
+        subscribedAt: new Date().toISOString(),
+        source: 'footer'
+      });
+      setStatus('success');
+      setEmail('');
+      setTimeout(() => setStatus('idle'), 5000);
+    } catch (err) {
+      console.error('Newsletter error:', err);
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 5000);
+    }
+  };
+
   return (
     <footer className="bg-black border-t border-white/10">
       {/* Trust Signals Bar */}
@@ -42,9 +68,51 @@ export function Footer({ onNavigate }: FooterProps) {
                 Officina<span className="text-brand-orange">delsuono</span>
               </span>
             </div>
-            <p className="text-zinc-400 max-w-sm mb-6">
+            <p className="text-zinc-400 max-w-sm mb-8">
               Consulenza tecnica specializzata per DJ (Certificazione MAT Academy) e vendita hardware professionale. Il tuo suono, configurato da esperti.
             </p>
+
+            {/* Newsletter Form */}
+            <div className="max-w-md">
+              <h4 className="text-white font-bold mb-2 flex items-center gap-2">
+                Iscriviti alla Newsletter <span className="text-brand-orange">🎧</span>
+              </h4>
+              <p className="text-sm text-zinc-500 mb-4">Ricevi offerte esclusive, guide e novità dal mondo DJ.</p>
+              
+              <form onSubmit={handleSubscribe} className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="La tua email"
+                  required
+                  disabled={status === 'loading' || status === 'success'}
+                  className="w-full bg-zinc-900 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-white placeholder:text-zinc-600 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange disabled:opacity-50 transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={status === 'loading' || status === 'success'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-brand-orange text-white rounded-lg hover:bg-orange-600 disabled:bg-zinc-700 transition-colors"
+                >
+                  {status === 'loading' ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </button>
+              </form>
+
+              {status === 'success' && (
+                <div className="mt-2 text-green-500 text-xs flex items-center gap-1 font-medium">
+                  <CheckCircle2 className="w-4 h-4" /> Iscrizione completata!
+                </div>
+              )}
+              {status === 'error' && (
+                <div className="mt-2 text-red-500 text-xs flex items-center gap-1 font-medium">
+                  <AlertCircle className="w-4 h-4" /> Errore durante l'iscrizione. Riprova.
+                </div>
+              )}
+            </div>
           </div>
           
           <div>
