@@ -391,7 +391,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                 </div>
               </div>
               {displayProduct.badge && (
-                <div className="absolute top-4 left-4 px-3 py-1 bg-brand-orange text-white text-xs font-bold uppercase tracking-wider rounded-md z-10">
+                <div className="absolute top-4 left-4 px-3 py-1 bg-brand-orange text-white text-xs font-bold uppercase tracking-wider rounded-md z-10 badge-shine">
                   {displayProduct.badge}
                 </div>
               )}
@@ -526,7 +526,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
             <div className="flex flex-col sm:flex-row gap-4 mt-8">
               <button 
                 onClick={(e) => handleAddToCart(e)}
-                className="flex-1 py-4 px-6 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-black text-lg uppercase tracking-wide transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:shadow-[0_0_40px_rgba(255,102,0,0.5)] hover:-translate-y-1"
+                className="btn-premium flex-1 py-4 px-6 bg-brand-orange hover:bg-orange-600 text-white rounded-xl font-black text-lg uppercase tracking-wide transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(255,102,0,0.3)] hover:shadow-[0_0_40px_rgba(255,102,0,0.5)] hover:-translate-y-1 glow-pulse"
               >
                 <ShoppingCart className="w-6 h-6" />
                 Aggiungi al Setup
@@ -536,7 +536,7 @@ export function Product({ productId, onNavigate, showToast, triggerFlyToCart }: 
                 href={`https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Sto%20valutando%20${displayProduct.name}.%20Vorrei%20il%20parere%20di%20un%20Sound%20Engineer.`} 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="flex-1 py-4 px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 hover:-translate-y-1"
+                className="btn-premium flex-1 py-4 px-6 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg shadow-green-900/20 hover:-translate-y-1"
               >
                 <MessageCircle className="w-6 h-6" />
                 Parla con un Ingegnere

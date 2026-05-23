@@ -136,7 +136,7 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
             ) : (
               <button 
                 onClick={() => setIsAuthModalOpen(true)}
-                className="flex items-center gap-2 bg-white/5 hover:bg-brand-orange text-white px-4 py-2 rounded-full text-sm font-bold transition-all border border-white/10 hover:border-brand-orange shadow-sm"
+                className="btn-premium flex items-center gap-2 bg-white/5 hover:bg-brand-orange text-white px-4 py-2 rounded-full text-sm font-bold transition-all border border-white/10 hover:border-brand-orange shadow-sm"
               >
                 <User className="w-4 h-4" />
                 <span className="hidden sm:block">Accedi</span>

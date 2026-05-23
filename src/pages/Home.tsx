@@ -49,6 +49,7 @@ export function Home({ onNavigate }: HomeProps) {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-black text-white relative font-sans overflow-x-hidden">
+      <div className="grain"></div>
       <MouseGlow />
 
       {/* Hero Section */}
@@ -105,7 +106,7 @@ export function Home({ onNavigate }: HomeProps) {
               contentKey="hero_title" 
               fallback="Il Suono Perfetto." 
             /><br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500 drop-shadow-[0_0_20px_rgba(255,100,0,0.3)]">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500 drop-shadow-[0_0_20px_rgba(255,100,0,0.3)] text-shimmer">
               <EditableText 
                 as="span" 
                 contentKey="hero_subtitle" 
@@ -136,7 +137,7 @@ export function Home({ onNavigate }: HomeProps) {
           >
             <button
               onClick={() => onNavigate('shop')}
-              className="w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95"
+              className="btn-premium w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95 glow-pulse"
             >
               Scopri i Setup Garantiti
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform shrink-0" />
@@ -253,7 +254,7 @@ export function Home({ onNavigate }: HomeProps) {
                 </div>
                 {/* Badge MAT Academy sovrapposto */}
                 <motion.div
-                  className="absolute -bottom-3 -right-3 z-30 bg-black/90 border border-brand-orange/40 rounded-xl px-3 py-2 flex items-center gap-2 backdrop-blur-md"
+                  className="absolute -bottom-3 -right-3 z-30 bg-black/90 border border-brand-orange/40 rounded-xl px-3 py-2 flex items-center gap-2 backdrop-blur-md badge-shine"
                   initial={{ opacity: 0, scale: 0, rotate: -10 }}
                   whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
                   viewport={{ once: true }}
@@ -297,7 +298,7 @@ export function Home({ onNavigate }: HomeProps) {
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, delay: item.delay, ease: [0.19, 1, 0.22, 1] }}
                 >
-                  <div className="flex gap-5 p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group">
+                  <div className="flex gap-5 p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group card-hover-glow">
                     <div className="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center shrink-0 group-hover:bg-brand-orange/20 transition-colors">
                       <item.icon className="w-6 h-6 text-brand-orange" />
                     </div>
@@ -341,7 +342,7 @@ export function Home({ onNavigate }: HomeProps) {
                 <div className="shrink-0">
                   <button 
                     onClick={() => onNavigate('quiz')}
-                    className="px-12 py-6 bg-white text-black hover:bg-zinc-100 rounded-[1.5rem] font-black text-2xl transition-all flex items-center justify-center gap-4 shadow-[0_30px_70px_rgba(255,255,255,0.2)] hover:-translate-y-2 active:scale-95"
+                    className="btn-premium px-12 py-6 bg-white text-black hover:bg-zinc-100 rounded-[1.5rem] font-black text-2xl transition-all flex items-center justify-center gap-4 shadow-[0_30px_70px_rgba(255,255,255,0.2)] hover:-translate-y-2 active:scale-95"
                   >
                     <SlidersHorizontal className="w-8 h-8" />
                     <EditableText as="span" contentKey="quiz_cta" fallback="Dimmi Cosa Comprare" />
@@ -389,7 +390,7 @@ export function Home({ onNavigate }: HomeProps) {
                 <TiltCard intensity={12} className="h-full">
                   <div
                     onClick={() => { onNavigate('shop'); sessionStorage.setItem('shopCategory', cat.category); }}
-                    className="group cursor-pointer relative overflow-hidden rounded-[3rem] border border-white/5 aspect-[4/5.5] flex flex-col justify-end p-8 hover:border-brand-orange/40 transition-all duration-700 bg-zinc-900/30 backdrop-blur-md shadow-2xl"
+                    className="group cursor-pointer relative overflow-hidden rounded-[3rem] border border-white/5 aspect-[4/5.5] flex flex-col justify-end p-8 hover:border-brand-orange/40 transition-all duration-700 bg-zinc-900/30 backdrop-blur-md shadow-2xl card-hover-glow"
                   >
                     <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-transparent to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
                     <div className="absolute inset-0 z-0 scale-100 group-hover:scale-110 transition-transform duration-1000 ease-out">
@@ -459,7 +460,7 @@ export function Home({ onNavigate }: HomeProps) {
               </div>
               <button
                 onClick={() => onNavigate('shop')}
-                className="px-10 py-4 bg-brand-orange hover:bg-orange-600 text-white rounded-2xl font-black text-lg transition-all flex items-center gap-3 group shadow-[0_15px_40px_rgba(255,95,0,0.25)] hover:scale-105 active:scale-95"
+                className="btn-premium px-10 py-4 bg-brand-orange hover:bg-orange-600 text-white rounded-2xl font-black text-lg transition-all flex items-center gap-3 group shadow-[0_15px_40px_rgba(255,95,0,0.25)] hover:scale-105 active:scale-95 glow-pulse"
               >
                 Scopri i Setup Curati
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
@@ -486,7 +487,7 @@ export function Home({ onNavigate }: HomeProps) {
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: 0.3 + i * 0.1 }}
                   onClick={() => onNavigate('shop')}
-                  className={`cursor-pointer p-6 rounded-2xl bg-gradient-to-br ${setup.color} border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group`}
+                  className={`cursor-pointer p-6 rounded-2xl bg-gradient-to-br ${setup.color} border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group card-hover-glow`}
                 >
                   <setup.icon className="w-8 h-8 text-brand-orange mb-3 group-hover:scale-110 transition-transform" />
                   <h4 className="text-lg font-black text-white mb-1">{setup.name}</h4>
@@ -525,7 +526,7 @@ export function Home({ onNavigate }: HomeProps) {
               href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20Vorrei%20una%20consulenza%20gratuita%20per%20scegliere%20il%20mio%20setup%20DJ."
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-10 py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xl transition-all shadow-[0_15px_40px_rgba(34,197,94,0.25)] hover:scale-105 active:scale-95"
+              className="btn-premium inline-flex items-center gap-3 px-10 py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xl transition-all shadow-[0_15px_40px_rgba(34,197,94,0.25)] hover:scale-105 active:scale-95"
             >
               <MessageCircle className="w-6 h-6" />
               Scrivimi su WhatsApp

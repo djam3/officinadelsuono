@@ -186,7 +186,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
               href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Sono%20indeciso%20su%20cosa%20comprare.%20Mi%20aiuti%20a%20non%20buttare%20soldi?" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white px-6 py-4 md:py-3 rounded-xl text-sm font-bold transition-all w-full md:w-auto"
+              className="btn-premium flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-white/10 text-white px-6 py-4 md:py-3 rounded-xl text-sm font-bold transition-all w-full md:w-auto"
             >
               <MessageCircle className="w-5 h-5 text-green-500" />
               Sei Indeciso? Chiedi ad Amerigo.
@@ -225,7 +225,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                 href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20Mi%20interessa%20il%20setup%20curato%20%22${encodeURIComponent(setup.name)}%22.%20Puoi%20darmi%20piu%20info?"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`group p-5 rounded-2xl bg-gradient-to-br ${setup.color} border border-white/5 ${setup.borderHover} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg`}
+                className={`group p-5 rounded-2xl bg-gradient-to-br ${setup.color} border border-white/5 ${setup.borderHover} transition-all duration-300 hover:-translate-y-1 hover:shadow-lg card-hover-glow`}
               >
                 <setup.icon className="w-7 h-7 text-brand-orange mb-3 group-hover:scale-110 transition-transform" />
                 <h3 className="text-sm font-black text-white mb-0.5 leading-tight">{setup.name}</h3>
@@ -328,10 +328,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                         <button onClick={() => toggleCompare(p)} className="text-zinc-400 hover:text-white"><X className="w-4 h-4" /></button>
                       </div>
                     ))}
-                    <button 
-                      onClick={() => onNavigate('compare')}
-                      className="bg-brand-orange text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 transition-colors"
-                    >
+                      className="btn-premium bg-brand-orange text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 transition-colors"
                       Confronta ({compareList.length})
                     </button>
                   </div>
@@ -339,7 +336,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map((product) => (
-                    <div key={product.id} className="group bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-brand-orange/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 transition-all duration-300 flex flex-col">
+                    <div key={product.id} className="group bg-zinc-900 border border-white/5 rounded-2xl overflow-hidden hover:border-brand-orange/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-brand-orange/10 transition-all duration-300 flex flex-col card-hover-glow">
                       <div 
                         className="aspect-square relative overflow-hidden cursor-pointer bg-zinc-950"
                         onClick={() => onNavigate('product', product.id)}
@@ -359,7 +356,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                             Esaurito
                           </div>
                         ) : product.badge && (
-                          <div className="absolute top-4 left-4 px-3 py-1 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-10">
+                          <div className="absolute top-4 left-4 px-3 py-1 bg-brand-orange text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg z-10 badge-shine">
                             {product.badge}
                           </div>
                         )}
@@ -452,7 +449,7 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
               href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20Sono%20interessato%20alla%20sezione%20Usato%20Certificato.%20Puoi%20darmi%20info?"
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-sm transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+              className="btn-premium shrink-0 px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-sm transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
             >
               <MessageCircle className="w-5 h-5" />
               Contattami per l'Usato
