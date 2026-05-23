@@ -328,7 +328,10 @@ export function Shop({ onNavigate, compareList, toggleCompare, showToast, trigge
                         <button onClick={() => toggleCompare(p)} className="text-zinc-400 hover:text-white"><X className="w-4 h-4" /></button>
                       </div>
                     ))}
+                    <button 
+                      onClick={() => onNavigate('compare')}
                       className="btn-premium bg-brand-orange text-white px-6 py-2 rounded-lg font-bold hover:bg-orange-600 transition-colors"
+                    >
                       Confronta ({compareList.length})
                     </button>
                   </div>
