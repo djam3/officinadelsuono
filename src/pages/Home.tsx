@@ -49,7 +49,6 @@ export function Home({ onNavigate }: HomeProps) {
 
   return (
     <div ref={containerRef} className="min-h-screen bg-black text-white relative font-sans overflow-x-hidden">
-      <div className="grain"></div>
       <MouseGlow />
 
       {/* Hero Section */}
