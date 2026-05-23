@@ -3,6 +3,7 @@ import { db } from '../../firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Loader2, Sparkles, Mail } from 'lucide-react';
 import { generateEmailContent } from '../../services/aiService';
+import DOMPurify from 'dompurify';
 
 import { Product } from '../../types/admin';
 
@@ -326,7 +327,7 @@ export function AdminNewsletterPanel({ products, newsletterCount, manualApiKey }
                 {emailPreviewMode === 'html' ? (
                   <div
                     className="prose prose-invert prose-sm max-w-none bg-white/5 rounded-lg p-4 text-sm"
-                    dangerouslySetInnerHTML={{ __html: emailAiResult.bodyHtml }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(emailAiResult.bodyHtml) }}
                   />
                 ) : (
                   <pre className="text-sm text-zinc-300 whitespace-pre-wrap bg-white/5 rounded-lg p-4 font-mono">

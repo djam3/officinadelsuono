@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useBuilder } from '../../contexts/BuilderContext';
 import { Pencil } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface EditableTextProps {
   contentKey: string;
@@ -43,8 +44,12 @@ export function EditableText({ contentKey, fallback, as: Component = 'span', cla
     }
   };
 
+  const createMarkup = (val: string) => {
+    return { __html: DOMPurify.sanitize(val.replace(/\n/g, '<br/>')) };
+  };
+
   if (!isBuilderMode) {
-    return <Component className={className} dangerouslySetInnerHTML={{ __html: displayValue.replace(/\n/g, '<br/>') }} />;
+    return <Component className={className} dangerouslySetInnerHTML={createMarkup(displayValue)} />;
   }
 
   if (isEditing) {
@@ -85,7 +90,7 @@ export function EditableText({ contentKey, fallback, as: Component = 'span', cla
       }}
     >
       {/* Show line breaks properly */}
-      <span dangerouslySetInnerHTML={{ __html: displayValue.replace(/\n/g, '<br/>') }} />
+      <span dangerouslySetInnerHTML={createMarkup(displayValue)} />
       <span className="absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 bg-brand-orange text-white p-1 rounded-full shadow-lg transition-opacity pointer-events-none" style={{display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
         <Pencil className="w-3 h-3" />
       </span>

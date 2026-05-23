@@ -6,6 +6,7 @@ import { MOCK_POSTS } from './Blog';
 import { collection, getDocs, query, limit, addDoc, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { BlogPost as BlogPostType, Product } from '../types/admin';
+import DOMPurify from 'dompurify';
 
 interface BlogPostProps {
   postId: string | null;
@@ -427,10 +428,9 @@ export function BlogPost({ postId, onNavigate, showToast, triggerFlyToCart }: Bl
               {post.excerpt}
             </p>
 
-            {/* Article body */}
             <div
               className="article-body"
-              dangerouslySetInnerHTML={{ __html: post.content || '<p>Contenuto in arrivo…</p>' }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(post.content || '<p>Contenuto in arrivo…</p>') }}
             />
 
             {/* ── Mid-content CTA WhatsApp ── */}
