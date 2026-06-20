@@ -1,8 +1,8 @@
-import React, { useRef, useMemo, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stage, Edges, Text, Html } from '@react-three/drei';
+import React, { useRef, useMemo, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Edges, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { CabinetDesign, PortDesign } from '../../types/speaker';
+import { CabinetDesign } from '../../types/speaker';
 
 interface CabinetViewer3DProps {
   cabinet: CabinetDesign;
@@ -306,27 +306,93 @@ const CabinetModel = ({ cabinet, showDimensions, exploded }: CabinetViewer3DProp
   );
 };
 
-export const CabinetViewer3D = ({ 
-  cabinet, 
-  showDimensions = true, 
-  exploded = false 
-}: CabinetViewer3DProps) => {
+// Verifica supporto WebGL — se assente, mostriamo un fallback 2D invece di un canvas vuoto
+const isWebGLAvailable = (): boolean => {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch {
+    return false;
+  }
+};
+
+// Fallback 2D: rappresentazione schematica della cassa con le quote reali
+const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
+  const { width, height, depth } = cabinet.externalDimensions;
   return (
-    <div className="w-full h-full min-h-[400px] bg-zinc-950/50 rounded-2xl border border-white/5 overflow-hidden relative">
-      <Canvas shadows camera={{ position: [1.5, 1, 2], fov: 45 }}>
-        <color attach="background" args={['#050505']} />
-        
-        <ambientLight intensity={0.7} />
-        <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} intensity={1} castShadow />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
-        
-        <Stage environment="city" intensity={0.5} adjustCamera={1.2}>
-          <CabinetModel cabinet={cabinet} showDimensions={showDimensions} exploded={exploded} />
-        </Stage>
-        
-        <OrbitControls makeDefault autoRotate={!exploded} autoRotateSpeed={1} minPolarAngle={0} maxPolarAngle={Math.PI / 1.5} />
+    <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-4 p-8">
+      <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-2xl">
+        {/* Faccia frontale */}
+        <polygon points="40,60 140,60 140,170 40,170" fill="#2a1b12" stroke="#a36e40" strokeWidth="2" />
+        {/* Top prospettico */}
+        <polygon points="40,60 70,35 170,35 140,60" fill="#3a2618" stroke="#a36e40" strokeWidth="2" />
+        {/* Lato destro */}
+        <polygon points="140,60 170,35 170,145 140,170" fill="#1f1410" stroke="#a36e40" strokeWidth="2" />
+        {/* Foro driver */}
+        <circle cx="90" cy="115" r="32" fill="#0a0a0b" stroke="#F27D26" strokeOpacity="0.5" strokeWidth="2" />
+        {cabinet.port && <circle cx="90" cy="158" r="6" fill="#000" />}
+      </svg>
+      <div className="text-center">
+        <div className="text-sm font-bold text-white">{cabinet.name}</div>
+        <div className="text-xs text-zinc-400 font-mono mt-1">{width} × {height} × {depth} mm</div>
+      </div>
+    </div>
+  );
+};
+
+export const CabinetViewer3D = ({
+  cabinet,
+  showDimensions = true,
+  exploded = false
+}: CabinetViewer3DProps) => {
+  // Camera adattata alle dimensioni reali della cassa (in metri)
+  const maxDim = Math.max(
+    cabinet.externalDimensions.width,
+    cabinet.externalDimensions.height,
+    cabinet.externalDimensions.depth
+  ) / 1000;
+  const dist = Math.max(maxDim * 2.4, 1);
+  const camPos: [number, number, number] = [dist * 0.75, dist * 0.55, dist * 0.95];
+
+  if (!isWebGLAvailable()) {
+    return (
+      <div className="w-full h-full min-h-[400px] bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
+        <CabinetFallback2D cabinet={cabinet} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full h-full min-h-[400px] bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
+      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 45 }}>
+        <color attach="background" args={['#0a0a0b']} />
+
+        <ambientLight intensity={0.55} />
+        <directionalLight position={[3, 5, 4]} intensity={1.2} castShadow />
+        <directionalLight position={[-4, 2, -3]} intensity={0.4} />
+        <pointLight position={[0, -3, 2]} intensity={0.3} />
+
+        <Suspense fallback={null}>
+          <group position={[0, maxDim * 0.05, 0]}>
+            <CabinetModel cabinet={cabinet} showDimensions={showDimensions} exploded={exploded} />
+          </group>
+        </Suspense>
+
+        <OrbitControls
+          makeDefault
+          autoRotate={!exploded}
+          autoRotateSpeed={1}
+          enablePan={false}
+          minDistance={dist * 0.6}
+          maxDistance={dist * 2.5}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 1.5}
+        />
       </Canvas>
-      
+
       {/* Overlay UI */}
       <div className="absolute top-4 left-4 flex gap-2">
         <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/70 font-medium">
