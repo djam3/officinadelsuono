@@ -12,6 +12,7 @@ import { AdminBlogPanel } from '../components/admin/AdminBlogPanel';
 import { AdminDiscountsPanel } from '../components/admin/AdminDiscountsPanel';
 import { AdminSiteContentPanel } from '../components/admin/AdminSiteContentPanel';
 import { AdminInventoryPanel } from '../components/admin/AdminInventoryPanel';
+import { AdminUsedMarketPanel } from '../components/admin/AdminUsedMarketPanel';
 import { AdminUsersPanel } from '../components/admin/AdminUsersPanel';
 import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
@@ -28,7 +29,7 @@ import {
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita';
+type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita' | 'usato';
 
 interface NavItem {
   id: AdminTab;
@@ -51,6 +52,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'orders',     label: 'Ordini',       description: 'Gestisci e spedisci gli ordini',      icon: ShoppingCart },
       { id: 'products',   label: 'Prodotti',     description: 'Gestisci il catalogo',                icon: Package },
       { id: 'shipping',   label: 'Spedizioni',   description: 'Corrieri, tariffe e preventivi',      icon: Truck },
+      { id: 'usato',      label: 'Mercatino Usato', description: 'Modera annunci utenti',                icon: ShoppingCart },
     ],
   },
   {
@@ -522,6 +524,7 @@ export function Admin({ onNavigate }: AdminProps) {
           })()}
 
           {activeTab === 'products' && <AdminInventoryPanel products={products} categories={categories} manualApiKey={manualApiKey} />}
+          {activeTab === 'usato' && <AdminUsedMarketPanel />}
           {activeTab === 'content' && <AdminSiteContentPanel />}
           {activeTab === 'newsletter' && <AdminNewsletterPanel newsletterCount={newsletterCount} products={products} manualApiKey={manualApiKey} />}
           {activeTab === 'blog' && <AdminBlogPanel blogPosts={blogPosts} manualApiKey={manualApiKey} />}
@@ -534,6 +537,7 @@ export function Admin({ onNavigate }: AdminProps) {
           {activeTab === 'orders' && <AdminOrdersPanel />}
           {activeTab === 'fatture' && <AdminInvoicesPanel invoices={invoices} />}
           {activeTab === 'contabilita' && <AdminAccountingPanel />}
+          {activeTab === 'discounts' && <AdminDiscountsPanel discounts={discounts} />}
         </div>
       </main>
 

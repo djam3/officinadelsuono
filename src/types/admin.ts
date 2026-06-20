@@ -45,6 +45,24 @@ export interface Product {
   };
 }
 
+export interface UsedListing {
+  id: string;
+  userId: string;
+  userEmail: string;
+  title: string;
+  description: string;
+  category: string;
+  brand: string;
+  condition: 'Nuovo' | 'Come Nuovo' | 'Buono' | 'Accettabile' | 'Da Riparare';
+  price: number;
+  images: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'sold';
+  contactMethod: 'email' | 'whatsapp';
+  whatsappNumber?: string;
+  createdAt: string | Timestamp;
+  updatedAt?: string | Timestamp;
+}
+
 export interface AdminUser {
   id: string;
   email: string;

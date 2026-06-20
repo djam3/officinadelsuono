@@ -36,6 +36,8 @@ const PAGE_TO_PATH: Record<string, string> = {
   'cookie-policy': '/cookie-policy',
   profile: '/profilo',
   admin: '/admin',
+  usato: '/usato',
+  configuratore: '/configuratore',
 };
 
 function pathToPage(pathname: string): { page: string; id?: string } {
@@ -73,6 +75,8 @@ const Profile = lazy(() => import('./pages/Profile').then(m => ({ default: m.Pro
 const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })));
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
+const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
+const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -234,8 +238,8 @@ export default function App() {
           <motion.div
             key={item.id}
             initial={{ left: item.startX, top: item.startY, scale: 1, opacity: 1 }}
-            animate={{ 
-              left: document.getElementById('cart-button')?.getBoundingClientRect().left || 0, 
+            animate={{
+              left: document.getElementById('cart-button')?.getBoundingClientRect().left || 0,
               top: document.getElementById('cart-button')?.getBoundingClientRect().top || 0,
               scale: 0.2,
               opacity: 0.5
@@ -293,7 +297,7 @@ export default function App() {
       </AnimatePresence>
 
       {!isAdminPage && <Navbar onNavigate={handleNavigate} onOpenCart={() => setIsCartOpen(true)} />}
-      
+
       <main className="flex-grow relative">
         <Suspense fallback={<PageLoader />}>
           <AnimatePresence mode="wait">
@@ -319,6 +323,8 @@ export default function App() {
               {currentPage === 'terms' && <Terms />}
               {currentPage === 'privacy' && <Privacy />}
               {currentPage === 'cookie-policy' && <CookiePolicy />}
+              {currentPage === 'usato' && <UsedMarket onNavigate={handleNavigate} showToast={showToast} />}
+              {currentPage === 'configuratore' && <SpeakerConfigurator />}
             </motion.div>
           </AnimatePresence>
         </Suspense>

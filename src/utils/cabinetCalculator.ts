@@ -1,0 +1,753 @@
+/**
+ * Cabinet Calculator — Motore di Calcolo Acustico Thiele-Small
+ * 
+ * Calcola il volume ottimale della cassa, la porta bass-reflex,
+ * le dimensioni dei pannelli e il progetto completo per il falegname.
+ * 
+ * Basato sulle formule di Thiele-Small e le best practices
+ * dell'ingegneria acustica professionale.
+ */
+
+import type {
+  SpeakerDriver, CabinetDesign, CabinetType, CabinetPanel,
+  PortDesign, BracingDesign, WoodType, PanelHole,
+  UseCase, Environment,
+} from '../types/speaker';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  COSTANTI
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SPEED_OF_SOUND = 343;    // m/s a 20°C
+const AIR_DENSITY = 1.18;     // kg/m³
+const GOLDEN_RATIO = 1.618;
+
+// Spessori legno standard (mm)
+const WOOD_THICKNESS: Record<string, number> = {
+  'standard': 18,
+  'heavy': 21,
+  'ultra': 25,
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CALCOLO TIPO DI CASSA OTTIMALE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Determina il tipo di cassa più adatto in base al driver e all'uso
+ */
+export function recommendCabinetType(
+  driver: SpeakerDriver,
+  useCase: UseCase,
+  environment: Environment
+): CabinetType {
+  const { qts, fs } = driver.thielSmall;
+
+  // Regole basate su Qts (parametro chiave per la scelta del tipo di cassa)
+  // Qts < 0.4 → bass-reflex ottimale
+  // Qts 0.4-0.7 → sealed o bass-reflex
+  // Qts > 0.7 → sealed preferibile
+
+  // Subwoofer dedicato → sempre bass-reflex per max output
+  if (useCase === 'subwoofer-dedicato') return 'bass-reflex';
+
+  // Festival/outdoor → bass-reflex per max SPL
+  if (useCase === 'dj-festival' || environment === 'outdoor') return 'bass-reflex';
+
+  // Studio monitor → sealed per risposta più accurata
+  if (useCase === 'studio-monitor') {
+    return qts > 0.5 ? 'sealed' : 'bass-reflex';
+  }
+
+  // Home hi-fi → sealed per transienti migliori
+  if (useCase === 'home-hifi' || useCase === 'cinema-home') {
+    return qts > 0.45 ? 'sealed' : 'bass-reflex';
+  }
+
+  // DJ Club, Band, PA → bass-reflex per efficienza
+  if (qts < 0.45) return 'bass-reflex';
+  if (qts > 0.6) return 'sealed';
+
+  return 'bass-reflex'; // default
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CALCOLO VOLUME CASSA CHIUSA (SEALED)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface SealedResult {
+  volume: number;           // litri volume interno
+  qtc: number;             // Q totale del sistema
+  f3: number;              // frequenza -3dB (Hz)
+  peakingDb: number;       // eventuale picco di risonanza
+}
+
+/**
+ * Calcola il volume ottimale per cassa chiusa
+ * Target Qtc = 0.707 (Butterworth, massimamente piatto)
+ */
+export function calculateSealed(driver: SpeakerDriver, targetQtc: number = 0.707): SealedResult {
+  const { fs, qts, vas } = driver.thielSmall;
+
+  // Vb = Vas / ((Qtc/Qts)² - 1)
+  const ratio = (targetQtc / qts) ** 2 - 1;
+  const volume = ratio > 0 ? vas / ratio : vas * 2; // fallback se Qts > targetQtc
+
+  // Frequenza di risonanza del sistema chiuso
+  // fc = fs × Qtc / Qts
+  const fc = fs * targetQtc / qts;
+
+  // F3 (frequenza -3dB)
+  const f3 = fc * Math.sqrt((1 / (targetQtc ** 2) - 2 + Math.sqrt((1 / (targetQtc ** 2) - 2) ** 2 + 4)));
+
+  // Peaking (solo se Qtc > 0.707)
+  let peakingDb = 0;
+  if (targetQtc > 0.707) {
+    peakingDb = 20 * Math.log10(targetQtc / Math.sqrt(1 - 1 / (4 * targetQtc ** 2)));
+  }
+
+  return {
+    volume: Math.max(volume, 3), // minimo 3 litri
+    qtc: targetQtc,
+    f3: Math.round(f3),
+    peakingDb: Math.round(peakingDb * 10) / 10,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CALCOLO VOLUME BASS-REFLEX
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface BassReflexResult {
+  volume: number;           // litri volume interno
+  port: PortDesign;
+  f3: number;              // frequenza -3dB (Hz)
+  fb: number;              // frequenza di accordo porta (Hz)
+}
+
+/**
+ * Calcola il volume ottimale per bass-reflex
+ * Usa l'allineamento QB3 (quasi-Butterworth terzo ordine)
+ */
+export function calculateBassReflex(driver: SpeakerDriver): BassReflexResult {
+  const { fs, qts, vas, sd, xmax } = driver.thielSmall;
+
+  // Volume cassa bass-reflex (allineamento QB3)
+  // Vb ≈ 15 × Vas × Qts^2.87 (approssimazione pratica)
+  let volume = 15 * vas * Math.pow(qts, 2.87);
+
+  // Limiti pratici
+  const minVolume = (driver.size <= 8) ? 5 : (driver.size <= 12) ? 15 : (driver.size <= 15) ? 40 : 80;
+  const maxVolume = (driver.size <= 8) ? 30 : (driver.size <= 12) ? 80 : (driver.size <= 15) ? 200 : 400;
+  volume = Math.max(minVolume, Math.min(maxVolume, volume));
+
+  // Frequenza di accordo della porta
+  // fb ≈ fs × 0.42 (per QB3)
+  const fb = Math.round(fs * 0.42);
+
+  // Calcolo porta circolare
+  const port = calculatePort(volume, fb, driver);
+
+  // F3 stimata (approssimazione)
+  const f3 = Math.round(fb * 0.75);
+
+  return { volume, port, f3, fb };
+}
+
+/**
+ * Calcola le dimensioni della porta bass-reflex
+ */
+function calculatePort(volumeLiters: number, tuningFreq: number, driver: SpeakerDriver): PortDesign {
+  const volumeM3 = volumeLiters / 1000;
+
+  // Diametro porta basato sulla dimensione del driver
+  // Regola pratica: diametro porta ≈ 1/3 ~ 1/4 del diametro del driver
+  let portDiameter: number;
+  if (driver.size <= 8) portDiameter = 50;
+  else if (driver.size <= 10) portDiameter = 65;
+  else if (driver.size <= 12) portDiameter = 80;
+  else if (driver.size <= 15) portDiameter = 100;
+  else portDiameter = 120; // 18" e 21"
+
+  const portRadiusM = (portDiameter / 2) / 1000;
+  const portAreaM2 = Math.PI * portRadiusM ** 2;
+
+  // Lunghezza porta dalla formula di Helmholtz:
+  // Lp = (c² × Sp) / (4π² × fb² × Vb) - 0.825 × √(Sp)
+  // dove c = velocità del suono, Sp = area porta, fb = freq accordo, Vb = volume
+  const Lp = (SPEED_OF_SOUND ** 2 * portAreaM2) / (4 * Math.PI ** 2 * tuningFreq ** 2 * volumeM3)
+    - 0.825 * Math.sqrt(portAreaM2);
+
+  const portLengthMm = Math.max(50, Math.round(Lp * 1000));
+
+  // Verifica velocità dell'aria nella porta
+  // v = Xmax × Sd × 2π × fb / Sp
+  const sdM2 = (driver.thielSmall.sd || 500) / 10000;
+  const xmaxM = (driver.thielSmall.xmax || 5) / 1000;
+  const airVelocity = xmaxM * sdM2 * 2 * Math.PI * tuningFreq / portAreaM2;
+
+  return {
+    shape: 'circular',
+    diameter: portDiameter,
+    length: portLengthMm,
+    tuningFrequency: tuningFreq,
+    airVelocity: Math.round(airVelocity * 10) / 10,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CALCOLO DIMENSIONI PANNELLI
+// ═══════════════════════════════════════════════════════════════════════════════
+
+interface DimensionsResult {
+  width: number;   // mm
+  height: number;  // mm
+  depth: number;   // mm
+}
+
+/**
+ * Calcola le dimensioni esterne della cassa dal volume interno
+ * Usa proporzioni auree per ottimizzare le risonanze interne
+ */
+export function calculateExternalDimensions(
+  internalVolumeLiters: number,
+  woodThickness: number,
+  driver: SpeakerDriver,
+  hasAmplifier: boolean
+): DimensionsResult {
+  // Volume interno in mm³
+  const volumeMm3 = internalVolumeLiters * 1e6;
+
+  // Dimensione minima frontale per ospitare il driver
+  const minFrontWidth = (driver.overallDiameter || driver.size * 25.4 + 40) + 40; // +40mm margine
+  const minFrontHeight = minFrontWidth + 60; // spazio extra sopra/sotto driver
+
+  // Calcola le dimensioni interne basate su proporzioni auree
+  // Rapporto ideale: 1 : 1.26 : 1.618 (per minimizzare risonanze stazionarie)
+  const ratio1 = 1;
+  const ratio2 = 1.26;
+  const ratio3 = GOLDEN_RATIO;
+
+  // V = W × H × D = x × (x × 1.26) × (x × 1.618)
+  // V = x³ × 1.26 × 1.618
+  // x = ³√(V / (1.26 × 1.618))
+  const x = Math.cbrt(volumeMm3 / (ratio1 * ratio2 * ratio3));
+
+  let internalWidth = Math.round(x * ratio1);
+  let internalHeight = Math.round(x * ratio2);
+  let internalDepth = Math.round(x * ratio3);
+
+  // Assicura che il frontale sia abbastanza grande per il driver
+  if (internalWidth < minFrontWidth) {
+    const scale = minFrontWidth / internalWidth;
+    internalWidth = minFrontWidth;
+    // Ricalcola profondità per mantenere il volume
+    internalDepth = Math.round(volumeMm3 / (internalWidth * internalHeight));
+    if (internalDepth < 150) {
+      internalDepth = 150;
+      internalHeight = Math.round(volumeMm3 / (internalWidth * internalDepth));
+    }
+  }
+
+  // Spazio extra per l'amplificatore (tipicamente dietro in basso)
+  let extraDepth = 0;
+  if (hasAmplifier) {
+    extraDepth = 30; // 30mm extra per i connettori dell'amplificatore
+  }
+
+  return {
+    width: internalWidth + 2 * woodThickness,
+    height: internalHeight + 2 * woodThickness,
+    depth: internalDepth + 2 * woodThickness + extraDepth,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  GENERAZIONE PANNELLI PER IL FALEGNAME
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Genera la lista completa dei pannelli con fori e misure
+ */
+export function generatePanels(
+  dimensions: DimensionsResult,
+  woodThickness: number,
+  woodType: WoodType,
+  driver: SpeakerDriver,
+  port: PortDesign | undefined,
+  hasAmplifier: boolean,
+  ampDimensions?: { width: number; height: number; depth: number }
+): CabinetPanel[] {
+  const { width, height, depth } = dimensions;
+  const wt = woodThickness;
+
+  // Dimensioni interne
+  const internalW = width - 2 * wt;
+  const internalH = height - 2 * wt;
+
+  // ─── Pannello Frontale (Baffle) ─────────────────────────────────────────────
+  const frontHoles: PanelHole[] = [];
+
+  // Foro driver (centrato orizzontalmente, spostato leggermente verso l'alto)
+  const driverMountDiameter = driver.mountingDiameter || (driver.size * 25.4 - 10);
+  frontHoles.push({
+    type: 'driver',
+    shape: 'circle',
+    diameter: driverMountDiameter,
+    x: Math.round(internalW / 2),
+    y: Math.round(internalH * 0.55), // leggermente sopra il centro
+    label: `Foro driver ${driver.brand} ${driver.model} — Ø${driverMountDiameter}mm — 8 fori M6 su cerchio Ø${driverMountDiameter + 20}mm`,
+  });
+
+  // Foro porta bass-reflex (se presente)
+  if (port && port.shape === 'circular' && port.diameter) {
+    frontHoles.push({
+      type: 'port',
+      shape: 'circle',
+      diameter: port.diameter,
+      x: Math.round(internalW / 2),
+      y: Math.round(internalH * 0.2), // basso sul frontale
+      label: `Porta bass-reflex Ø${port.diameter}mm — tubo lungo ${port.length}mm`,
+    });
+  }
+
+  const panels: CabinetPanel[] = [
+    {
+      id: 'front',
+      name: 'Pannello Frontale (Baffle)',
+      width: width,
+      height: height,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      holes: frontHoles,
+      notes: `Doppio spessore consigliato (${wt * 2}mm) per ridurre risonanze. Fori per T-nut M6 sul retro.`,
+    },
+    {
+      id: 'rear',
+      name: 'Pannello Posteriore',
+      width: width,
+      height: height,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      holes: hasAmplifier && ampDimensions ? [
+        {
+          type: 'amplifier',
+          shape: 'rectangle',
+          width: ampDimensions.width + 10,
+          height: ampDimensions.height + 10,
+          x: Math.round(internalW / 2),
+          y: Math.round(internalH * 0.3),
+          label: `Sede amplificatore ${ampDimensions.width}×${ampDimensions.height}mm — con fori fissaggio M4`,
+        },
+        {
+          type: 'connector',
+          shape: 'rectangle',
+          width: 85,
+          height: 45,
+          x: Math.round(internalW / 2),
+          y: Math.round(internalH * 0.1),
+          label: 'Presa IEC / interruttore / fusibile — 85×45mm',
+        }
+      ] : [
+        {
+          type: 'connector',
+          shape: 'rectangle',
+          width: 85,
+          height: 85,
+          x: Math.round(internalW / 2),
+          y: Math.round(internalH * 0.25),
+          label: 'Terminale Speakon — piastra 85×85mm',
+        }
+      ],
+      notes: hasAmplifier
+        ? 'Fresatura per sede amplificatore. Prevedere apertura ventilazione 60×30mm sopra la sede amplificatore.'
+        : 'Foro terminale Speakon con fori M4 per fissaggio piastra.',
+    },
+    {
+      id: 'side-left',
+      name: 'Pannello Laterale Sinistro',
+      width: depth - 2 * wt,
+      height: height,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      holes: [
+        {
+          type: 'handle',
+          shape: 'rounded-rect',
+          width: 160,
+          height: 60,
+          cornerRadius: 15,
+          x: Math.round((depth - 2 * wt) / 2),
+          y: Math.round(height * 0.7),
+          label: 'Maniglia incassata 160×60mm — profondità 30mm',
+        }
+      ],
+      notes: 'Fresatura maniglia profondità 30mm.',
+    },
+    {
+      id: 'side-right',
+      name: 'Pannello Laterale Destro',
+      width: depth - 2 * wt,
+      height: height,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      holes: [
+        {
+          type: 'handle',
+          shape: 'rounded-rect',
+          width: 160,
+          height: 60,
+          cornerRadius: 15,
+          x: Math.round((depth - 2 * wt) / 2),
+          y: Math.round(height * 0.7),
+          label: 'Maniglia incassata 160×60mm — profondità 30mm',
+        }
+      ],
+      notes: 'Speculare al pannello sinistro.',
+    },
+    {
+      id: 'top',
+      name: 'Pannello Superiore',
+      width: width - 2 * wt,
+      height: depth - 2 * wt,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      notes: 'Incastro tra i laterali.',
+    },
+    {
+      id: 'bottom',
+      name: 'Pannello Inferiore',
+      width: width - 2 * wt,
+      height: depth - 2 * wt,
+      thickness: wt,
+      quantity: 1,
+      material: woodType,
+      holes: [
+        {
+          type: 'vent',
+          shape: 'circle',
+          diameter: 8,
+          x: 30,
+          y: 30,
+          label: '4 piedini in gomma M8 — posizioni angolari a 30mm dai bordi',
+        }
+      ],
+      notes: '4 fori M8 per piedini in gomma anti-risonanza a 30mm dagli angoli.',
+    },
+  ];
+
+  return panels;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  GENERAZIONE RINFORZI INTERNI
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export function generateBracing(
+  dimensions: DimensionsResult,
+  woodThickness: number,
+  woodType: WoodType,
+  driver: SpeakerDriver
+): BracingDesign[] {
+  const braces: BracingDesign[] = [];
+  const { height } = dimensions;
+
+  // Rinforzo window a metà altezza (se cassa > 400mm)
+  if (height > 400) {
+    braces.push({
+      type: 'window',
+      position: Math.round(height * 0.5),
+      material: woodType,
+      thickness: woodThickness,
+      description: `Rinforzo "window" a ${Math.round(height * 0.5)}mm dal fondo — foro centrale 60% della superficie per passaggio aria`,
+    });
+  }
+
+  // Rinforzo shelf dietro il driver (per casse > 500mm)
+  if (height > 500) {
+    braces.push({
+      type: 'shelf',
+      position: Math.round(height * 0.7),
+      material: woodType,
+      thickness: woodThickness,
+      description: `Shelf brace a ${Math.round(height * 0.7)}mm — larghezza 80mm, incollato ai laterali`,
+    });
+  }
+
+  return braces;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CALCOLO COMPLETO DELLA CASSA
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface FullCalculationResult {
+  cabinetDesign: CabinetDesign;
+  acousticData: {
+    f3: number;
+    fb?: number;
+    qtc?: number;
+    peakingDb?: number;
+  };
+}
+
+/**
+ * Calcola il progetto completo della cassa per un driver dato
+ */
+export function calculateFullCabinet(
+  driver: SpeakerDriver,
+  cabinetType: CabinetType,
+  useCase: UseCase,
+  _environment: Environment,
+  hasAmplifier: boolean = true,
+  ampDimensions?: { width: number; height: number; depth: number }
+): FullCalculationResult {
+
+  // Determina spessore legno in base alla potenza
+  let woodThickness = WOOD_THICKNESS['standard']; // 18mm
+  if (driver.powerRMS > 800) woodThickness = WOOD_THICKNESS['heavy']; // 21mm
+  if (driver.powerRMS > 1500) woodThickness = WOOD_THICKNESS['ultra']; // 25mm
+
+  const woodType: WoodType = driver.powerRMS > 500 ? 'MDF-HDF' : 'MDF';
+
+  let internalVolume: number;
+  let port: PortDesign | undefined;
+  let f3: number;
+  let fb: number | undefined;
+  let qtc: number | undefined;
+  let peakingDb: number | undefined;
+
+  // Calcola volume e parametri acustici
+  if (cabinetType === 'sealed') {
+    const result = calculateSealed(driver);
+    internalVolume = result.volume;
+    f3 = result.f3;
+    qtc = result.qtc;
+    peakingDb = result.peakingDb;
+  } else {
+    // bass-reflex (default)
+    const result = calculateBassReflex(driver);
+    internalVolume = result.volume;
+    port = result.port;
+    f3 = result.f3;
+    fb = result.fb;
+  }
+
+  // Calcola dimensioni esterne
+  const dimensions = calculateExternalDimensions(
+    internalVolume, woodThickness, driver, hasAmplifier
+  );
+
+  // Genera pannelli
+  const panels = generatePanels(
+    dimensions, woodThickness, woodType, driver, port, hasAmplifier, ampDimensions
+  );
+
+  // Genera rinforzi
+  const bracing = generateBracing(dimensions, woodThickness, woodType, driver);
+
+  // Volume lordo (volume interno + pannelli)
+  const grossVolume = (dimensions.width * dimensions.height * dimensions.depth) / 1e6; // litri
+
+  // Peso stimato
+  // Densità MDF ≈ 730 kg/m³
+  const totalPanelVolume = panels.reduce((acc, p) =>
+    acc + (p.width * p.height * p.thickness * p.quantity) / 1e9, 0);
+  const estimatedWeight = Math.round(totalPanelVolume * 730 * 10) / 10;
+
+  // Diametro taglio driver
+  const driverCutout = {
+    diameter: driver.mountingDiameter || Math.round(driver.size * 25.4 - 10),
+    boltCircle: (driver.mountingDiameter || Math.round(driver.size * 25.4 - 10)) + 20,
+    boltCount: driver.size >= 15 ? 8 : 6,
+    boltSize: driver.size >= 15 ? 'M8' : 'M6',
+  };
+
+  // Sede amplificatore
+  const ampCutout = hasAmplifier && ampDimensions ? {
+    width: ampDimensions.width + 10,
+    height: ampDimensions.height + 10,
+    position: 'rear' as const,
+  } : undefined;
+
+  // Maniglie
+  const handleCutouts = driver.size >= 12 ? {
+    width: 160,
+    height: 60,
+    position: 'sides' as const,
+  } : undefined;
+
+  // Nome progetto
+  const cabinetName = `${driver.brand} ${driver.model} — ${cabinetType === 'sealed' ? 'Cassa Chiusa' : 'Bass Reflex'} ${Math.round(internalVolume)}L`;
+
+  // Note assemblaggio per il falegname
+  const assemblyNotes = generateAssemblyNotes(cabinetType, driver, woodType, woodThickness, port);
+
+  const cabinetDesign: CabinetDesign = {
+    type: cabinetType,
+    name: cabinetName,
+    internalVolume: Math.round(internalVolume * 10) / 10,
+    grossVolume: Math.round(grossVolume * 10) / 10,
+    externalDimensions: {
+      width: Math.round(dimensions.width),
+      height: Math.round(dimensions.height),
+      depth: Math.round(dimensions.depth),
+    },
+    woodType,
+    woodThickness,
+    port,
+    panels,
+    bracing,
+    dampingMaterial: driver.type === 'subwoofer'
+      ? 'Lana di roccia 50mm densità 40kg/m³'
+      : 'Lana di roccia 40mm densità 30kg/m³',
+    dampingCoverage: cabinetType === 'sealed'
+      ? 'Tutte le pareti interne (100%)'
+      : 'Pareti laterali, superiore e inferiore (no frontale, no posteriore)',
+    driverCutout,
+    ampCutout,
+    handleCutouts,
+    finish: 'Vernice nera testurizzata anti-graffio (o a scelta cliente)',
+    estimatedWeight,
+    assemblyNotes,
+  };
+
+  return {
+    cabinetDesign,
+    acousticData: { f3, fb, qtc, peakingDb },
+  };
+}
+
+/**
+ * Genera le istruzioni di assemblaggio per il falegname
+ */
+function generateAssemblyNotes(
+  type: CabinetType,
+  driver: SpeakerDriver,
+  woodType: WoodType,
+  thickness: number,
+  port?: PortDesign,
+): string[] {
+  const notes: string[] = [
+    `Materiale: ${woodType} spessore ${thickness}mm`,
+    `Tutti i giunti incollati con colla vinilica D3 + viti autoforanti 4×40mm ogni 100mm`,
+    `Sigillare tutti i giunti interni con silicone acustico trasparente`,
+    `Frontale a doppio spessore: incollare due pannelli da ${thickness}mm`,
+    `Predisporre fori per T-nut ${driver.size >= 15 ? 'M8' : 'M6'} sul retro del baffle`,
+  ];
+
+  if (type === 'bass-reflex' && port) {
+    notes.push(
+      `Porta bass-reflex: tubo PVC Ø${port.diameter}mm × ${port.length}mm — smussare i bordi con raggio 5mm`,
+      `Posizionare la porta lontano dal driver per evitare turbolenze`
+    );
+  }
+
+  if (driver.size >= 15) {
+    notes.push(
+      'Rinforzi interni obbligatori — vedi schema rinforzi nel progetto',
+      'Prevedere maniglie incassate laterali (fresatura 30mm profondità)'
+    );
+  }
+
+  notes.push(
+    'Carteggiare tutte le superfici esterne prima della finitura (grana 120 → 240)',
+    'Applicare 2 mani di fondo + 2 mani di vernice testurizzata',
+    'NON applicare finitura/vernice sulle superfici di incollaggio'
+  );
+
+  return notes;
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ABBINAMENTO AMPLIFICATORE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface AmpMatchResult {
+  amplifierId: string;
+  score: number;          // 0-100
+  reasons: string[];
+  warnings: string[];
+}
+
+/**
+ * Valuta la compatibilità di un amplificatore con un driver
+ */
+export function scoreAmplifierMatch(
+  driver: SpeakerDriver,
+  amp: import('../types/speaker').Amplifier,
+  useCase: UseCase
+): AmpMatchResult {
+  let score = 50; // base
+  const reasons: string[] = [];
+  const warnings: string[] = [];
+
+  // ─── Compatibilità impedenza ─────────────────────────────────────────────
+  if (!amp.impedanceRange.includes(driver.impedance)) {
+    score -= 50;
+    warnings.push(`Impedenza driver ${driver.impedance}Ω non supportata dall'amplificatore`);
+  } else {
+    score += 10;
+    reasons.push(`Impedenza ${driver.impedance}Ω compatibile`);
+  }
+
+  // ─── Potenza adeguata ────────────────────────────────────────────────────
+  const ampPower = amp.powerPerChannel[String(driver.impedance)] || 0;
+  const powerRatio = ampPower / driver.powerRMS;
+
+  if (powerRatio >= 0.5 && powerRatio <= 1.5) {
+    score += 20;
+    reasons.push(`Potenza ${ampPower}W ben dimensionata per driver ${driver.powerRMS}W`);
+  } else if (powerRatio > 1.5) {
+    score += 10;
+    warnings.push(`Amplificatore sovradimensionato (${ampPower}W vs ${driver.powerRMS}W) — usare limiter`);
+  } else if (powerRatio >= 0.3) {
+    score += 5;
+    reasons.push(`Potenza ${ampPower}W accettabile per uso domestico`);
+  } else {
+    score -= 20;
+    warnings.push(`Amplificatore sottodimensionato (${ampPower}W per driver da ${driver.powerRMS}W)`);
+  }
+
+  // ─── DSP per uso professionale ───────────────────────────────────────────
+  if (['dj-club', 'dj-festival', 'pa-events', 'band-live'].includes(useCase)) {
+    if (amp.hasDSP) {
+      score += 15;
+      reasons.push('DSP integrato essenziale per uso professionale');
+    } else {
+      score -= 10;
+      warnings.push('Nessun DSP — consigliato processore esterno per uso pro');
+    }
+  }
+
+  // ─── Bluetooth per uso casalingo ─────────────────────────────────────────
+  if (['home-hifi', 'cinema-home'].includes(useCase)) {
+    if (amp.inputs.includes('Bluetooth 5.0') || amp.inputs.includes('Bluetooth 5.0 aptX')) {
+      score += 10;
+      reasons.push('Bluetooth integrato per comodità domestica');
+    }
+  }
+
+  // ─── Qualità audio (THD e SNR) ───────────────────────────────────────────
+  if (amp.thd < 0.01) {
+    score += 10;
+    reasons.push(`Distorsione bassissima (${amp.thd}%)`);
+  }
+  if (amp.snr > 110) {
+    score += 5;
+    reasons.push(`SNR eccellente (${amp.snr}dB)`);
+  }
+
+  return {
+    amplifierId: amp.id,
+    score: Math.max(0, Math.min(100, score)),
+    reasons,
+    warnings,
+  };
+}

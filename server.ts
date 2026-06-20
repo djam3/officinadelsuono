@@ -334,6 +334,30 @@ async function startServer() {
     }
   });
 
+  // Speaker Configurator API
+  app.post("/api/speaker-configurator/recommend", async (req, res) => {
+    try {
+      const { useCase, musicGenres, environment, budget } = req.body;
+      
+      // We simulate an AI agent processing this. In a real scenario we could call 
+      // Anthropic or Google Gemini to score the drivers or we can use a heuristic script.
+      // For speed and reliability we'll do a backend-side heuristic match first.
+      
+      // You can also use the Anthropic SDK if you want pure LLM recommendation
+      res.json({
+        success: true,
+        message: "AI recommendation will be processed client-side or handled here with LLM."
+      });
+      // NOTE: In the current architecture, we'll let the frontend AI Context handle the actual 
+      // API call to Anthropic/Gemini so it can use the shared API keys, OR we can implement it here.
+      // Since the prompt is complex, handling it client-side with the pre-built AIContext is often better 
+      // to reuse the stream features and cost tracking.
+    } catch (error: any) {
+      console.error("Configurator recommend error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Upload endpoint
   app.post("/api/upload", upload.array('files', 10), async (req, res) => {
     try {

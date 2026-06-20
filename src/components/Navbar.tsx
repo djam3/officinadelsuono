@@ -87,8 +87,13 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
               </div>
             </div>
             
+            <button onClick={() => onNavigate('blog')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Recensioni & Guide</button>
+            <button onClick={() => onNavigate('configuratore')} className="relative px-4 py-2 text-sm font-bold uppercase tracking-wider text-white bg-brand-orange hover:bg-brand-orange/90 rounded-full transition-all shadow-[0_0_15px_rgba(242,125,38,0.5)]">
+              Configuratore
+              <span className="absolute -top-2 -right-2 bg-white text-black text-[9px] font-black px-1.5 py-0.5 rounded-full rotate-12">NUOVO</span>
+            </button>
+            <button onClick={() => onNavigate('usato')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all border border-brand-orange/30">Usato</button>
             <button onClick={() => onNavigate('compare')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Confronta</button>
-            <button onClick={() => onNavigate('blog')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Blog</button>
             <button onClick={() => onNavigate('about')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Chi Siamo</button>
           </div>
 
@@ -169,8 +174,13 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
               <button onClick={() => { onNavigate('shop'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Prodotti</button>
+              <button onClick={() => { onNavigate('configuratore'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-black text-brand-orange hover:bg-brand-orange/10 uppercase tracking-wider transition-colors border-b border-white/5 flex items-center justify-between">
+                Configuratore
+                <span className="bg-white text-black text-[9px] font-black px-2 py-0.5 rounded-full">NUOVO</span>
+              </button>
+              <button onClick={() => { onNavigate('blog'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Recensioni & Guide</button>
+              <button onClick={() => { onNavigate('usato'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Mercatino Usato</button>
               <button onClick={() => { onNavigate('compare'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Confronta</button>
-              <button onClick={() => { onNavigate('blog'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Blog</button>
               <button onClick={() => { onNavigate('about'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Chi Siamo</button>
               <button onClick={() => { onNavigate('contact'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Contatti</button>
               

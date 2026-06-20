@@ -1,0 +1,820 @@
+/**
+ * Speaker Database — Driver e Amplificatori Premium
+ * Solo i migliori brand: B&C, Faital Pro, Eighteen Sound, RCF, Celestion
+ * Amplificatori: Hypex, ICEpower, Powersoft, Pascal
+ * 
+ * Parametri Thiele-Small da datasheet ufficiali dei produttori.
+ */
+
+import type { SpeakerDriver, Amplifier, PricingConfig } from '../types/speaker';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  DRIVER / CONI SPEAKER — PREMIUM SELECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const DRIVERS: SpeakerDriver[] = [
+
+  // ─── SUBWOOFER 18" ───────────────────────────────────────────────────────────
+  {
+    id: 'bc-18sw115',
+    brand: 'B&C',
+    model: '18SW115',
+    size: 18,
+    type: 'subwoofer',
+    powerRMS: 1700,
+    powerPeak: 3400,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 25, max: 1000 },
+    thielSmall: {
+      fs: 35, qts: 0.28, qes: 0.29, qms: 8.5,
+      vas: 220, xmax: 10, sd: 1520, re: 5.4,
+      mms: 205, bl: 26.5, le: 1.8
+    },
+    price: 420,
+    image: '/configurator/drivers/bc-18sw115.webp',
+    datasheet: 'https://www.bcspeakers.com/products/lf/18/8/18sw115',
+    description: 'Subwoofer professionale 18" con bobina da 4.5". Risposta in frequenza estesa fino a 25Hz, ideale per club e festival. Magnete in ferrite ad alta densità di flusso.',
+    madeIn: 'Italia',
+    recommendedFor: ['dj-club', 'dj-festival', 'pa-events'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta trattata',
+    voiceCoilDiameter: 115,
+    mountingDiameter: 434,
+    overallDiameter: 460,
+    depth: 235,
+    weight: 12.5
+  },
+  {
+    id: 'eighteen-18nlw9601',
+    brand: 'Eighteen Sound',
+    model: '18NLW9601',
+    size: 18,
+    type: 'subwoofer',
+    powerRMS: 1600,
+    powerPeak: 3200,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 28, max: 1500 },
+    thielSmall: {
+      fs: 37, qts: 0.30, qes: 0.31, qms: 9.2,
+      vas: 190, xmax: 10, sd: 1520, re: 5.5,
+      mms: 190, bl: 25.8, le: 1.6
+    },
+    price: 460,
+    image: '/configurator/drivers/18s-18nlw9601.webp',
+    description: 'Neodimio 18" ultraleggero da 6.5kg. Prestazioni da top di gamma con peso dimezzato. Perfetto per sistemi trasportabili ad alta potenza.',
+    madeIn: 'Italia',
+    recommendedFor: ['dj-festival', 'pa-events', 'band-live'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta rinforzata',
+    voiceCoilDiameter: 100,
+    mountingDiameter: 434,
+    overallDiameter: 460,
+    depth: 205,
+    weight: 6.5
+  },
+  {
+    id: 'faital-18hp1060',
+    brand: 'Faital Pro',
+    model: '18HP1060',
+    size: 18,
+    type: 'subwoofer',
+    powerRMS: 1200,
+    powerPeak: 2400,
+    impedance: 8,
+    sensitivity: 98,
+    frequencyRange: { min: 30, max: 2000 },
+    thielSmall: {
+      fs: 38, qts: 0.31, qes: 0.33, qms: 7.8,
+      vas: 200, xmax: 8, sd: 1520, re: 5.6,
+      mms: 170, bl: 23.5, le: 1.5
+    },
+    price: 380,
+    image: '/configurator/drivers/faital-18hp1060.webp',
+    description: 'Woofer professionale 18" ad alta sensibilità. Eccellente rapporto potenza/sensibilità, ideale per subwoofer PA con massima pressione sonora.',
+    madeIn: 'Italia',
+    recommendedFor: ['pa-events', 'band-live', 'dj-club'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 100,
+    mountingDiameter: 434,
+    overallDiameter: 460,
+    depth: 220,
+    weight: 11.2
+  },
+
+  // ─── WOOFER 15" ──────────────────────────────────────────────────────────────
+  {
+    id: 'bc-15sw115',
+    brand: 'B&C',
+    model: '15SW115',
+    size: 15,
+    type: 'woofer',
+    powerRMS: 1500,
+    powerPeak: 3000,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 30, max: 1500 },
+    thielSmall: {
+      fs: 38, qts: 0.27, qes: 0.28, qms: 9.0,
+      vas: 135, xmax: 10, sd: 1140, re: 5.5,
+      mms: 155, bl: 25.0, le: 1.5
+    },
+    price: 390,
+    image: '/configurator/drivers/bc-15sw115.webp',
+    description: 'Woofer 15" ad altissima potenza con bobina da 4.5". Design ottimizzato per subwoofer compatti e mid-bass in sistemi multi-via.',
+    madeIn: 'Italia',
+    recommendedFor: ['dj-club', 'band-live', 'pa-events'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta trattata',
+    voiceCoilDiameter: 115,
+    mountingDiameter: 368,
+    overallDiameter: 394,
+    depth: 210,
+    weight: 10.8
+  },
+  {
+    id: 'eighteen-15nlw9500',
+    brand: 'Eighteen Sound',
+    model: '15NLW9500',
+    size: 15,
+    type: 'woofer',
+    powerRMS: 1000,
+    powerPeak: 2000,
+    impedance: 8,
+    sensitivity: 98,
+    frequencyRange: { min: 35, max: 2500 },
+    thielSmall: {
+      fs: 42, qts: 0.32, qes: 0.34, qms: 8.5,
+      vas: 120, xmax: 7.5, sd: 1140, re: 5.4,
+      mms: 120, bl: 21.5, le: 1.3
+    },
+    price: 350,
+    image: '/configurator/drivers/18s-15nlw9500.webp',
+    description: 'Neodimio 15" con risposta estesa. Solo 5.6kg, ideale per sistemi full-range o sub compatti dove il peso conta.',
+    madeIn: 'Italia',
+    recommendedFor: ['band-live', 'dj-club', 'pa-events'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta rinforzata fibra di vetro',
+    voiceCoilDiameter: 100,
+    mountingDiameter: 368,
+    overallDiameter: 394,
+    depth: 175,
+    weight: 5.6
+  },
+  {
+    id: 'rcf-lf15g401',
+    brand: 'RCF',
+    model: 'LF15G401',
+    size: 15,
+    type: 'woofer',
+    powerRMS: 800,
+    powerPeak: 1600,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 35, max: 2500 },
+    thielSmall: {
+      fs: 40, qts: 0.33, qes: 0.35, qms: 8.0,
+      vas: 130, xmax: 7, sd: 1140, re: 5.6,
+      mms: 130, bl: 22.0, le: 1.4
+    },
+    price: 320,
+    image: '/configurator/drivers/rcf-lf15g401.webp',
+    description: 'Woofer 15" professionale RCF. Affidabilità leggendaria, progettato per touring e installazioni fisse. Cono in carta con trattamento impermeabile.',
+    madeIn: 'Italia',
+    recommendedFor: ['pa-events', 'band-live', 'karaoke'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta trattata resistente all\'acqua',
+    voiceCoilDiameter: 100,
+    mountingDiameter: 368,
+    overallDiameter: 394,
+    depth: 195,
+    weight: 9.8
+  },
+
+  // ─── WOOFER/MID-BASS 12" ────────────────────────────────────────────────────
+  {
+    id: 'bc-12nw76',
+    brand: 'B&C',
+    model: '12NW76',
+    size: 12,
+    type: 'mid-bass',
+    powerRMS: 600,
+    powerPeak: 1200,
+    impedance: 8,
+    sensitivity: 98,
+    frequencyRange: { min: 45, max: 3500 },
+    thielSmall: {
+      fs: 52, qts: 0.30, qes: 0.32, qms: 8.8,
+      vas: 70, xmax: 6, sd: 530, re: 5.5,
+      mms: 68, bl: 18.5, le: 0.9
+    },
+    price: 340,
+    image: '/configurator/drivers/bc-12nw76.webp',
+    description: 'Neodimio 12" con sensibilità eccezionale. Solo 3.8kg. Ideale come woofer in monitor da palco o cassa full-range compatta.',
+    madeIn: 'Italia',
+    recommendedFor: ['band-live', 'studio-monitor', 'pa-events'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta',
+    voiceCoilDiameter: 76,
+    mountingDiameter: 286,
+    overallDiameter: 310,
+    depth: 145,
+    weight: 3.8
+  },
+  {
+    id: 'faital-12fe300',
+    brand: 'Faital Pro',
+    model: '12FE300',
+    size: 12,
+    type: 'woofer',
+    powerRMS: 300,
+    powerPeak: 600,
+    impedance: 8,
+    sensitivity: 96,
+    frequencyRange: { min: 45, max: 5000 },
+    thielSmall: {
+      fs: 48, qts: 0.38, qes: 0.42, qms: 7.5,
+      vas: 85, xmax: 5.5, sd: 530, re: 5.8,
+      mms: 52, bl: 14.5, le: 0.8
+    },
+    price: 180,
+    image: '/configurator/drivers/faital-12fe300.webp',
+    description: 'Woofer 12" efficiente con risposta in frequenza estesa. Eccellente per casse full-range e monitor studio. Rapporto qualità-prezzo imbattibile.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'band-live', 'karaoke'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 76,
+    mountingDiameter: 286,
+    overallDiameter: 310,
+    depth: 155,
+    weight: 5.2
+  },
+  {
+    id: 'celestion-tf1225e',
+    brand: 'Celestion',
+    model: 'TF1225e',
+    size: 12,
+    type: 'woofer',
+    powerRMS: 300,
+    powerPeak: 600,
+    impedance: 8,
+    sensitivity: 96,
+    frequencyRange: { min: 48, max: 5000 },
+    thielSmall: {
+      fs: 50, qts: 0.35, qes: 0.38, qms: 7.2,
+      vas: 75, xmax: 5, sd: 530, re: 5.6,
+      mms: 55, bl: 15.0, le: 0.85
+    },
+    price: 160,
+    image: '/configurator/drivers/celestion-tf1225e.webp',
+    description: 'Woofer 12" dal suono caldo e definito, eredità British. Ideale per monitor, casse voce e installazioni dove la qualità sonora viene prima della potenza pura.',
+    madeIn: 'UK',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'karaoke', 'band-live'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta pressata',
+    voiceCoilDiameter: 64,
+    mountingDiameter: 286,
+    overallDiameter: 310,
+    depth: 140,
+    weight: 4.8
+  },
+
+  // ─── WOOFER 10" ──────────────────────────────────────────────────────────────
+  {
+    id: 'bc-10md26',
+    brand: 'B&C',
+    model: '10MD26',
+    size: 10,
+    type: 'mid-bass',
+    powerRMS: 350,
+    powerPeak: 700,
+    impedance: 16,
+    sensitivity: 97,
+    frequencyRange: { min: 65, max: 4500 },
+    thielSmall: {
+      fs: 75, qts: 0.28, qes: 0.30, qms: 8.0,
+      vas: 30, xmax: 4.5, sd: 346, re: 12.5,
+      mms: 32, bl: 15.0, le: 0.7
+    },
+    price: 220,
+    image: '/configurator/drivers/bc-10md26.webp',
+    description: 'Mid-bass 10" ad alta sensibilità. Progettato per casse attive compatte e monitor da palco. Suono diretto e punch eccezionale.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'band-live', 'karaoke'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 64,
+    mountingDiameter: 236,
+    overallDiameter: 256,
+    depth: 120,
+    weight: 3.5
+  },
+  {
+    id: 'faital-10fe200',
+    brand: 'Faital Pro',
+    model: '10FE200',
+    size: 10,
+    type: 'woofer',
+    powerRMS: 200,
+    powerPeak: 400,
+    impedance: 8,
+    sensitivity: 95,
+    frequencyRange: { min: 55, max: 6000 },
+    thielSmall: {
+      fs: 60, qts: 0.40, qes: 0.45, qms: 7.0,
+      vas: 40, xmax: 4.5, sd: 346, re: 5.8,
+      mms: 28, bl: 10.5, le: 0.6
+    },
+    price: 120,
+    image: '/configurator/drivers/faital-10fe200.webp',
+    description: 'Woofer 10" versatile ed efficiente. Perfetto per monitor studio compatti e casse home hi-fi. Risposta in frequenza ampia e naturale.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'cinema-home'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 51,
+    mountingDiameter: 236,
+    overallDiameter: 256,
+    depth: 115,
+    weight: 2.8
+  },
+
+  // ─── WOOFER 8" ───────────────────────────────────────────────────────────────
+  {
+    id: 'bc-8nw51',
+    brand: 'B&C',
+    model: '8NW51',
+    size: 8,
+    type: 'mid-bass',
+    powerRMS: 200,
+    powerPeak: 400,
+    impedance: 8,
+    sensitivity: 93,
+    frequencyRange: { min: 70, max: 5000 },
+    thielSmall: {
+      fs: 78, qts: 0.35, qes: 0.38, qms: 7.5,
+      vas: 14, xmax: 5, sd: 220, re: 5.5,
+      mms: 18, bl: 10.0, le: 0.5
+    },
+    price: 195,
+    image: '/configurator/drivers/bc-8nw51.webp',
+    description: 'Neodimio 8" compatto e leggero. Ideale per monitor nearfield e casse attive da studio dove la precisione è fondamentale.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'cinema-home'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta trattata',
+    voiceCoilDiameter: 51,
+    mountingDiameter: 192,
+    overallDiameter: 210,
+    depth: 95,
+    weight: 1.5
+  },
+  {
+    id: 'eighteen-8nmb420',
+    brand: 'Eighteen Sound',
+    model: '8NMB420',
+    size: 8,
+    type: 'mid-bass',
+    powerRMS: 250,
+    powerPeak: 500,
+    impedance: 8,
+    sensitivity: 94,
+    frequencyRange: { min: 65, max: 5500 },
+    thielSmall: {
+      fs: 72, qts: 0.33, qes: 0.35, qms: 8.0,
+      vas: 16, xmax: 5.5, sd: 220, re: 5.6,
+      mms: 20, bl: 11.0, le: 0.55
+    },
+    price: 210,
+    image: '/configurator/drivers/18s-8nmb420.webp',
+    description: 'Mid-bass neodimio 8" con escursione elevata. Ottimo come woofer in monitor studio attivi o casse compatte PA di alta qualità.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'band-live'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta rinforzata',
+    voiceCoilDiameter: 51,
+    mountingDiameter: 192,
+    overallDiameter: 210,
+    depth: 100,
+    weight: 1.8
+  },
+
+  // ─── FULL-RANGE / COAXIAL ───────────────────────────────────────────────────
+  {
+    id: 'bc-12cx32',
+    brand: 'B&C',
+    model: '12CX32',
+    size: 12,
+    type: 'coaxial',
+    powerRMS: 400,
+    powerPeak: 800,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 50, max: 18000 },
+    thielSmall: {
+      fs: 55, qts: 0.32, qes: 0.34, qms: 8.2,
+      vas: 65, xmax: 5.5, sd: 530, re: 5.5,
+      mms: 48, bl: 16.0, le: 0.8
+    },
+    price: 430,
+    image: '/configurator/drivers/bc-12cx32.webp',
+    description: 'Coassiale 12" con driver HF integrato. Sorgente puntiforme perfetta per monitor da palco e casse full-range senza crossover esterno.',
+    madeIn: 'Italia',
+    recommendedFor: ['band-live', 'studio-monitor', 'pa-events', 'karaoke'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 76,
+    mountingDiameter: 286,
+    overallDiameter: 310,
+    depth: 160,
+    weight: 6.8
+  },
+  {
+    id: 'faital-8fe200',
+    brand: 'Faital Pro',
+    model: '8FE200',
+    size: 8,
+    type: 'full-range',
+    powerRMS: 200,
+    powerPeak: 400,
+    impedance: 8,
+    sensitivity: 94,
+    frequencyRange: { min: 65, max: 10000 },
+    thielSmall: {
+      fs: 70, qts: 0.38, qes: 0.42, qms: 7.5,
+      vas: 18, xmax: 4, sd: 220, re: 5.6,
+      mms: 16, bl: 9.5, le: 0.5
+    },
+    price: 95,
+    image: '/configurator/drivers/faital-8fe200.webp',
+    description: 'Full-range 8" economico ma di alta qualità. Risposta in frequenza ampia, ideale per casse compatte e monitor near-field.',
+    madeIn: 'Italia',
+    recommendedFor: ['home-hifi', 'studio-monitor', 'cinema-home', 'karaoke'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta',
+    voiceCoilDiameter: 38,
+    mountingDiameter: 192,
+    overallDiameter: 210,
+    depth: 95,
+    weight: 2.1
+  },
+
+  // ─── SUBWOOFER 21" ──────────────────────────────────────────────────────────
+  {
+    id: 'bc-21sw152',
+    brand: 'B&C',
+    model: '21SW152',
+    size: 21,
+    type: 'subwoofer',
+    powerRMS: 2000,
+    powerPeak: 4000,
+    impedance: 8,
+    sensitivity: 97,
+    frequencyRange: { min: 20, max: 800 },
+    thielSmall: {
+      fs: 30, qts: 0.25, qes: 0.26, qms: 9.5,
+      vas: 350, xmax: 12, sd: 2120, re: 5.3,
+      mms: 310, bl: 32.0, le: 2.2
+    },
+    price: 680,
+    image: '/configurator/drivers/bc-21sw152.webp',
+    description: 'Il re dei subwoofer. 21" con 2000W RMS. Risposta fino a 20Hz, escursione da 12mm. Per chi vuole sentire i sub-bassi, non solo ascoltarli.',
+    madeIn: 'Italia',
+    recommendedFor: ['dj-festival', 'subwoofer-dedicato', 'cinema-home'],
+    magnetType: 'Ferrite',
+    coneType: 'Carta rinforzata fibra di carbonio',
+    voiceCoilDiameter: 152,
+    mountingDiameter: 514,
+    overallDiameter: 540,
+    depth: 270,
+    weight: 16.5
+  },
+
+  // ─── WOOFER 6.5" (STUDIO/HIFI) ──────────────────────────────────────────────
+  {
+    id: 'eighteen-6nd430',
+    brand: 'Eighteen Sound',
+    model: '6ND430',
+    size: 6.5,
+    type: 'mid-bass',
+    powerRMS: 200,
+    powerPeak: 400,
+    impedance: 8,
+    sensitivity: 91,
+    frequencyRange: { min: 80, max: 6000 },
+    thielSmall: {
+      fs: 90, qts: 0.36, qes: 0.40, qms: 7.0,
+      vas: 8, xmax: 5, sd: 137, re: 5.5,
+      mms: 12, bl: 8.0, le: 0.4
+    },
+    price: 165,
+    image: '/configurator/drivers/18s-6nd430.webp',
+    description: 'Neodimio 6.5" di precisione. Escursione elevata per le dimensioni. Ideale per monitor studio nearfield e hi-fi di classe.',
+    madeIn: 'Italia',
+    recommendedFor: ['studio-monitor', 'home-hifi', 'cinema-home'],
+    magnetType: 'Neodimio',
+    coneType: 'Carta',
+    voiceCoilDiameter: 44,
+    mountingDiameter: 155,
+    overallDiameter: 170,
+    depth: 80,
+    weight: 1.2
+  },
+];
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  AMPLIFICATORI CLASSE D — PREMIUM SELECTION
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const AMPLIFIERS: Amplifier[] = [
+
+  // ─── HYPEX (Olanda — Top assoluto) ───────────────────────────────────────────
+  {
+    id: 'hypex-fa123',
+    brand: 'Hypex',
+    model: 'FA123',
+    classType: 'D',
+    channels: 1,
+    powerPerChannel: { '4': 125, '8': 65 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.005,
+    snr: 112,
+    hasDSP: true,
+    dspFeatures: ['Crossover', 'EQ parametrico 8 bande', 'Limiter', 'Delay', 'Phase'],
+    inputs: ['XLR', 'Jack 6.3mm'],
+    dimensions: { width: 160, height: 50, depth: 210 },
+    weight: 0.85,
+    supplyVoltage: '230V AC integrato',
+    price: 250,
+    image: '/configurator/amps/hypex-fa123.webp',
+    description: 'Modulo amplificatore Hypex con tecnologia FusionAmp. DSP integrato con software di configurazione. La scelta dei brand hi-fi più prestigiosi al mondo.',
+    madeIn: 'Olanda',
+    features: ['FusionAmp Technology', 'DSP configurabile via USB', 'Alimentatore integrato', 'Auto-standby'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset', 'Sovratensione']
+  },
+  {
+    id: 'hypex-fa252',
+    brand: 'Hypex',
+    model: 'FA252',
+    classType: 'D',
+    channels: 1,
+    powerPerChannel: { '4': 250, '8': 125 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.004,
+    snr: 115,
+    hasDSP: true,
+    dspFeatures: ['Crossover', 'EQ parametrico 8 bande', 'Limiter', 'Delay', 'Phase', 'Compression'],
+    inputs: ['XLR', 'Jack 6.3mm', 'RCA'],
+    dimensions: { width: 160, height: 55, depth: 230 },
+    weight: 1.1,
+    supplyVoltage: '230V AC integrato',
+    price: 380,
+    image: '/configurator/amps/hypex-fa252.webp',
+    description: 'FusionAmp 250W. Distorsione quasi inesistente. DSP completo con software dedicato per calibrazione precisa della risposta.',
+    madeIn: 'Olanda',
+    features: ['nCore Technology', 'DSP 56-bit', 'USB configurazione', 'Alimentatore switching efficiente'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset', 'Sovratensione', 'Sottotensione']
+  },
+  {
+    id: 'hypex-fa502',
+    brand: 'Hypex',
+    model: 'FA502',
+    classType: 'D',
+    channels: 1,
+    powerPerChannel: { '4': 500, '8': 250 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.003,
+    snr: 117,
+    hasDSP: true,
+    dspFeatures: ['Crossover', 'EQ parametrico 10 bande', 'Limiter', 'Delay', 'Phase', 'Compression'],
+    inputs: ['XLR', 'Jack 6.3mm', 'RCA'],
+    dimensions: { width: 200, height: 60, depth: 260 },
+    weight: 1.6,
+    supplyVoltage: '230V AC integrato',
+    price: 520,
+    image: '/configurator/amps/hypex-fa502.webp',
+    description: 'Il top della gamma Hypex. 500W su 4Ω con distorsione dello 0.003%. Per audiofili che non accettano compromessi.',
+    madeIn: 'Olanda',
+    features: ['nCore Premium', 'DSP 56-bit dual core', 'USB + Ethernet', 'Alimentatore PFC'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset', 'Sovratensione', 'Sottotensione', 'Clipping detection']
+  },
+
+  // ─── ICEpower (Danimarca — Bang & Olufsen) ──────────────────────────────────
+  {
+    id: 'icepower-125asx2',
+    brand: 'ICEpower',
+    model: '125ASX2',
+    classType: 'D',
+    channels: 2,
+    powerPerChannel: { '4': 125, '8': 65 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.005,
+    snr: 111,
+    hasDSP: false,
+    inputs: ['RCA', 'Jack 3.5mm'],
+    dimensions: { width: 135, height: 42, depth: 175 },
+    weight: 0.65,
+    supplyVoltage: '230V AC integrato',
+    price: 180,
+    image: '/configurator/amps/icepower-125asx2.webp',
+    description: 'Modulo stereo compatto ICEpower. Alimentatore integrato, efficienza >90%. Sviluppato dalla divisione pro di Bang & Olufsen.',
+    madeIn: 'Danimarca',
+    features: ['Tecnologia ICEpower', 'Alimentatore integrato', 'Auto-standby', 'Efficienza >90%'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset']
+  },
+  {
+    id: 'icepower-250asx2',
+    brand: 'ICEpower',
+    model: '250ASX2',
+    classType: 'D',
+    channels: 2,
+    powerPerChannel: { '4': 250, '8': 125 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 5, max: 50000 },
+    thd: 0.003,
+    snr: 117,
+    hasDSP: false,
+    inputs: ['RCA', 'XLR'],
+    dimensions: { width: 160, height: 45, depth: 220 },
+    weight: 1.0,
+    supplyVoltage: '230V AC integrato',
+    price: 280,
+    image: '/configurator/amps/icepower-250asx2.webp',
+    description: '250W stereo ICEpower con risposta fino a 50kHz. Qualità audiophile in formato compatto. Usato da brand come Bel Canto e PS Audio.',
+    madeIn: 'Danimarca',
+    features: ['Tecnologia ICEpower', 'Risposta estesa 5Hz-50kHz', 'Alimentatore PFC', 'Efficienza >93%'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset', 'Sovratensione']
+  },
+
+  // ─── POWERSOFT (Italia — Leader mondiale PA) ────────────────────────────────
+  {
+    id: 'powersoft-digimod1000',
+    brand: 'Powersoft',
+    model: 'DigiMod 1000',
+    classType: 'D',
+    channels: 1,
+    powerPerChannel: { '4': 1000, '8': 500 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.05,
+    snr: 108,
+    hasDSP: true,
+    dspFeatures: ['Crossover 24dB/oct', 'EQ parametrico 6 bande', 'Limiter RMS+Peak', 'Delay 10ms'],
+    inputs: ['XLR'],
+    dimensions: { width: 200, height: 70, depth: 280 },
+    weight: 2.5,
+    supplyVoltage: '230V AC integrato',
+    price: 650,
+    image: '/configurator/amps/powersoft-digimod1000.webp',
+    description: 'Modulo professionale Powersoft con DSP integrato. 1000W su 4Ω. Lo standard dell\'industria PA mondiale — da D&B a JBL usano Powersoft.',
+    madeIn: 'Italia',
+    features: ['Tecnologia brevettata Powersoft', 'DSP 24bit/96kHz', 'Alimentatore switching universale', 'Monitoring temperatura'],
+    protections: ['Sovratemperatura multilivello', 'Cortocircuito', 'DC offset', 'Sovracorrente', 'Sovratensione']
+  },
+  {
+    id: 'powersoft-digimod3000',
+    brand: 'Powersoft',
+    model: 'DigiMod 3000',
+    classType: 'D',
+    channels: 1,
+    powerPerChannel: { '4': 3000, '8': 1500 },
+    impedanceRange: [2, 4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.05,
+    snr: 110,
+    hasDSP: true,
+    dspFeatures: ['Crossover 48dB/oct', 'EQ parametrico 10 bande', 'Limiter RMS+Peak+Thermal', 'Delay 20ms', 'Compression'],
+    inputs: ['XLR', 'AES/EBU'],
+    dimensions: { width: 240, height: 80, depth: 320 },
+    weight: 4.0,
+    supplyVoltage: '230V AC integrato',
+    price: 1100,
+    image: '/configurator/amps/powersoft-digimod3000.webp',
+    description: 'Il mostro Powersoft. 3000W su 4Ω, anche su 2Ω. Per subwoofer da festival e installazioni dove serve potenza illimitata.',
+    madeIn: 'Italia',
+    features: ['Potenza 3kW', 'DSP avanzato', 'Compatibile 2Ω', 'Ventilazione forzata'],
+    protections: ['Sovratemperatura multilivello', 'Cortocircuito', 'DC offset', 'Sovracorrente', 'Sovratensione', 'Thermal modeling']
+  },
+
+  // ─── PASCAL (Danimarca — Pro Audio) ─────────────────────────────────────────
+  {
+    id: 'pascal-s-pro2',
+    brand: 'Pascal',
+    model: 'S-PRO2 500',
+    classType: 'D',
+    channels: 2,
+    powerPerChannel: { '4': 500, '8': 250 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.02,
+    snr: 113,
+    hasDSP: true,
+    dspFeatures: ['Crossover', 'EQ 6 bande', 'Limiter', 'Delay'],
+    inputs: ['XLR', 'Euroblock'],
+    dimensions: { width: 180, height: 55, depth: 250 },
+    weight: 1.8,
+    supplyVoltage: '230V AC integrato',
+    price: 480,
+    image: '/configurator/amps/pascal-spro2-500.webp',
+    description: 'Modulo stereo pro Pascal. 500W+500W con DSP. Compatto, affidabile, progettato per touring intensivo.',
+    madeIn: 'Danimarca',
+    features: ['UMAC Technology', 'DSP integrato', 'Alimentatore universale', 'Remote monitoring ready'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset', 'Sovratensione']
+  },
+
+  // ─── Entry-level con Bluetooth ──────────────────────────────────────────────
+  {
+    id: 'icepower-50asx2-bt',
+    brand: 'ICEpower',
+    model: '50ASX2 BT',
+    classType: 'D',
+    channels: 2,
+    powerPerChannel: { '4': 50, '8': 25 },
+    impedanceRange: [4, 8],
+    frequencyResponse: { min: 20, max: 20000 },
+    thd: 0.008,
+    snr: 105,
+    hasDSP: false,
+    inputs: ['RCA', 'Bluetooth 5.0', 'Jack 3.5mm', 'USB-C audio'],
+    dimensions: { width: 120, height: 38, depth: 150 },
+    weight: 0.45,
+    supplyVoltage: '230V AC integrato',
+    price: 130,
+    image: '/configurator/amps/icepower-50asx2-bt.webp',
+    description: 'Amplificatore compatto con Bluetooth 5.0 aptX. Perfetto per casse home hi-fi e monitor desktop. Qualità ICEpower in formato mini.',
+    madeIn: 'Danimarca',
+    features: ['Bluetooth 5.0 aptX', 'USB-C audio', 'Auto-standby', 'LED indicatore'],
+    protections: ['Sovratemperatura', 'Cortocircuito', 'DC offset']
+  },
+];
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  CONFIGURAZIONE PREZZI DEFAULT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const DEFAULT_PRICING_CONFIG: PricingConfig = {
+  marginPercent: 30,                    // 30% margine OdS
+  carpenterRatePerHour: 35,             // €/ora falegname
+  estimatedHoursPerCabinet: 6,          // ore stimate per cassa (taglio + assemblaggio)
+  woodPricePerSheet: 45,               // € per foglio MDF 18mm 244x122cm
+  hardwareKitPrice: 25,                // viti, t-nut, maniglie, piedini, terminale
+  dampingPricePerMeter: 12,            // lana di roccia al m²
+  finishPricePerCabinet: 40,           // verniciatura testurizzata
+  assemblyHours: 2,                    // ore assemblaggio OdS (montaggio driver + ampli + cablaggio)
+  assemblyRatePerHour: 40,             // €/ora lavoro OdS
+};
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  HELPER MAPS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const USE_CASE_LABELS: Record<string, { label: string; icon: string; description: string }> = {
+  'dj-club': { label: 'DJ / Club', icon: '🎧', description: 'Bassi potenti e definiti per club e discoteche' },
+  'dj-festival': { label: 'DJ / Festival', icon: '🎪', description: 'Potenza massima per grandi spazi aperti' },
+  'band-live': { label: 'Band Live', icon: '🎸', description: 'Chiarezza e potenza per concerti dal vivo' },
+  'pa-events': { label: 'PA / Eventi', icon: '📢', description: 'Voce chiara e musica per eventi aziendali' },
+  'studio-monitor': { label: 'Studio Monitor', icon: '🎙️', description: 'Precisione e risposta piatta per mixing' },
+  'home-hifi': { label: 'Home Hi-Fi', icon: '🏠', description: 'Ascolto di qualità nel salotto di casa' },
+  'karaoke': { label: 'Karaoke / Voce', icon: '🎤', description: 'Voce in primo piano con bassi controllati' },
+  'cinema-home': { label: 'Home Cinema', icon: '🎬', description: 'Audio surround immersivo per film' },
+  'subwoofer-dedicato': { label: 'Subwoofer Puro', icon: '💥', description: 'Solo bassi estremi sotto i 100Hz' },
+};
+
+export const MUSIC_GENRE_LABELS: Record<string, { label: string; icon: string }> = {
+  'techno': { label: 'Techno / Minimal', icon: '⚡' },
+  'house': { label: 'House / Deep', icon: '🌊' },
+  'hip-hop': { label: 'Hip-Hop / Trap', icon: '🔥' },
+  'rock': { label: 'Rock / Alternative', icon: '🎸' },
+  'metal': { label: 'Metal / Hard Rock', icon: '🤘' },
+  'jazz': { label: 'Jazz / Soul', icon: '🎷' },
+  'classica': { label: 'Classica / Orchestra', icon: '🎻' },
+  'pop': { label: 'Pop / R&B', icon: '🎵' },
+  'reggae': { label: 'Reggae / Dub', icon: '🟢' },
+  'drum-and-bass': { label: 'Drum & Bass / Jungle', icon: '🥁' },
+  'acustica': { label: 'Acustica / Folk', icon: '🪕' },
+  'elettronica': { label: 'Elettronica / Ambient', icon: '🎹' },
+};
+
+export const ENVIRONMENT_LABELS: Record<string, { label: string; description: string; sqm: string }> = {
+  'indoor-small': { label: 'Indoor Piccolo', description: 'Camera, studio, salotto', sqm: '< 30 m²' },
+  'indoor-medium': { label: 'Indoor Medio', description: 'Bar, ristorante, sala prove', sqm: '30-100 m²' },
+  'indoor-large': { label: 'Indoor Grande', description: 'Club, teatro, palestra', sqm: '100-500 m²' },
+  'outdoor': { label: 'Outdoor', description: 'Festival, piazza, giardino', sqm: '> 500 m²' },
+};
+
+export const BUDGET_LABELS: Record<string, { label: string; description: string; range: string }> = {
+  'economy': { label: 'Economy', description: 'Massimo risparmio, qualità solida', range: '€200-500' },
+  'mid': { label: 'Intermedio', description: 'Ottimo rapporto qualità/prezzo', range: '€500-1000' },
+  'premium': { label: 'Premium', description: 'Componenti top di gamma', range: '€1000-2000' },
+  'ultra': { label: 'Ultra', description: 'Il meglio in assoluto, senza compromessi', range: '€2000+' },
+};

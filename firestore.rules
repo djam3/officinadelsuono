@@ -230,5 +230,34 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if false;
     }
+
+    // ─── Used Listings (Mercatino Usato) ──────────────────────────────────────
+    // Lettura pubblica solo per annunci approvati; l'autore può leggere i propri
+    // annunci in qualsiasi stato. Creazione riservata a utenti autenticati,
+    // sempre in stato "pending" (moderazione admin). Modifica/eliminazione solo
+    // admin o autore stesso.
+
+    function isValidUsedListing() {
+      return hasFields(['userId', 'userEmail', 'title', 'description', 'category', 'brand', 'condition', 'price', 'images', 'status', 'contactMethod', 'createdAt']) &&
+        request.resource.data.userId is string && request.resource.data.userId == request.auth.uid &&
+        request.resource.data.userEmail is string && request.resource.data.userEmail.size() > 0 && request.resource.data.userEmail.size() < 200 &&
+        request.resource.data.title is string && request.resource.data.title.size() > 0 && request.resource.data.title.size() < 150 &&
+        request.resource.data.description is string && request.resource.data.description.size() > 0 && request.resource.data.description.size() < 3000 &&
+        request.resource.data.category is string && request.resource.data.category.size() > 0 && request.resource.data.category.size() < 50 &&
+        request.resource.data.brand is string && request.resource.data.brand.size() < 100 &&
+        request.resource.data.condition in ['Nuovo', 'Come Nuovo', 'Buono', 'Accettabile', 'Da Riparare'] &&
+        request.resource.data.price is number && request.resource.data.price >= 0 && request.resource.data.price <= 100000 &&
+        request.resource.data.images is list && request.resource.data.images.size() <= 5 &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.contactMethod in ['email', 'whatsapp'] &&
+        (!('whatsappNumber' in request.resource.data) || (request.resource.data.whatsappNumber is string && request.resource.data.whatsappNumber.size() < 30)) &&
+        request.resource.data.createdAt is string;
+    }
+
+    match /used_listings/{listingId} {
+      allow read: if resource.data.status == 'approved' || isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
+      allow create: if isAuthenticated() && isValidUsedListing();
+      allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
+    }
   }
 }

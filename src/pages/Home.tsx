@@ -353,6 +353,39 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
+      {/* Speaker Configurator Banner */}
+      <section className="py-12 bg-black relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <TiltCard intensity={10}>
+            <div className="p-8 md:p-16 rounded-[3rem] bg-zinc-900 border border-white/10 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558591710-4b4a1ae0f04d?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-20 mix-blend-overlay group-hover:scale-105 transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent" />
+              <div className="flex flex-col md:flex-row items-center justify-between gap-12 relative z-10">
+                <div className="flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-white border border-white/20 mb-8 backdrop-blur-md">
+                    <Speaker className="w-4 h-4 text-brand-orange" />
+                    <span className="text-xs font-black uppercase tracking-[0.2em]">Crea la Tua Cassa Su Misura</span>
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 leading-tight uppercase">
+                    Configuratore <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500">Casse AI</span>
+                  </h2>
+                  <div className="text-zinc-400 text-lg max-w-xl mx-auto md:mx-0 leading-relaxed mb-8">
+                    Scegli l'utilizzo, e la nostra AI progetterà per te la cassa di legno perfetta calcolando i parametri Thiele-Small. Completa di amplificatore e pronta per essere costruita dal tuo falegname o da noi.
+                  </div>
+                  <button 
+                    onClick={() => onNavigate('configuratore')}
+                    className="btn-premium px-10 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-2xl font-black text-xl transition-all inline-flex items-center gap-3 shadow-[0_15px_40px_rgba(255,95,0,0.25)] hover:-translate-y-1 active:scale-95"
+                  >
+                    Progetta Ora
+                    <ArrowRight className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </TiltCard>
+        </div>
+      </section>
+
       {/* Featured Categories */}
       <section className="py-32 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
