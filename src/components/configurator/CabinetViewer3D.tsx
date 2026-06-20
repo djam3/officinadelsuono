@@ -1,6 +1,6 @@
-import React, { useRef, useMemo, Suspense } from 'react';
+import React, { useMemo, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Edges, Html } from '@react-three/drei';
+import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 import { CabinetDesign } from '../../types/speaker';
 
@@ -10,303 +10,294 @@ interface CabinetViewer3DProps {
   exploded?: boolean;
 }
 
-// Genera una texture legno base
-const createWoodTexture = () => {
+const ACCENT = '#F27D26';
+
+// ─── Texture procedurale: finitura nera testurizzata (bump) ──────────────────
+const createTexturedBump = () => {
+  const size = 256;
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const context = canvas.getContext('2d');
-  if (context) {
-    context.fillStyle = '#2a1b12'; // Base color (dark wood)
-    context.fillRect(0, 0, 512, 512);
-    // Add some noise/grain
-    for (let i = 0; i < 5000; i++) {
-      context.fillStyle = `rgba(0, 0, 0, ${Math.random() * 0.1})`;
-      context.fillRect(Math.random() * 512, Math.random() * 512, Math.random() * 20, 2);
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#808080';
+    ctx.fillRect(0, 0, size, size);
+    // grana fine tipo vernice a buccia d'arancia
+    for (let i = 0; i < 14000; i++) {
+      const v = 110 + Math.random() * 90;
+      ctx.fillStyle = `rgb(${v},${v},${v})`;
+      const r = Math.random() * 1.6 + 0.4;
+      ctx.beginPath();
+      ctx.arc(Math.random() * size, Math.random() * size, r, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(3, 3);
   return texture;
 };
 
-const woodTexture = createWoodTexture();
-
-const Panel = ({
-  width,
-  height,
-  thickness,
-  position,
-  rotation = [0, 0, 0],
-  holes = [],
-  name,
-  explodedOffset = [0, 0, 0],
-  isExploded = false
+// ─── Driver 3D realistico (cestello, sospensione, cono, dust cap, bulloni) ───
+const Driver3D = ({
+  mountRadius,
+  boltCount,
+  z,
 }: {
-  width: number;
-  height: number;
-  thickness: number;
-  position: [number, number, number];
-  rotation?: [number, number, number];
-  holes?: any[];
-  name: string;
-  explodedOffset?: [number, number, number];
-  isExploded?: boolean;
+  mountRadius: number; // raggio foro di montaggio (m)
+  boltCount: number;
+  z: number;           // z della superficie del baffle (m)
 }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  // Convert mm to meters for Three.js
-  const w = width / 1000;
-  const h = height / 1000;
-  const d = thickness / 1000;
-
-  // Calculate final position with explosion
-  const finalPos: [number, number, number] = isExploded
-    ? [
-        position[0] + explodedOffset[0],
-        position[1] + explodedOffset[1],
-        position[2] + explodedOffset[2],
-      ]
-    : position;
-
-  // Usa CSG o ShapeGeometry per forare, ma per semplicità usiamo texture o geometry base per ora
-  // In una versione pro, si usa THREE.Shape per creare fori
-  const shape = useMemo(() => {
-    const s = new THREE.Shape();
-    s.moveTo(-w / 2, -h / 2);
-    s.lineTo(w / 2, -h / 2);
-    s.lineTo(w / 2, h / 2);
-    s.lineTo(-w / 2, h / 2);
-    s.lineTo(-w / 2, -h / 2);
-
-    if (holes && holes.length > 0) {
-      holes.forEach(hole => {
-        if (hole.shape === 'circle' && hole.diameter) {
-          const holePath = new THREE.Path();
-          // Convert from bottom-left origin to center origin
-          const hX = (hole.x / 1000) - (w / 2);
-          const hY = (hole.y / 1000) - (h / 2);
-          const radius = (hole.diameter / 2) / 1000;
-          holePath.absarc(hX, hY, radius, 0, Math.PI * 2, false);
-          s.holes.push(holePath);
-        } else if (hole.shape === 'rectangle' && hole.width && hole.height) {
-          const holePath = new THREE.Path();
-          const hw = (hole.width / 1000) / 2;
-          const hh = (hole.height / 1000) / 2;
-          const hX = (hole.x / 1000) - (w / 2);
-          const hY = (hole.y / 1000) - (h / 2);
-          
-          holePath.moveTo(hX - hw, hY - hh);
-          holePath.lineTo(hX + hw, hY - hh);
-          holePath.lineTo(hX + hw, hY + hh);
-          holePath.lineTo(hX - hw, hY + hh);
-          holePath.lineTo(hX - hw, hY - hh);
-          s.holes.push(holePath);
-        } else if (hole.shape === 'rounded-rect' && hole.width && hole.height) {
-          // semplificazione: usa rettangolo
-          const holePath = new THREE.Path();
-          const hw = (hole.width / 1000) / 2;
-          const hh = (hole.height / 1000) / 2;
-          const hX = (hole.x / 1000) - (w / 2);
-          const hY = (hole.y / 1000) - (h / 2);
-          
-          holePath.moveTo(hX - hw, hY - hh);
-          holePath.lineTo(hX + hw, hY - hh);
-          holePath.lineTo(hX + hw, hY + hh);
-          holePath.lineTo(hX - hw, hY + hh);
-          holePath.lineTo(hX - hw, hY - hh);
-          s.holes.push(holePath);
-        }
-      });
-    }
-    return s;
-  }, [w, h, holes]);
-
-  const extrudeSettings = {
-    depth: d,
-    bevelEnabled: false,
-  };
+  const r = mountRadius;
+  const bolts = useMemo(
+    () =>
+      Array.from({ length: boltCount }, (_, i) => {
+        const a = (i / boltCount) * Math.PI * 2;
+        return [Math.cos(a) * r * 1.0, Math.sin(a) * r * 1.0] as [number, number];
+      }),
+    [boltCount, r]
+  );
 
   return (
-    <group position={finalPos} rotation={rotation}>
-      {/* Shift extrusion to center it over Z */}
-      <group position={[0, 0, -d / 2]}>
-        <mesh ref={meshRef} castShadow receiveShadow>
-          <extrudeGeometry args={[shape, extrudeSettings]} />
-          <meshStandardMaterial 
-            map={woodTexture} 
-            color="#a36e40" // wood tint
-            roughness={0.8}
-            metalness={0.1}
-          />
-          <Edges scale={1} threshold={15} color="black" />
+    <group position={[0, 0, z]}>
+      {/* Flangia / cestello esterno (anello metallico) */}
+      <mesh position={[0, 0, -0.002]}>
+        <torusGeometry args={[r * 1.03, r * 0.07, 16, 48]} />
+        <meshStandardMaterial color="#3a3c40" roughness={0.35} metalness={0.85} />
+      </mesh>
+
+      {/* Anello di base del cestello */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.01]}>
+        <cylinderGeometry args={[r * 1.0, r * 0.98, 0.016, 48, 1, true]} />
+        <meshStandardMaterial color="#1c1d20" roughness={0.5} metalness={0.6} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Bulloni di fissaggio */}
+      {bolts.map(([bx, by], i) => (
+        <mesh key={i} position={[bx, by, 0.001]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[r * 0.05, r * 0.05, 0.01, 6]} />
+          <meshStandardMaterial color="#0e0e10" roughness={0.4} metalness={0.9} />
         </mesh>
-      </group>
-      
-      {isExploded && (
-        <Html position={[0, 0, d/2 + 0.05]} center className="pointer-events-none">
-          <div className="bg-black/80 text-brand-orange text-xs px-2 py-1 rounded backdrop-blur-md border border-white/10 whitespace-nowrap">
-            {name}
-          </div>
-        </Html>
+      ))}
+
+      {/* Sospensione in gomma (surround) */}
+      <mesh position={[0, 0, -0.008]}>
+        <torusGeometry args={[r * 0.82, r * 0.12, 16, 48]} />
+        <meshStandardMaterial color="#0b0b0c" roughness={0.85} metalness={0.05} />
+      </mesh>
+
+      {/* Cono (tronco di cono che rientra nella cassa) */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.008 - r * 0.34]}>
+        <cylinderGeometry args={[r * 0.18, r * 0.74, r * 0.68, 48, 1, true]} />
+        <meshStandardMaterial color="#222327" roughness={0.55} metalness={0.25} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Dust cap (cupola centrale) */}
+      <mesh position={[0, 0, -0.012]}>
+        <sphereGeometry args={[r * 0.26, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <meshStandardMaterial color="#2a2c30" roughness={0.3} metalness={0.7} />
+      </mesh>
+      {/* Anello accento attorno al dust cap */}
+      <mesh position={[0, 0, -0.013]}>
+        <torusGeometry args={[r * 0.27, r * 0.012, 12, 40]} />
+        <meshStandardMaterial color={ACCENT} roughness={0.4} metalness={0.5} emissive={ACCENT} emissiveIntensity={0.15} />
+      </mesh>
+    </group>
+  );
+};
+
+// ─── Condotto bass-reflex svasato ─────────────────────────────────────────────
+const Port3D = ({ radius, length, z }: { radius: number; length: number; z: number }) => {
+  return (
+    <group position={[0, 0, z]}>
+      {/* Svasatura anteriore */}
+      <mesh position={[0, 0, 0]}>
+        <torusGeometry args={[radius, radius * 0.22, 16, 40]} />
+        <meshStandardMaterial color="#0c0c0d" roughness={0.6} metalness={0.2} />
+      </mesh>
+      {/* Tubo interno */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -length / 2]}>
+        <cylinderGeometry args={[radius, radius, length, 40, 1, true]} />
+        <meshStandardMaterial color="#08080a" roughness={0.7} metalness={0.1} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Fondo scuro */}
+      <mesh position={[0, 0, -length]}>
+        <circleGeometry args={[radius, 40]} />
+        <meshStandardMaterial color="#050506" roughness={0.9} />
+      </mesh>
+    </group>
+  );
+};
+
+// ─── Piastra connettori / amplificatore sul retro ────────────────────────────
+const RearPanel3D = ({
+  hasAmp,
+  z,
+  y,
+}: {
+  hasAmp: boolean;
+  z: number; // z della faccia posteriore (m)
+  y: number;
+}) => {
+  return (
+    <group position={[0, y, z]}>
+      {/* Piastra incassata */}
+      <mesh position={[0, 0, -0.002]}>
+        <boxGeometry args={[0.18, hasAmp ? 0.16 : 0.11, 0.008]} />
+        <meshStandardMaterial color="#0d0d0f" roughness={0.6} metalness={0.4} />
+      </mesh>
+
+      {hasAmp ? (
+        <>
+          {/* Dissipatore con alette */}
+          {Array.from({ length: 6 }, (_, i) => (
+            <mesh key={i} position={[-0.06 + i * 0.024, 0.045, -0.006]}>
+              <boxGeometry args={[0.012, 0.055, 0.012]} />
+              <meshStandardMaterial color="#46494e" roughness={0.4} metalness={0.8} />
+            </mesh>
+          ))}
+          {/* Presa IEC */}
+          <mesh position={[0.045, -0.04, -0.006]}>
+            <boxGeometry args={[0.05, 0.03, 0.008]} />
+            <meshStandardMaterial color="#050506" roughness={0.7} />
+          </mesh>
+          {/* Connettore XLR / Speakon */}
+          <mesh position={[-0.05, -0.04, -0.008]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.018, 0.018, 0.01, 24]} />
+            <meshStandardMaterial color="#1a1b1e" roughness={0.4} metalness={0.7} />
+          </mesh>
+        </>
+      ) : (
+        <>
+          {/* Connettore Speakon */}
+          <mesh position={[0, 0.012, -0.006]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.024, 0.024, 0.012, 28]} />
+            <meshStandardMaterial color="#1a1b1e" roughness={0.4} metalness={0.7} />
+          </mesh>
+          <mesh position={[0, 0.012, -0.012]}>
+            <circleGeometry args={[0.016, 24]} />
+            <meshStandardMaterial color="#08080a" roughness={0.8} />
+          </mesh>
+          {/* Etichetta accento */}
+          <mesh position={[0, -0.035, -0.0065]}>
+            <boxGeometry args={[0.09, 0.012, 0.002]} />
+            <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.2} roughness={0.5} />
+          </mesh>
+        </>
       )}
     </group>
   );
 };
 
-const DimensionLine = ({ start, end, label, offset = 0.1 }: { start: [number, number, number], end: [number, number, number], label: string, offset?: number }) => {
-  const points = [
-    new THREE.Vector3(...start),
-    new THREE.Vector3(...end)
-  ];
-  const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-  
-  const midPoint = [
-    (start[0] + end[0]) / 2,
-    (start[1] + end[1]) / 2,
-    (start[2] + end[2]) / 2,
-  ];
+// ─── Modello completo della cassa ─────────────────────────────────────────────
+const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
+  const bumpTex = useMemo(() => createTexturedBump(), []);
 
-  return (
-    <group>
-      <lineSegments geometry={lineGeometry}>
-        <lineBasicMaterial color="#F27D26" linewidth={2} />
-      </lineSegments>
-      <Html position={midPoint as [number, number, number]} center className="pointer-events-none">
-        <div className="bg-zinc-900/90 text-brand-orange text-[10px] font-bold px-1.5 py-0.5 rounded border border-brand-orange/30">
-          {label}
-        </div>
-      </Html>
-    </group>
-  );
-};
-
-const CabinetModel = ({ cabinet, showDimensions, exploded }: CabinetViewer3DProps) => {
-  // Dimensioni esterne in metri
   const w = cabinet.externalDimensions.width / 1000;
   const h = cabinet.externalDimensions.height / 1000;
   const d = cabinet.externalDimensions.depth / 1000;
-  const t = cabinet.woodThickness / 1000;
+  const wt = cabinet.woodThickness / 1000;
 
-  const explosionFactor = 0.3; // m
+  // Posizioni driver e porta dai dati dei pannelli
+  const front = cabinet.panels.find((p) => p.id === 'front');
+  const driverHole = front?.holes?.find((hh) => hh.type === 'driver');
+  const portHole = front?.holes?.find((hh) => hh.type === 'port');
 
-  const getPanel = (id: string) => cabinet.panels.find(p => p.id === id);
-  const front = getPanel('front');
-  const rear = getPanel('rear');
-  const left = getPanel('side-left');
-  const right = getPanel('side-right');
-  const top = getPanel('top');
-  const bottom = getPanel('bottom');
+  const heightMm = cabinet.externalDimensions.height;
+  const wtMm = cabinet.woodThickness;
+
+  const driverRraw = ((driverHole?.diameter ?? cabinet.driverCutout.diameter) / 2) / 1000;
+  // Clamp: il driver non deve mai eccedere il baffle (alcuni progetti generano
+  // casse leggermente più piccole del driver). Mantiene il render plausibile.
+  const baffleMaxR = (Math.min(w, h) / 2) * 0.9;
+  const driverR = Math.min(driverRraw, baffleMaxR);
+  let driverY = driverHole
+    ? (-heightMm / 2 + wtMm + driverHole.y) / 1000
+    : h * 0.06;
+  // Mantieni il driver interamente dentro l'altezza della cassa
+  const driverYLimit = h / 2 - driverR - 0.006;
+  driverY = Math.max(-driverYLimit, Math.min(driverYLimit, driverY));
+
+  const portR = portHole?.diameter ? (portHole.diameter / 2) / 1000 : 0;
+  let portY = portHole ? (-heightMm / 2 + wtMm + portHole.y) / 1000 : -h * 0.28;
+  let portX = 0;
+  const portLen = cabinet.port?.length ? Math.min(cabinet.port.length / 1000, d * 0.7) : 0.1;
+
+  // Anti-collisione: se la porta finisce sotto il driver (driver molto grande),
+  // spostala nell'angolo basso libero del baffle così resta visibile.
+  if (portR > 0) {
+    const verticalGap = Math.abs(driverY - portY);
+    if (verticalGap < driverR + portR * 1.4) {
+      portX = (w / 2) - portR - 0.022;
+      portY = (-h / 2) + portR + 0.022;
+    }
+  }
+  const rearHasAmp = !!cabinet.ampCutout;
+
+  const bevel = Math.min(w, h, d) * 0.025;
+  const footR = Math.min(w, d) * 0.05;
+  const footH = 0.012;
+
+  const footPositions: [number, number, number][] = [
+    [w / 2 - footR * 1.6, -h / 2 - footH / 2, d / 2 - footR * 1.6],
+    [-w / 2 + footR * 1.6, -h / 2 - footH / 2, d / 2 - footR * 1.6],
+    [w / 2 - footR * 1.6, -h / 2 - footH / 2, -d / 2 + footR * 1.6],
+    [-w / 2 + footR * 1.6, -h / 2 - footH / 2, -d / 2 + footR * 1.6],
+  ];
 
   return (
     <group>
-      {/* Front */}
-      {front && (
-        <Panel 
-          width={front.width} height={front.height} thickness={front.thickness}
-          holes={front.holes} name={front.name}
-          position={[0, 0, d/2 - t/2]}
-          explodedOffset={[0, 0, explosionFactor]}
-          isExploded={exploded}
+      {/* Corpo cassa */}
+      <RoundedBox args={[w, h, d]} radius={bevel} smoothness={4} castShadow receiveShadow>
+        <meshStandardMaterial
+          color="#191a1d"
+          roughness={0.82}
+          metalness={0.14}
+          bumpMap={bumpTex}
+          bumpScale={0.0018}
         />
-      )}
-      
-      {/* Rear */}
-      {rear && (
-        <Panel 
-          width={rear.width} height={rear.height} thickness={rear.thickness}
-          holes={rear.holes} name={rear.name}
-          position={[0, 0, -d/2 + t/2]}
-          explodedOffset={[0, 0, -explosionFactor]}
-          isExploded={exploded}
-        />
-      )}
+      </RoundedBox>
 
-      {/* Left Side */}
-      {left && (
-        <Panel 
-          width={left.width} height={left.height} thickness={left.thickness}
-          holes={left.holes} name={left.name}
-          position={[-w/2 + t/2, 0, 0]}
-          rotation={[0, -Math.PI / 2, 0]}
-          explodedOffset={[-explosionFactor, 0, 0]}
-          isExploded={exploded}
-        />
-      )}
+      {/* Baffle frontale leggermente ribassato per profondità visiva */}
+      <mesh position={[0, 0, d / 2 + 0.0008]}>
+        <planeGeometry args={[w - bevel * 2, h - bevel * 2]} />
+        <meshStandardMaterial color="#0f1012" roughness={0.7} metalness={0.18} />
+      </mesh>
 
-      {/* Right Side */}
-      {right && (
-        <Panel 
-          width={right.width} height={right.height} thickness={right.thickness}
-          holes={right.holes} name={right.name}
-          position={[w/2 - t/2, 0, 0]}
-          rotation={[0, Math.PI / 2, 0]}
-          explodedOffset={[explosionFactor, 0, 0]}
-          isExploded={exploded}
-        />
-      )}
+      {/* Driver */}
+      <group position={[0, driverY, 0]}>
+        <Driver3D mountRadius={driverR} boltCount={cabinet.driverCutout.boltCount} z={d / 2 + 0.004} />
+      </group>
 
-      {/* Top */}
-      {top && (
-        <Panel 
-          width={top.width} height={top.height} thickness={top.thickness}
-          holes={top.holes} name={top.name}
-          position={[0, h/2 - t/2, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
-          explodedOffset={[0, explosionFactor, 0]}
-          isExploded={exploded}
-        />
-      )}
-
-      {/* Bottom */}
-      {bottom && (
-        <Panel 
-          width={bottom.width} height={bottom.height} thickness={bottom.thickness}
-          holes={bottom.holes} name={bottom.name}
-          position={[0, -h/2 + t/2, 0]}
-          rotation={[Math.PI / 2, 0, 0]}
-          explodedOffset={[0, -explosionFactor, 0]}
-          isExploded={exploded}
-        />
-      )}
-
-      {/* Port Tube */}
-      {cabinet.port && cabinet.port.shape === 'circular' && cabinet.port.diameter && !exploded && (
-        <mesh position={[0, -h/2 + t + (cabinet.port.diameter/1000/2) + 0.05, d/2 - t - (cabinet.port.length/1000/2)]} rotation={[Math.PI/2, 0, 0]}>
-          <cylinderGeometry args={[cabinet.port.diameter/2/1000, cabinet.port.diameter/2/1000, cabinet.port.length/1000, 32, 1, true]} />
-          <meshStandardMaterial color="#111" side={THREE.DoubleSide} />
-        </mesh>
-      )}
-
-      {/* Dimensions (Wireframe bounds) */}
-      {showDimensions && !exploded && (
-        <group>
-          {/* Width */}
-          <DimensionLine 
-            start={[-w/2, h/2 + 0.1, d/2]} 
-            end={[w/2, h/2 + 0.1, d/2]} 
-            label={`${cabinet.externalDimensions.width} mm`} 
-          />
-          {/* Height */}
-          <DimensionLine 
-            start={[w/2 + 0.1, -h/2, d/2]} 
-            end={[w/2 + 0.1, h/2, d/2]} 
-            label={`${cabinet.externalDimensions.height} mm`} 
-          />
-          {/* Depth */}
-          <DimensionLine 
-            start={[w/2 + 0.1, -h/2 + 0.1, d/2]} 
-            end={[w/2 + 0.1, -h/2 + 0.1, -d/2]} 
-            label={`${cabinet.externalDimensions.depth} mm`} 
-          />
+      {/* Porta bass-reflex */}
+      {portR > 0 && (
+        <group position={[portX, portY, 0]}>
+          <Port3D radius={portR} length={portLen} z={d / 2 + 0.002} />
         </group>
       )}
+
+      {/* Badge brand sul baffle */}
+      <mesh position={[0, -h / 2 + bevel + 0.018, d / 2 + 0.003]}>
+        <boxGeometry args={[Math.min(w * 0.22, 0.13), 0.006, 0.002]} />
+        <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.18} roughness={0.5} metalness={0.3} />
+      </mesh>
+
+      {/* Piastra posteriore */}
+      <RearPanel3D hasAmp={rearHasAmp} z={-d / 2 - 0.001} y={-h * 0.12} />
+
+      {/* Piedini */}
+      {footPositions.map((p, i) => (
+        <mesh key={i} position={p}>
+          <cylinderGeometry args={[footR, footR * 1.05, footH, 24]} />
+          <meshStandardMaterial color="#050506" roughness={0.9} metalness={0.1} />
+        </mesh>
+      ))}
     </group>
   );
 };
 
-// Verifica supporto WebGL — se assente, mostriamo un fallback 2D invece di un canvas vuoto
+// ─── Verifica supporto WebGL ──────────────────────────────────────────────────
 const isWebGLAvailable = (): boolean => {
   try {
     const canvas = document.createElement('canvas');
@@ -319,20 +310,16 @@ const isWebGLAvailable = (): boolean => {
   }
 };
 
-// Fallback 2D: rappresentazione schematica della cassa con le quote reali
+// ─── Fallback 2D se WebGL non disponibile ─────────────────────────────────────
 const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
   const { width, height, depth } = cabinet.externalDimensions;
   return (
     <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-4 p-8">
       <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-2xl">
-        {/* Faccia frontale */}
-        <polygon points="40,60 140,60 140,170 40,170" fill="#2a1b12" stroke="#a36e40" strokeWidth="2" />
-        {/* Top prospettico */}
-        <polygon points="40,60 70,35 170,35 140,60" fill="#3a2618" stroke="#a36e40" strokeWidth="2" />
-        {/* Lato destro */}
-        <polygon points="140,60 170,35 170,145 140,170" fill="#1f1410" stroke="#a36e40" strokeWidth="2" />
-        {/* Foro driver */}
-        <circle cx="90" cy="115" r="32" fill="#0a0a0b" stroke="#F27D26" strokeOpacity="0.5" strokeWidth="2" />
+        <polygon points="40,60 140,60 140,170 40,170" fill="#191a1d" stroke="#3a3c40" strokeWidth="2" />
+        <polygon points="40,60 70,35 170,35 140,60" fill="#222327" stroke="#3a3c40" strokeWidth="2" />
+        <polygon points="140,60 170,35 170,145 140,170" fill="#0f1012" stroke="#3a3c40" strokeWidth="2" />
+        <circle cx="90" cy="115" r="32" fill="#0a0a0b" stroke={ACCENT} strokeOpacity="0.5" strokeWidth="2" />
         {cabinet.port && <circle cx="90" cy="158" r="6" fill="#000" />}
       </svg>
       <div className="text-center">
@@ -345,17 +332,16 @@ const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
 
 export const CabinetViewer3D = ({
   cabinet,
-  showDimensions = true,
-  exploded = false
+  exploded = false,
 }: CabinetViewer3DProps) => {
-  // Camera adattata alle dimensioni reali della cassa (in metri)
   const maxDim = Math.max(
     cabinet.externalDimensions.width,
     cabinet.externalDimensions.height,
     cabinet.externalDimensions.depth
   ) / 1000;
-  const dist = Math.max(maxDim * 2.4, 1);
-  const camPos: [number, number, number] = [dist * 0.75, dist * 0.55, dist * 0.95];
+  const dist = Math.max(maxDim * 2.1, 0.9);
+  const camPos: [number, number, number] = [dist * 0.78, dist * 0.42, dist * 0.95];
+  const groundY = -(cabinet.externalDimensions.height / 1000) / 2 - 0.014;
 
   if (!isWebGLAvailable()) {
     return (
@@ -366,30 +352,51 @@ export const CabinetViewer3D = ({
   }
 
   return (
-    <div className="w-full h-full min-h-[400px] bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
-      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 45 }}>
-        <color attach="background" args={['#0a0a0b']} />
+    <div className="w-full h-full min-h-[400px] bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
+      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 42 }}>
+        <color attach="background" args={['#0c0c0e']} />
+        <fog attach="fog" args={['#0c0c0e', dist * 2, dist * 4.5]} />
 
-        <ambientLight intensity={0.55} />
-        <directionalLight position={[3, 5, 4]} intensity={1.2} castShadow />
-        <directionalLight position={[-4, 2, -3]} intensity={0.4} />
-        <pointLight position={[0, -3, 2]} intensity={0.3} />
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[3, 5, 4]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
+        <directionalLight position={[-4, 2, -2]} intensity={0.5} color="#9db4ff" />
+        <pointLight position={[0, 1, 3]} intensity={0.4} />
 
         <Suspense fallback={null}>
-          <group position={[0, maxDim * 0.05, 0]}>
-            <CabinetModel cabinet={cabinet} showDimensions={showDimensions} exploded={exploded} />
+          <group position={[0, groundY * -0.15, 0]}>
+            <CabinetModel cabinet={cabinet} />
           </group>
+
+          {/* Riflessi da studio (procedurali, senza rete) */}
+          <Environment resolution={256}>
+            <Lightformer intensity={2.2} position={[0, 3, 2]} scale={[4, 4, 1]} />
+            <Lightformer intensity={1.1} position={[-3, 1, 2]} scale={[3, 3, 1]} color="#aac4ff" />
+            <Lightformer intensity={1.3} position={[3, 2, 1]} scale={[2, 2, 1]} color="#ffd9b0" />
+            <Lightformer intensity={0.8} position={[0, -2, -2]} scale={[4, 2, 1]} />
+          </Environment>
+
+          {/* Ombra di contatto a terra */}
+          <ContactShadows
+            position={[0, groundY, 0]}
+            opacity={0.55}
+            scale={Math.max(w_scale(cabinet), 1.2)}
+            blur={2.4}
+            far={maxDim * 1.2}
+            resolution={512}
+            color="#000000"
+          />
         </Suspense>
 
         <OrbitControls
           makeDefault
           autoRotate={!exploded}
-          autoRotateSpeed={1}
+          autoRotateSpeed={0.7}
           enablePan={false}
-          minDistance={dist * 0.6}
-          maxDistance={dist * 2.5}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI / 1.5}
+          enableZoom
+          minDistance={dist * 0.55}
+          maxDistance={dist * 2.4}
+          minPolarAngle={Math.PI * 0.12}
+          maxPolarAngle={Math.PI * 0.62}
         />
       </Canvas>
 
@@ -400,13 +407,21 @@ export const CabinetViewer3D = ({
         </div>
       </div>
       <div className="absolute bottom-4 right-4 flex gap-2">
-         <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/50 font-medium flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-            3D Rendering
-         </div>
+        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/50 font-medium flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
+          Trascina per ruotare
+        </div>
       </div>
     </div>
   );
 };
+
+// scala dell'ombra in base alla larghezza/profondità
+function w_scale(cabinet: CabinetDesign): number {
+  return Math.max(
+    cabinet.externalDimensions.width / 1000,
+    cabinet.externalDimensions.depth / 1000
+  ) * 2.2;
+}
 
 export default CabinetViewer3D;
