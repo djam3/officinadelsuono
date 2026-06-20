@@ -8,10 +8,14 @@
  * magnete, canali, DSP).
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import type { SpeakerDriver, Amplifier } from '../../types/speaker';
 
 const ACCENT = '#F27D26';
+
+// Una path immagine è "reale" se punta a un file caricato (non a un placeholder)
+const hasRealPhoto = (src?: string): boolean =>
+  !!src && src.trim().length > 0 && !src.includes('placehold') && !src.includes('USE_IMAGES_ARRAY');
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DRIVER / CONO SPEAKER
@@ -242,5 +246,63 @@ export function AmpIllustration({
         <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" />
       </circle>
     </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  WRAPPER IBRIDI — foto reale se disponibile, altrimenti illustrazione SVG
+//  Quando saranno caricate le foto originali (licenziate) in
+//  public/configurator/drivers/ e public/configurator/amps/ con i nomi file
+//  definiti in speakerDatabase.ts, verranno mostrate automaticamente.
+//  Finché un file manca o non carica, si ripiega sull'illustrazione vettoriale.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function DriverVisual({
+  driver,
+  className = '',
+  showLabel = true,
+}: {
+  driver: SpeakerDriver;
+  className?: string;
+  showLabel?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!hasRealPhoto(driver.image) || failed) {
+    return <DriverIllustration driver={driver} className={className} showLabel={showLabel} />;
+  }
+
+  return (
+    <img
+      src={driver.image}
+      alt={`${driver.brand} ${driver.model}`}
+      loading="lazy"
+      className={`${className} object-contain`}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
+export function AmpVisual({
+  amp,
+  className = '',
+}: {
+  amp: Amplifier;
+  className?: string;
+}) {
+  const [failed, setFailed] = useState(false);
+
+  if (!hasRealPhoto(amp.image) || failed) {
+    return <AmpIllustration amp={amp} className={className} />;
+  }
+
+  return (
+    <img
+      src={amp.image}
+      alt={`${amp.brand} ${amp.model}`}
+      loading="lazy"
+      className={`${className} object-contain`}
+      onError={() => setFailed(true)}
+    />
   );
 }

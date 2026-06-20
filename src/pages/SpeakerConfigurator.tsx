@@ -15,7 +15,7 @@ import type {
   SpeakerProject
 } from '../types/speaker';
 import { CabinetViewer3D } from '../components/configurator/CabinetViewer3D';
-import { DriverIllustration, AmpIllustration } from '../components/configurator/ComponentVisuals';
+import { DriverVisual, AmpVisual } from '../components/configurator/ComponentVisuals';
 import { generateProjectPDF } from '../utils/generatePDF';
 import { generateCabinetDXF } from '../utils/generateDXF';
 
@@ -277,7 +277,7 @@ function StepDriverSelect({
               
               <div className="aspect-square bg-gradient-to-br from-zinc-800/40 to-zinc-950 p-6 flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent z-0" />
-                <DriverIllustration driver={driver} className="w-full h-full relative z-10 drop-shadow-2xl" />
+                <DriverVisual driver={driver} className="w-full h-full relative z-10 drop-shadow-2xl" />
                 <span className="absolute bottom-3 left-3 z-10 text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-950/70 px-2 py-1 rounded-md backdrop-blur-sm">
                   {driver.type.replace('-', ' ')}
                 </span>
@@ -486,7 +486,7 @@ function StepAmpSelect({
 
               <div className="aspect-video bg-gradient-to-br from-zinc-800/60 to-zinc-950 p-6 flex items-center justify-center relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-900 to-transparent z-0" />
-                <AmpIllustration amp={amp} className="w-full h-full relative z-10 drop-shadow-2xl" />
+                <AmpVisual amp={amp} className="w-full h-full relative z-10 drop-shadow-2xl" />
               </div>
               
               <div className="p-6 flex-1 flex flex-col">
@@ -636,7 +636,7 @@ function StepSummary({
             
             <div className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5 mb-4">
               <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
-                <DriverIllustration driver={driver} showLabel={false} className="w-full h-full" />
+                <DriverVisual driver={driver} showLabel={false} className="w-full h-full" />
               </div>
               <div>
                 <div className="text-xs text-[#F27D26] font-bold uppercase">{driver.brand}</div>
@@ -647,7 +647,7 @@ function StepSummary({
 
             <div className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5 mb-4">
               <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
-                <AmpIllustration amp={amplifier} className="w-full h-full" />
+                <AmpVisual amp={amplifier} className="w-full h-full" />
               </div>
               <div>
                 <div className="text-xs text-[#F27D26] font-bold uppercase">{amplifier.brand}</div>
