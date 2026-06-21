@@ -259,5 +259,30 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidUsedListing();
       allow update, delete: if isAdmin() || (isAuthenticated() && request.auth.uid == resource.data.userId);
     }
+
+    // ─── Richieste Configuratore Casse (lead → admin) ─────────────────────────
+    // Chiunque può inviare una richiesta valida (sempre stato "nuovo").
+    // Lettura/modifica/eliminazione riservate all'admin: il progetto e il
+    // preventivo sono visibili solo nel pannello admin.
+
+    function isValidConfiguratorRequest() {
+      return hasFields(['code', 'status', 'contact', 'driverId', 'ampId', 'quantity', 'createdAt']) &&
+        request.resource.data.status == 'nuovo' &&
+        request.resource.data.code is string && request.resource.data.code.size() < 40 &&
+        request.resource.data.contact is map &&
+        request.resource.data.contact.name is string && request.resource.data.contact.name.size() > 0 && request.resource.data.contact.name.size() < 120 &&
+        request.resource.data.contact.email is string && request.resource.data.contact.email.size() > 3 && request.resource.data.contact.email.size() < 200 && request.resource.data.contact.email.matches('.*@.*\\..*') &&
+        (!('phone' in request.resource.data.contact) || (request.resource.data.contact.phone is string && request.resource.data.contact.phone.size() < 40)) &&
+        (!('message' in request.resource.data.contact) || (request.resource.data.contact.message is string && request.resource.data.contact.message.size() < 1500)) &&
+        request.resource.data.driverId is string && request.resource.data.driverId.size() < 80 &&
+        request.resource.data.ampId is string && request.resource.data.ampId.size() < 80 &&
+        request.resource.data.quantity is number && request.resource.data.quantity >= 1 && request.resource.data.quantity <= 50 &&
+        request.resource.data.createdAt is string;
+    }
+
+    match /configurator_requests/{requestId} {
+      allow read, update, delete: if isAdmin();
+      allow create: if isValidConfiguratorRequest();
+    }
   }
 }

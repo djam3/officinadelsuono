@@ -308,6 +308,29 @@ export interface AIRecommendation {
   warnings?: string[];
 }
 
+// ─── Richiesta dal Configuratore (lead → admin) ────────────────────────────────
+export type ConfiguratorRequestStatus = 'nuovo' | 'preventivato' | 'inviato' | 'chiuso';
+
+export interface ConfiguratorRequest {
+  id: string;
+  code: string;
+  status: ConfiguratorRequestStatus;
+  contact: {
+    name: string;
+    email: string;
+    phone?: string;
+    message?: string;
+  };
+  driverId: string;
+  driverLabel: string;
+  ampId: string;
+  ampLabel: string;
+  useCase: string;
+  quantity: number;
+  cabinetName: string;
+  createdAt: string;
+}
+
 // ─── Wizard State ──────────────────────────────────────────────────────────────
 export type WizardStep = 1 | 2 | 3 | 4 | 5;
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { auth, db, googleProvider } from '../firebase';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { collection, getDocs, doc, onSnapshot, query, orderBy, setDoc, getDoc, limit } from 'firebase/firestore';
-import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt, Truck, Calculator, ShoppingCart } from 'lucide-react';
+import { LogOut, Settings, User as UserIcon, LayoutDashboard, Package, ScrollText, Megaphone, Bot, Activity, Users as UsersIcon, ChevronRight, ShieldAlert, Loader2, Globe, Share2, BrainCircuit, Pencil, X, Tag, Mail, AlertTriangle, Receipt, Truck, Calculator, ShoppingCart, Speaker } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useBuilder } from '../contexts/BuilderContext';
 import { Logo } from '../components/Logo';
@@ -13,6 +13,7 @@ import { AdminDiscountsPanel } from '../components/admin/AdminDiscountsPanel';
 import { AdminSiteContentPanel } from '../components/admin/AdminSiteContentPanel';
 import { AdminInventoryPanel } from '../components/admin/AdminInventoryPanel';
 import { AdminUsedMarketPanel } from '../components/admin/AdminUsedMarketPanel';
+import { AdminConfiguratorPanel } from '../components/admin/AdminConfiguratorPanel';
 import { AdminUsersPanel } from '../components/admin/AdminUsersPanel';
 import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
@@ -29,7 +30,7 @@ import {
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita' | 'usato';
+type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita' | 'usato' | 'configuratore';
 
 interface NavItem {
   id: AdminTab;
@@ -52,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'orders',     label: 'Ordini',       description: 'Gestisci e spedisci gli ordini',      icon: ShoppingCart },
       { id: 'products',   label: 'Prodotti',     description: 'Gestisci il catalogo',                icon: Package },
       { id: 'shipping',   label: 'Spedizioni',   description: 'Corrieri, tariffe e preventivi',      icon: Truck },
+      { id: 'configuratore', label: 'Configuratore', description: 'Richieste casse su misura',        icon: Speaker },
       { id: 'usato',      label: 'Mercatino Usato', description: 'Modera annunci utenti',                icon: ShoppingCart },
     ],
   },
@@ -524,6 +526,7 @@ export function Admin({ onNavigate }: AdminProps) {
           })()}
 
           {activeTab === 'products' && <AdminInventoryPanel products={products} categories={categories} manualApiKey={manualApiKey} />}
+          {activeTab === 'configuratore' && <AdminConfiguratorPanel />}
           {activeTab === 'usato' && <AdminUsedMarketPanel />}
           {activeTab === 'content' && <AdminSiteContentPanel />}
           {activeTab === 'newsletter' && <AdminNewsletterPanel newsletterCount={newsletterCount} products={products} manualApiKey={manualApiKey} />}

@@ -1,23 +1,21 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Settings, ChevronRight, ChevronLeft, 
-  CheckCircle, Music, Zap, Layers, Cpu, Box, 
-  Check, AlertTriangle
+import {
+  Settings, ChevronRight, ChevronLeft,
+  CheckCircle, Music, Zap, Layers, Cpu, Box,
+  Check, AlertTriangle, Send, Loader2, Mail, User, Phone, MessageSquare
 } from 'lucide-react';
 
 import { DRIVERS, AMPLIFIERS, USE_CASE_LABELS } from '../data/speakerDatabase';
 import { calculateFullCabinet, recommendCabinetType, scoreAmplifierMatch } from '../utils/cabinetCalculator';
-import { calculatePricing, formatPrice } from '../utils/pricingEngine';
-import type { 
-  UserConfiguration, SpeakerDriver, Amplifier, 
-  CabinetDesign, PricingBreakdown, UseCase, CabinetType,
-  SpeakerProject
+import type {
+  UserConfiguration, SpeakerDriver, Amplifier,
+  CabinetDesign, UseCase
 } from '../types/speaker';
 import { CabinetViewer3D } from '../components/configurator/CabinetViewer3D';
 import { DriverVisual, AmpVisual } from '../components/configurator/ComponentVisuals';
-import { generateProjectPDF } from '../utils/generatePDF';
-import { generateCabinetDXF } from '../utils/generateDXF';
+import { db } from '../firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 const STEPS = [
   { id: 1, title: 'Il Tuo Sound', icon: Music },
@@ -57,11 +55,6 @@ export default function SpeakerConfigurator() {
       return null;
     }
   }, [selectedDriver, userConfig.useCase, selectedAmpId, selectedAmplifier]);
-
-  const pricing = useMemo(() => {
-    if (!selectedDriver || !selectedAmplifier || !cabinetDesign) return null;
-    return calculatePricing(selectedDriver, selectedAmplifier, cabinetDesign, userConfig.quantity || 1);
-  }, [selectedDriver, selectedAmplifier, cabinetDesign, userConfig.quantity]);
 
   const handleNext = () => setStep(s => Math.min(STEPS.length, s + 1));
   const handlePrev = () => setStep(s => Math.max(1, s - 1));
@@ -157,12 +150,11 @@ export default function SpeakerConfigurator() {
                 onSelect={setSelectedAmpId} 
               />
             )}
-            {step === 5 && selectedDriver && selectedAmplifier && cabinetDesign && pricing && (
-              <StepSummary 
-                driver={selectedDriver} 
-                amplifier={selectedAmplifier} 
-                cabinet={cabinetDesign} 
-                pricing={pricing} 
+            {step === 5 && selectedDriver && selectedAmplifier && cabinetDesign && (
+              <StepSummary
+                driver={selectedDriver}
+                amplifier={selectedAmplifier}
+                cabinet={cabinetDesign}
                 userConfig={userConfig}
               />
             )}
@@ -182,14 +174,20 @@ export default function SpeakerConfigurator() {
             Indietro
           </button>
           
-          <button
-            onClick={handleNext}
-            disabled={isNextDisabled()}
-            className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold transition-all bg-[#F27D26] hover:bg-[#E06C1C] text-white shadow-lg shadow-[#F27D26]/20 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:bg-[#F27D26]"
-          >
-            {step === STEPS.length ? 'Conferma Ordine' : 'Avanti'}
-            <ChevronRight className="w-5 h-5" />
-          </button>
+          {step < STEPS.length ? (
+            <button
+              onClick={handleNext}
+              disabled={isNextDisabled()}
+              className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold transition-all bg-[#F27D26] hover:bg-[#E06C1C] text-white shadow-lg shadow-[#F27D26]/20 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:bg-[#F27D26]"
+            >
+              Avanti
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-500 max-w-[16rem] text-right">
+              Compila il modulo per ricevere il preventivo personalizzato.
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -311,8 +309,7 @@ function StepDriverSelect({
                   </div>
                 </div>
                 
-                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
-                  <span className="text-2xl font-bold">€{driver.price}</span>
+                <div className="mt-6 pt-4 border-t border-white/5 flex justify-end items-center">
                   <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
                     {driver.madeIn}
                   </span>
@@ -326,7 +323,7 @@ function StepDriverSelect({
   );
 }
 
-function StepCabinetPreview({ 
+function StepCabinetPreview({
   driver, 
   cabinetDesign 
 }: { 
@@ -517,8 +514,7 @@ function StepAmpSelect({
                   </div>
                 </div>
                 
-                <div className="mt-6 pt-4 border-t border-white/5 flex justify-between items-center">
-                  <span className="text-2xl font-bold">€{amp.price}</span>
+                <div className="mt-6 pt-4 border-t border-white/5 flex justify-end items-center">
                   <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
                     {amp.madeIn}
                   </span>
@@ -532,108 +528,81 @@ function StepAmpSelect({
   );
 }
 
-function StepSummary({ 
-  driver, 
-  amplifier, 
-  cabinet, 
-  pricing,
+function StepSummary({
+  driver,
+  amplifier,
+  cabinet,
   userConfig
-}: { 
-  driver: SpeakerDriver, 
-  amplifier: Amplifier, 
-  cabinet: CabinetDesign, 
-  pricing: PricingBreakdown,
+}: {
+  driver: SpeakerDriver,
+  amplifier: Amplifier,
+  cabinet: CabinetDesign,
   userConfig: Partial<UserConfiguration>
 }) {
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  
-  const createProjectData = (): SpeakerProject => {
-    return {
-      id: `PROJ-${Date.now()}`,
-      userId: 'guest',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      status: 'configurazione',
-      userConfig: userConfig as UserConfiguration,
-      driver: driver,
-      amplifier: amplifier,
-      cabinet: cabinet,
-      pricing: pricing,
-      pricingConfig: {
-        marginPercent: 30,
-        carpenterRatePerHour: 35,
-        estimatedHoursPerCabinet: 4,
-        woodPricePerSheet: 60,
-        hardwareKitPrice: 25,
-        dampingPricePerMeter: 12,
-        finishPricePerCabinet: 40,
-        assemblyHours: 2,
-        assemblyRatePerHour: 35
-      },
-      aiExplanation: 'Configurazione generata automaticamente in base ai parametri acustici ideali.',
-      aiConfidence: 95
-    };
-  };
+  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleDownloadPDF = async () => {
-    try {
-      setIsGeneratingPDF(true);
-      const project = createProjectData();
-      const pdfBlob = await generateProjectPDF(project);
-      
-      const url = URL.createObjectURL(pdfBlob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Progetto_${cabinet.name.replace(/\s+/g, '_')}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Errore generazione PDF", error);
-      alert("Si è verificato un errore durante la generazione del PDF.");
-    } finally {
-      setIsGeneratingPDF(false);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
+  const canSubmit = form.name.trim().length > 1 && emailValid && !submitting;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) {
+      setError('Inserisci nome ed email validi.');
+      return;
     }
-  };
-
-  const handleDownloadDXF = () => {
+    setError(null);
+    setSubmitting(true);
     try {
-      const dxfContent = generateCabinetDXF(cabinet);
-      const blob = new Blob([dxfContent], { type: 'application/dxf' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `TaglioCNC_${cabinet.name.replace(/\s+/g, '_')}.dxf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Errore generazione DXF", error);
-      alert("Si è verificato un errore durante la generazione del DXF.");
+      const code = `CFG-${Date.now().toString(36).toUpperCase()}`;
+      await addDoc(collection(db, 'configurator_requests'), {
+        code,
+        status: 'nuovo',
+        contact: {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          message: form.message.trim(),
+        },
+        driverId: driver.id,
+        driverLabel: `${driver.brand} ${driver.model}`,
+        ampId: amplifier.id,
+        ampLabel: `${amplifier.brand} ${amplifier.model}`,
+        useCase: userConfig.useCase || '',
+        quantity: userConfig.quantity || 1,
+        cabinetName: cabinet.name,
+        createdAt: new Date().toISOString(),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error('Errore invio richiesta configuratore', err);
+      setError('Si è verificato un errore durante l\'invio. Riprova tra poco.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto mb-12">
-        <h2 className="text-4xl font-bold mb-4">Il Tuo Progetto</h2>
-        <p className="text-zinc-400 text-lg">Riepilogo finale e preventivo della tua cassa custom.</p>
+        <h2 className="text-4xl font-bold mb-4">La Tua Configurazione</h2>
+        <p className="text-zinc-400 text-lg">Controlla i componenti scelti e richiedi il tuo preventivo personalizzato: lo prepariamo a mano e te lo inviamo noi.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Sinistra: Componenti */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#F27D26]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            
+
             <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
               <Settings className="w-5 h-5 text-[#F27D26]" />
               Configurazione Sistema
             </h3>
-            
+
             <div className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5 mb-4">
               <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
                 <DriverVisual driver={driver} showLabel={false} className="w-full h-full" />
@@ -655,7 +624,7 @@ function StepSummary({
                 <div className="text-sm text-zinc-400">Classe {amplifier.classType} • {amplifier.hasDSP && 'DSP Integrato'}</div>
               </div>
             </div>
-            
+
             <div className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5">
               <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center">
                 <Box className="w-10 h-10 text-zinc-600" />
@@ -669,65 +638,92 @@ function StepSummary({
           </div>
         </div>
 
-        {/* Destra: Preventivo */}
+        {/* Destra: Richiesta preventivo */}
         <div className="space-y-6">
-          <div className="bg-zinc-900 border border-[#F27D26]/30 rounded-2xl p-8 relative shadow-2xl shadow-[#F27D26]/5">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-[#F27D26]" />
-              Preventivo
-            </h3>
-            
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Componenti Elettronici</span>
-                <span className="font-mono">{formatPrice(pricing.driverCost + pricing.amplifierCost)}</span>
+          {submitted ? (
+            <div className="bg-zinc-900 border border-emerald-500/30 rounded-2xl p-8 text-center shadow-2xl">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-5">
+                <CheckCircle className="w-8 h-8 text-emerald-400" />
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Legname e Materiali</span>
-                <span className="font-mono">{formatPrice(pricing.woodCost + pricing.hardwareCost + pricing.dampingCost + pricing.finishCost)}</span>
+              <h3 className="text-xl font-bold mb-2">Richiesta inviata!</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Abbiamo ricevuto la tua configurazione. Prepariamo il preventivo su misura e ti contattiamo a breve all'indirizzo che hai indicato.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="bg-zinc-900 border border-[#F27D26]/30 rounded-2xl p-8 relative shadow-2xl shadow-[#F27D26]/5">
+              <h3 className="text-xl font-bold mb-2 flex items-center gap-3">
+                <Send className="w-5 h-5 text-[#F27D26]" />
+                Richiedi il Preventivo
+              </h3>
+              <p className="text-zinc-500 text-sm mb-6">Niente prezzi automatici: ogni cassa è artigianale. Lasciaci i tuoi dati e ti inviamo il preventivo personalizzato.</p>
+
+              <div className="space-y-3">
+                <div className="relative">
+                  <User className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nome e cognome *"
+                    value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#F27D26] transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="email"
+                    required
+                    placeholder="Email *"
+                    value={form.email}
+                    onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#F27D26] transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <Phone className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="tel"
+                    placeholder="Telefono / WhatsApp (opzionale)"
+                    value={form.phone}
+                    onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#F27D26] transition-colors"
+                  />
+                </div>
+                <div className="relative">
+                  <MessageSquare className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+                  <textarea
+                    rows={3}
+                    placeholder="Messaggio o note (opzionale)"
+                    value={form.message}
+                    onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm resize-none focus:outline-none focus:border-[#F27D26] transition-colors"
+                  />
+                </div>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Lavorazione e Assemblaggio</span>
-                <span className="font-mono">{formatPrice(pricing.carpenterLabor + pricing.assemblyLabor)}</span>
-              </div>
-              
-              <div className="h-[1px] w-full bg-white/10 my-4" />
-              
-              <div className="flex justify-between items-end">
-                <span className="text-zinc-300">Totale per unità</span>
-                <span className="font-mono font-bold text-xl">{formatPrice(pricing.totalPerUnit)}</span>
-              </div>
-              
-              {pricing.quantity > 1 && (
-                <div className="flex justify-between items-end">
-                  <span className="text-zinc-300">Quantità</span>
-                  <span className="font-bold text-xl">× {pricing.quantity}</span>
+
+              {error && (
+                <div className="mt-4 flex items-start gap-2 text-sm text-red-400">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>{error}</span>
                 </div>
               )}
-            </div>
-            
-            <div className="bg-zinc-950 p-6 rounded-xl border border-[#F27D26]/50 mt-8">
-              <div className="text-sm text-[#F27D26] font-bold uppercase tracking-wider mb-2">Totale Complessivo</div>
-              <div className="text-5xl font-black">{formatPrice(pricing.grandTotal)}</div>
-              <div className="text-xs text-zinc-500 mt-2">IVA inclusa. Spedizione calcolata al checkout.</div>
-            </div>
 
-            <div className="mt-6 space-y-3">
-              <button 
-                onClick={handleDownloadPDF}
-                disabled={isGeneratingPDF}
-                className="w-full btn-premium py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 border border-white/10"
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                className="w-full mt-6 btn-premium py-4 bg-[#F27D26] hover:bg-[#E06C1C] text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#F27D26]"
               >
-                {isGeneratingPDF ? 'Generazione...' : 'Scarica PDF Progetto Tecnico'}
+                {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                {submitting ? 'Invio in corso...' : 'Invia richiesta'}
               </button>
-              <button 
-                onClick={handleDownloadDXF}
-                className="w-full btn-premium py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2 border border-white/10"
-              >
-                Scarica DXF per Falegname (CNC)
-              </button>
-            </div>
-          </div>
+
+              <p className="text-[11px] text-zinc-600 mt-3 text-center">
+                Useremo i tuoi dati solo per inviarti il preventivo.
+              </p>
+            </form>
+          )}
         </div>
 
       </div>
