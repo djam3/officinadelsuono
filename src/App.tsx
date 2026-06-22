@@ -38,6 +38,7 @@ const PAGE_TO_PATH: Record<string, string> = {
   admin: '/admin',
   usato: '/usato',
   configuratore: '/configuratore',
+  calcolatori: '/calcolatori',
 };
 
 function pathToPage(pathname: string): { page: string; id?: string } {
@@ -77,6 +78,7 @@ const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.B
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
 const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
 const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
+const CalculatorsHub = lazy(() => import('./components/configurator/calculators/CalculatorsHub'));
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -325,6 +327,7 @@ export default function App() {
               {currentPage === 'cookie-policy' && <CookiePolicy />}
               {currentPage === 'usato' && <UsedMarket onNavigate={handleNavigate} showToast={showToast} />}
               {currentPage === 'configuratore' && <SpeakerConfigurator />}
+              {currentPage === 'calcolatori' && <CalculatorsHub onNavigate={handleNavigate} />}
             </motion.div>
           </AnimatePresence>
         </Suspense>
