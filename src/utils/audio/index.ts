@@ -7,3 +7,4 @@ export * from './dsp';
 export * from './crossover';
 export * from './electrical';
 export * from './environment';
+export * from './autoDesign';

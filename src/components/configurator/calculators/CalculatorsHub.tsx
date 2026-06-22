@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Box, SlidersHorizontal, Zap, Languages, ArrowLeft } from 'lucide-react';
+import { Box, SlidersHorizontal, Zap, Languages, ArrowLeft, Cpu } from 'lucide-react';
 import { CalcLangProvider, useCalcLang } from '../../../i18n/CalcLang';
+import { AutoDesignCalc } from './AutoDesignCalc';
 import {
   ThieleSmallCalc, SealedCalc, VentedCalc, ResponseEngineCalc,
   PassiveRadiatorCalc, BandpassCalc, TlHornCalc, EnvironmentCalc,
@@ -17,6 +18,11 @@ interface CalcItem { key: string; it: string; en: string; Comp: React.FC; }
 interface CalcGroup { it: string; en: string; icon: React.FC<{ className?: string }>; items: CalcItem[]; }
 
 const GROUPS: CalcGroup[] = [
+  {
+    it: 'Auto-progetto', en: 'Auto-design', icon: Cpu, items: [
+      { key: 'auto', it: 'Driver → Box → Ampli', en: 'Driver → Box → Amp', Comp: AutoDesignCalc },
+    ],
+  },
   {
     it: 'Cassa & Driver', en: 'Enclosure & Driver', icon: Box, items: [
       { key: 'ts', it: 'Thiele-Small', en: 'Thiele-Small', Comp: ThieleSmallCalc },
@@ -53,7 +59,7 @@ const ALL: CalcItem[] = GROUPS.flatMap(g => g.items);
 
 function HubInner({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const { lang, setLang, tx } = useCalcLang();
-  const [active, setActive] = useState('ts');
+  const [active, setActive] = useState('auto');
   const ActiveComp = (ALL.find(i => i.key === active) || ALL[0]).Comp;
 
   return (
