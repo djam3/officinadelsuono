@@ -14,6 +14,9 @@ import type {
 } from '../types/speaker';
 import { CabinetViewer3D } from '../components/configurator/CabinetViewer3D';
 import { DriverVisual, AmpVisual } from '../components/configurator/ComponentVisuals';
+import { Plot, PLOT_COLORS } from '../components/configurator/calculators/ui';
+import * as Audio from '../utils/audio';
+import { subscribeDrivers } from '../services/driverLibrary';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -30,8 +33,10 @@ export default function SpeakerConfigurator() {
   const [userConfig, setUserConfig] = useState<Partial<UserConfiguration>>({ quantity: 1 });
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [selectedAmpId, setSelectedAmpId] = useState<string | null>(null);
+  const [drivers, setDrivers] = useState<SpeakerDriver[]>(DRIVERS);
+  useEffect(() => subscribeDrivers(list => setDrivers(list.length ? list : DRIVERS)), []);
 
-  const selectedDriver = useMemo(() => DRIVERS.find(d => d.id === selectedDriverId) || null, [selectedDriverId]);
+  const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId) || null, [drivers, selectedDriverId]);
   const selectedAmplifier = useMemo(() => AMPLIFIERS.find(a => a.id === selectedAmpId) || null, [selectedAmpId]);
 
   const cabinetDesign = useMemo(() => {
@@ -130,7 +135,7 @@ export default function SpeakerConfigurator() {
             )}
             {step === 2 && (
               <StepDriverSelect 
-                drivers={DRIVERS} 
+                drivers={drivers}
                 selectedId={selectedDriverId} 
                 onSelect={setSelectedDriverId} 
               />
@@ -326,10 +331,23 @@ function StepDriverSelect({
 function StepCabinetPreview({
   driver, 
   cabinetDesign 
-}: { 
-  driver: SpeakerDriver, 
-  cabinetDesign: CabinetDesign 
+}: {
+  driver: SpeakerDriver,
+  cabinetDesign: CabinetDesign
 }) {
+  const splCurve = useMemo(() => {
+    try {
+      const ts = Audio.tsFromDriver(driver);
+      if (cabinetDesign.type === 'sealed') {
+        const s = Audio.sealedFromVb(ts, cabinetDesign.internalVolume);
+        return Audio.computeResponse({ ts, type: 'sealed', fc: s.fc, qtc: s.qtc });
+      }
+      const fb = cabinetDesign.port?.tuningFrequency || ts.fs * 0.5;
+      const alpha = ts.vas / cabinetDesign.internalVolume;
+      return Audio.computeResponse({ ts, type: 'vented', fb, alpha, ql: 7 });
+    } catch { return null; }
+  }, [driver, cabinetDesign]);
+
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto mb-12">
@@ -427,11 +445,22 @@ function StepCabinetPreview({
           </div>
         </div>
       </div>
+
+      {/* Grafico risposta in frequenza (il cliente vede i grafici, non i numeri) */}
+      {splCurve && (
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Layers className="w-5 h-5 text-[#F27D26]" /> Risposta in Frequenza Stimata
+          </h3>
+          <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: splCurve.spl }]} yLabel="SPL" yUnit="dB" height={220} />
+          <p className="text-[10px] text-zinc-600 mt-2">Curva indicativa generata dai parametri del driver (modello alle basse frequenze).</p>
+        </div>
+      )}
     </div>
   );
 }
 
-function StepAmpSelect({ 
+function StepAmpSelect({
   driver, 
   useCase, 
   amplifiers, 

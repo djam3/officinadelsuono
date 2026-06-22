@@ -1,11 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ArrowRight, Cpu, Box as BoxIcon, Zap, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useCalcLang } from '../../../i18n/CalcLang';
 import { Stat, Disclaimer, Plot, PLOT_COLORS } from './ui';
 import * as A from '../../../utils/audio';
 import { DRIVERS, AMPLIFIERS } from '../../../data/speakerDatabase';
+import { subscribeDrivers } from '../../../services/driverLibrary';
 import { scoreAmplifierMatch, calculateExternalDimensions } from '../../../utils/cabinetCalculator';
-import type { UseCase } from '../../../types/speaker';
+import type { UseCase, SpeakerDriver } from '../../../types/speaker';
 
 function woodThicknessFor(powerRMS: number): number {
   if (powerRMS > 1500) return 25;
@@ -15,8 +16,10 @@ function woodThicknessFor(powerRMS: number): number {
 
 export function AutoDesignCalc() {
   const { tx } = useCalcLang();
+  const [drivers, setDrivers] = useState<SpeakerDriver[]>(DRIVERS);
+  useEffect(() => subscribeDrivers(list => setDrivers(list.length ? list : DRIVERS)), []);
   const [driverId, setDriverId] = useState(DRIVERS.find(d => d.size >= 15)?.id || DRIVERS[0].id);
-  const driver = useMemo(() => DRIVERS.find(d => d.id === driverId) || DRIVERS[0], [driverId]);
+  const driver = useMemo(() => drivers.find(d => d.id === driverId) || drivers[0], [drivers, driverId]);
 
   const ts = useMemo(() => A.tsFromDriver(driver), [driver]);
   const box = useMemo(() => A.autoEnclosure(ts), [ts]);
@@ -67,7 +70,7 @@ export function AutoDesignCalc() {
           <span className="text-xs text-zinc-400 font-medium">{tx('Woofer / Subwoofer', 'Woofer / Subwoofer')}</span>
           <select value={driverId} onChange={e => setDriverId(e.target.value)}
             className="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#F27D26]">
-            {[...DRIVERS].sort((a, b) => b.size - a.size).map(d => (
+            {[...drivers].sort((a, b) => b.size - a.size).map(d => (
               <option key={d.id} value={d.id}>{d.size}" {d.brand} {d.model} — {d.type}</option>
             ))}
           </select>

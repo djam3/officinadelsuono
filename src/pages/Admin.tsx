@@ -14,6 +14,8 @@ import { AdminSiteContentPanel } from '../components/admin/AdminSiteContentPanel
 import { AdminInventoryPanel } from '../components/admin/AdminInventoryPanel';
 import { AdminUsedMarketPanel } from '../components/admin/AdminUsedMarketPanel';
 import { AdminConfiguratorPanel } from '../components/admin/AdminConfiguratorPanel';
+import { AdminComponentsPanel } from '../components/admin/AdminComponentsPanel';
+import CalculatorsHub from '../components/configurator/calculators/CalculatorsHub';
 import { AdminUsersPanel } from '../components/admin/AdminUsersPanel';
 import { AdminMonitoringPanel } from '../components/admin/AdminMonitoringPanel';
 import { AdminSocialPanel } from '../components/admin/AdminSocialPanel';
@@ -30,7 +32,7 @@ import {
 
 const ADMIN_EMAIL = 'officinadelsuono99@gmail.com';
 
-type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita' | 'usato' | 'configuratore';
+type AdminTab = 'dashboard' | 'orders' | 'products' | 'discounts' | 'content' | 'newsletter' | 'blog' | 'ai' | 'monitoring' | 'users' | 'ai_features' | 'social' | 'fatture' | 'shipping' | 'contabilita' | 'usato' | 'configuratore' | 'componenti' | 'strumenti';
 
 interface NavItem {
   id: AdminTab;
@@ -54,6 +56,8 @@ const NAV_GROUPS: NavGroup[] = [
       { id: 'products',   label: 'Prodotti',     description: 'Gestisci il catalogo',                icon: Package },
       { id: 'shipping',   label: 'Spedizioni',   description: 'Corrieri, tariffe e preventivi',      icon: Truck },
       { id: 'configuratore', label: 'Configuratore', description: 'Richieste casse su misura',        icon: Speaker },
+      { id: 'componenti', label: 'Componenti', description: 'Driver/tweeter + schede tecniche',       icon: Speaker },
+      { id: 'strumenti',  label: 'Strumenti Tecnici', description: 'Calcolatori box/crossover/ampli',  icon: Calculator },
       { id: 'usato',      label: 'Mercatino Usato', description: 'Modera annunci utenti',                icon: ShoppingCart },
     ],
   },
@@ -527,6 +531,8 @@ export function Admin({ onNavigate }: AdminProps) {
 
           {activeTab === 'products' && <AdminInventoryPanel products={products} categories={categories} manualApiKey={manualApiKey} />}
           {activeTab === 'configuratore' && <AdminConfiguratorPanel />}
+          {activeTab === 'componenti' && <AdminComponentsPanel />}
+          {activeTab === 'strumenti' && <CalculatorsHub />}
           {activeTab === 'usato' && <AdminUsedMarketPanel />}
           {activeTab === 'content' && <AdminSiteContentPanel />}
           {activeTab === 'newsletter' && <AdminNewsletterPanel newsletterCount={newsletterCount} products={products} manualApiKey={manualApiKey} />}

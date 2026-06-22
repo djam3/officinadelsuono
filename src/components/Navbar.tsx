@@ -92,7 +92,6 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
               Configuratore
               <span className="absolute -top-2 -right-2 bg-white text-black text-[9px] font-black px-1.5 py-0.5 rounded-full rotate-12">NUOVO</span>
             </button>
-            <button onClick={() => onNavigate('calcolatori')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Calcolatori</button>
             <button onClick={() => onNavigate('usato')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all border border-brand-orange/30">Usato</button>
             <button onClick={() => onNavigate('compare')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Confronta</button>
             <button onClick={() => onNavigate('about')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Chi Siamo</button>
@@ -179,7 +178,6 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
                 Configuratore
                 <span className="bg-white text-black text-[9px] font-black px-2 py-0.5 rounded-full">NUOVO</span>
               </button>
-              <button onClick={() => { onNavigate('calcolatori'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Calcolatori</button>
               <button onClick={() => { onNavigate('blog'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Recensioni & Guide</button>
               <button onClick={() => { onNavigate('usato'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Mercatino Usato</button>
               <button onClick={() => { onNavigate('compare'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Confronta</button>
