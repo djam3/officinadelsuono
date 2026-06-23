@@ -45,13 +45,10 @@ export default function SpeakerConfigurator() {
   const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId) || null, [drivers, selectedDriverId]);
   const selectedAmplifier = useMemo(() => AMPLIFIERS.find(a => a.id === selectedAmpId) || null, [selectedAmpId]);
 
-  const cabinetDesign = useMemo(() => {
+  // Progetto acustico BASE — calcolato dal motore condiviso con l'Admin.
+  // Non dipende dalle personalizzazioni: è la sorgente di verità degli acustici.
+  const baseCabinet = useMemo(() => {
     if (!selectedDriver || !userConfig.useCase) return null;
-
-    // Se esiste un cabinet personalizzato, usalo
-    if (customCabinet) {
-      return { ...cabinetDesign, ...customCabinet } as CabinetDesign;
-    }
 
     const recommendedType = recommendCabinetType(selectedDriver, userConfig.useCase as UseCase, 'indoor-medium');
     const hasAmp = !!selectedAmpId;
@@ -71,7 +68,13 @@ export default function SpeakerConfigurator() {
       console.error(e);
       return null;
     }
-  }, [selectedDriver, userConfig.useCase, selectedAmpId, selectedAmplifier, customCabinet]);
+  }, [selectedDriver, userConfig.useCase, selectedAmpId, selectedAmplifier]);
+
+  // Progetto mostrato = base + personalizzazioni cliente (dimensioni/legno/finitura)
+  const cabinetDesign = useMemo<CabinetDesign | null>(() => {
+    if (!baseCabinet) return null;
+    return customCabinet ? { ...baseCabinet, ...customCabinet } : baseCabinet;
+  }, [baseCabinet, customCabinet]);
 
   const handleNext = () => setStep(s => Math.min(STEPS.length, s + 1));
   const handlePrev = () => setStep(s => Math.max(1, s - 1));
@@ -86,7 +89,21 @@ export default function SpeakerConfigurator() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col font-sans relative overflow-hidden">
+      {/* Glow ambientale animato (premium feel) */}
+      <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
+        <motion.div
+          className="absolute -top-40 -left-40 w-[40rem] h-[40rem] rounded-full bg-[#F27D26]/10 blur-[120px]"
+          animate={{ x: [0, 80, 0], y: [0, 40, 0], opacity: [0.5, 0.8, 0.5] }}
+          transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute top-1/3 -right-40 w-[36rem] h-[36rem] rounded-full bg-blue-500/10 blur-[120px]"
+          animate={{ x: [0, -60, 0], y: [0, -50, 0], opacity: [0.4, 0.7, 0.4] }}
+          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      </div>
+
       {/* Top Navigation / Progress */}
       <div className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-6">
@@ -94,8 +111,8 @@ export default function SpeakerConfigurator() {
             <h1 className="text-2xl font-bold tracking-tight">
               <span className="text-[#F27D26]">Speaker</span>{t('configurator.title')}
             </h1>
-            <div className="text-sm font-medium text-zinc-400">
-              Step {step} {t('common.loading').split(' ')[0]} {STEPS.length}
+            <div className="text-sm font-medium text-zinc-400 tabular-nums">
+              Step <span className="text-white font-bold">{step}</span> / {STEPS.length}
             </div>
           </div>
           

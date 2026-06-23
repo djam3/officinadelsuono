@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Sliders, Palette, Box } from 'lucide-react';
 import type { CabinetDesign } from '../../types/speaker';
+import { CabinetViewer3D } from '../../components/configurator/CabinetViewer3D';
 
 interface StepCustomizeCabinetProps {
   cabinet: CabinetDesign;
@@ -38,7 +39,7 @@ export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinet
   };
 
   const handleFinishChange = (finish: string) => {
-    onUpdate({ name: finish });
+    onUpdate({ finish });
   };
 
   return (
@@ -200,7 +201,7 @@ export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinet
                   key={finish}
                   onClick={() => handleFinishChange(finish)}
                   className={`px-4 py-4 rounded-lg font-medium transition-all border flex items-center justify-center gap-2 ${
-                    cabinet.name === finish
+                    cabinet.finish === finish
                       ? 'bg-brand-orange/20 border-brand-orange text-brand-orange'
                       : 'bg-zinc-900 border-white/10 text-zinc-300 hover:border-white/20'
                   }`}
@@ -221,44 +222,35 @@ export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinet
           </motion.div>
         </div>
 
-        {/* Destra: Preview */}
-        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8 h-fit sticky top-24">
-          <h3 className="text-xl font-bold mb-6">Anteprima</h3>
-
-          {/* Box 3D semplificato */}
-          <div className="aspect-video bg-gradient-to-br from-zinc-800 to-zinc-950 rounded-lg mb-6 relative overflow-hidden flex items-center justify-center">
-            <div
-              className="border-4 border-brand-orange relative transform perspective"
-              style={{
-                width: Math.min(200, customDims.width / 4),
-                height: Math.min(300, customDims.height / 4),
-                backgroundColor:
-                  cabinet.name === 'black' ? '#000' : cabinet.name === 'white' ? '#fff' : '#8B7355',
-                transform: 'rotateX(20deg) rotateY(-30deg)',
-              }}
-            />
+        {/* Destra: Preview 3D LIVE — aggiorna in tempo reale coi parametri */}
+        <div className="lg:sticky lg:top-24 h-fit space-y-4">
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-2 relative overflow-hidden">
+            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
+              <span className="bg-brand-orange/90 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">
+                Anteprima live
+              </span>
+            </div>
+            <div className="h-[460px] rounded-xl overflow-hidden">
+              <CabinetViewer3D cabinet={cabinet} />
+            </div>
           </div>
 
           {/* Riepilogo */}
-          <div className="space-y-4 text-sm">
-            <div className="border-t border-white/5 pt-4">
-              <div className="flex justify-between mb-2">
-                <span className="text-zinc-400">Tipo di legno</span>
-                <span className="font-bold">{cabinet.woodType}</span>
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="bg-zinc-950/50 rounded-lg p-3">
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wide">Materiale</div>
+                <div className="font-bold mt-0.5">{cabinet.woodType} {cabinet.woodThickness}mm</div>
               </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-zinc-400">Spessore</span>
-                <span className="font-bold">{cabinet.woodThickness}mm</span>
+              <div className="bg-zinc-950/50 rounded-lg p-3">
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wide">{t('configurator.finish')}</div>
+                <div className="font-bold mt-0.5 capitalize">{t(`configurator.${cabinet.finish}`, cabinet.finish)}</div>
               </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-zinc-400">Finitura</span>
-                <span className="font-bold">{cabinet.name}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-white/5">
-                <span className="text-zinc-400">Dimensioni esterne</span>
-                <span className="font-bold text-brand-orange">
-                  {customDims.width} × {customDims.height} × {customDims.depth}mm
-                </span>
+              <div className="bg-zinc-950/50 rounded-lg p-3 col-span-2">
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wide">Dimensioni esterne</div>
+                <div className="font-bold mt-0.5 text-brand-orange font-mono">
+                  {customDims.width} × {customDims.height} × {customDims.depth} mm
+                </div>
               </div>
             </div>
           </div>

@@ -39,6 +39,63 @@ const createTexturedBump = () => {
   return texture;
 };
 
+// ─── Texture procedurale: venatura legno (color map per finitura naturale) ───
+const createWoodTexture = () => {
+  const w = 512, h = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    // base legno chiaro (betulla/multistrato)
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#c79a68');
+    grad.addColorStop(0.5, '#b8895a');
+    grad.addColorStop(1, '#a87a4d');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // venature verticali ondulate
+    for (let i = 0; i < 90; i++) {
+      const x = Math.random() * w;
+      const amp = 4 + Math.random() * 12;
+      const tone = 90 + Math.random() * 70;
+      ctx.strokeStyle = `rgba(${tone - 30},${tone - 55},${tone - 80},${0.06 + Math.random() * 0.12})`;
+      ctx.lineWidth = 0.5 + Math.random() * 2.2;
+      ctx.beginPath();
+      for (let y = 0; y <= h; y += 8) {
+        const xx = x + Math.sin((y / h) * Math.PI * (1 + Math.random())) * amp;
+        y === 0 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y);
+      }
+      ctx.stroke();
+    }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1.5, 1.5);
+  return texture;
+};
+
+// ─── Mappa finitura → parametri materiale del corpo cassa ────────────────────
+interface FinishStyle {
+  color: string;
+  baffleColor: string;
+  roughness: number;
+  metalness: number;
+  useWood: boolean;
+}
+const FINISH_STYLES: Record<string, FinishStyle> = {
+  natural: { color: '#b8895a', baffleColor: '#8a6038', roughness: 0.72, metalness: 0.05, useWood: true },
+  black:   { color: '#191a1d', baffleColor: '#0f1012', roughness: 0.82, metalness: 0.14, useWood: false },
+  white:   { color: '#e9e9ec', baffleColor: '#cfd0d4', roughness: 0.55, metalness: 0.10, useWood: false },
+};
+const resolveFinish = (finish?: string): FinishStyle => {
+  const f = (finish || '').toLowerCase();
+  if (f.includes('natural') || f.includes('legno')) return FINISH_STYLES.natural;
+  if (f.includes('white') || f.includes('bianc')) return FINISH_STYLES.white;
+  return FINISH_STYLES.black;
+};
+
 // ─── Driver 3D realistico (cestello, sospensione, cono, dust cap, bulloni) ───
 const Driver3D = ({
   mountRadius,
@@ -193,19 +250,23 @@ const RearPanel3D = ({
 // ─── Modello completo della cassa ─────────────────────────────────────────────
 const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
   const bumpTex = useMemo(() => createTexturedBump(), []);
+  const woodTex = useMemo(() => createWoodTexture(), []);
+  const finish = resolveFinish(cabinet.finish);
 
   const w = cabinet.externalDimensions.width / 1000;
   const h = cabinet.externalDimensions.height / 1000;
   const d = cabinet.externalDimensions.depth / 1000;
   const wt = cabinet.woodThickness / 1000;
 
-  // Posizioni driver e porta dai dati dei pannelli
+  // Posizioni driver e porte dai dati dei pannelli
   const front = cabinet.panels.find((p) => p.id === 'front');
   const driverHole = front?.holes?.find((hh) => hh.type === 'driver');
-  const portHole = front?.holes?.find((hh) => hh.type === 'port');
+  const portHoles = front?.holes?.filter((hh) => hh.type === 'port') ?? [];
 
   const heightMm = cabinet.externalDimensions.height;
+  const widthMm = cabinet.externalDimensions.width;
   const wtMm = cabinet.woodThickness;
+  const internalWmm = widthMm - 2 * wtMm;
 
   const driverRraw = ((driverHole?.diameter ?? cabinet.driverCutout.diameter) / 2) / 1000;
   // Clamp: il driver non deve mai eccedere il baffle (alcuni progetti generano
@@ -219,20 +280,26 @@ const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
   const driverYLimit = h / 2 - driverR - 0.006;
   driverY = Math.max(-driverYLimit, Math.min(driverYLimit, driverY));
 
-  const portR = portHole?.diameter ? (portHole.diameter / 2) / 1000 : 0;
-  let portY = portHole ? (-heightMm / 2 + wtMm + portHole.y) / 1000 : -h * 0.28;
-  let portX = 0;
+  const portR = portHoles[0]?.diameter ? (portHoles[0].diameter / 2) / 1000 : 0;
   const portLen = cabinet.port?.length ? Math.min(cabinet.port.length / 1000, d * 0.7) : 0.1;
 
-  // Anti-collisione: se la porta finisce sotto il driver (driver molto grande),
-  // spostala nell'angolo basso libero del baffle così resta visibile.
-  if (portR > 0) {
-    const verticalGap = Math.abs(driverY - portY);
-    if (verticalGap < driverR + portR * 1.4) {
-      portX = (w / 2) - portR - 0.022;
-      portY = (-h / 2) + portR + 0.022;
+  // Calcola la posizione (x,y) di ciascuna porta sul baffle, con anti-collisione
+  // rispetto al driver: se una porta finisce sotto il driver, scende in basso.
+  const ports = portHoles.map((ph, i) => {
+    const pr = ph.diameter ? (ph.diameter / 2) / 1000 : portR;
+    let px = ((ph.x - internalWmm / 2) / 1000);
+    let py = (-heightMm / 2 + wtMm + ph.y) / 1000;
+    const verticalGap = Math.abs(driverY - py);
+    if (verticalGap < driverR + pr * 1.4) {
+      py = (-h / 2) + pr + 0.022;
+      // distribuisce le porte basse simmetricamente se più di una
+      if (portHoles.length > 1) {
+        const spread = (w / 2) - pr - 0.022;
+        px = -spread + (2 * spread * i) / (portHoles.length - 1 || 1);
+      }
     }
-  }
+    return { px, py, pr };
+  });
   const rearHasAmp = !!cabinet.ampCutout;
 
   const bevel = Math.min(w, h, d) * 0.025;
@@ -248,21 +315,22 @@ const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
 
   return (
     <group>
-      {/* Corpo cassa */}
+      {/* Corpo cassa — materiale in base alla finitura scelta */}
       <RoundedBox args={[w, h, d]} radius={bevel} smoothness={4} castShadow receiveShadow>
         <meshStandardMaterial
-          color="#191a1d"
-          roughness={0.82}
-          metalness={0.14}
-          bumpMap={bumpTex}
-          bumpScale={0.0018}
+          color={finish.color}
+          roughness={finish.roughness}
+          metalness={finish.metalness}
+          map={finish.useWood ? woodTex : undefined}
+          bumpMap={finish.useWood ? woodTex : bumpTex}
+          bumpScale={finish.useWood ? 0.004 : 0.0018}
         />
       </RoundedBox>
 
       {/* Baffle frontale leggermente ribassato per profondità visiva */}
       <mesh position={[0, 0, d / 2 + 0.0008]}>
         <planeGeometry args={[w - bevel * 2, h - bevel * 2]} />
-        <meshStandardMaterial color="#0f1012" roughness={0.7} metalness={0.18} />
+        <meshStandardMaterial color={finish.baffleColor} roughness={0.7} metalness={finish.metalness + 0.04} />
       </mesh>
 
       {/* Driver */}
@@ -270,12 +338,12 @@ const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
         <Driver3D mountRadius={driverR} boltCount={cabinet.driverCutout.boltCount} z={d / 2 + 0.004} />
       </group>
 
-      {/* Porta bass-reflex */}
-      {portR > 0 && (
-        <group position={[portX, portY, 0]}>
-          <Port3D radius={portR} length={portLen} z={d / 2 + 0.002} />
+      {/* Porte bass-reflex (una o più) */}
+      {ports.map((p, i) => (
+        <group key={i} position={[p.px, p.py, 0]}>
+          <Port3D radius={p.pr} length={portLen} z={d / 2 + 0.002} />
         </group>
-      )}
+      ))}
 
       {/* Badge brand sul baffle */}
       <mesh position={[0, -h / 2 + bevel + 0.018, d / 2 + 0.003]}>
