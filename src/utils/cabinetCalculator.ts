@@ -13,13 +13,16 @@ import type {
   PortDesign, BracingDesign, WoodType, PanelHole,
   UseCase, Environment,
 } from '../types/speaker';
+// Motore di calcolo acustico CONDIVISO con l'Admin (Strumenti Tecnici).
+// Il configuratore DEVE usare queste funzioni per non divergere dai calcoli admin.
+import {
+  tsFromDriver, sealedFromQtc, ventedDesign, type AlignmentType,
+} from './audio';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  COSTANTI
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SPEED_OF_SOUND = 343;    // m/s a 20°C
-const AIR_DENSITY = 1.18;     // kg/m³
 const GOLDEN_RATIO = 1.618;
 
 // Spessori legno standard (mm)
@@ -85,32 +88,18 @@ interface SealedResult {
 /**
  * Calcola il volume ottimale per cassa chiusa
  * Target Qtc = 0.707 (Butterworth, massimamente piatto)
+ *
+ * Delega al motore acustico condiviso (audio/enclosure.ts) per garantire
+ * risultati IDENTICI agli Strumenti Tecnici dell'Admin.
  */
 export function calculateSealed(driver: SpeakerDriver, targetQtc: number = 0.707): SealedResult {
-  const { fs, qts, vas } = driver.thielSmall;
-
-  // Vb = Vas / ((Qtc/Qts)² - 1)
-  const ratio = (targetQtc / qts) ** 2 - 1;
-  const volume = ratio > 0 ? vas / ratio : vas * 2; // fallback se Qts > targetQtc
-
-  // Frequenza di risonanza del sistema chiuso
-  // fc = fs × Qtc / Qts
-  const fc = fs * targetQtc / qts;
-
-  // F3 (frequenza -3dB)
-  const f3 = fc * Math.sqrt((1 / (targetQtc ** 2) - 2 + Math.sqrt((1 / (targetQtc ** 2) - 2) ** 2 + 4)));
-
-  // Peaking (solo se Qtc > 0.707)
-  let peakingDb = 0;
-  if (targetQtc > 0.707) {
-    peakingDb = 20 * Math.log10(targetQtc / Math.sqrt(1 - 1 / (4 * targetQtc ** 2)));
-  }
-
+  const ts = tsFromDriver(driver);
+  const s = sealedFromQtc(ts, targetQtc);
   return {
-    volume: Math.max(volume, 3), // minimo 3 litri
-    qtc: targetQtc,
-    f3: Math.round(f3),
-    peakingDb: Math.round(peakingDb * 10) / 10,
+    volume: Math.max(s.vb, 3), // minimo 3 litri
+    qtc: s.qtc,
+    f3: Math.round(s.f3),
+    peakingDb: Math.round(s.peakingDb * 10) / 10,
   };
 }
 
@@ -126,74 +115,50 @@ interface BassReflexResult {
 }
 
 /**
- * Calcola il volume ottimale per bass-reflex
- * Usa l'allineamento QB3 (quasi-Butterworth terzo ordine)
+ * Calcola il volume ottimale per bass-reflex.
+ *
+ * Delega al motore acustico condiviso (audio/enclosure.ts), con la STESSA
+ * logica dell'auto-design Admin:
+ *  - allineamento scelto dal Qts (QB3 / B4 / C4)
+ *  - Fb = 0.42·Fs·Qts^(-0.9) (accordo corretto, NON il vecchio 0.42·Fs fisso)
+ *  - diametro porta scelto per tenere la velocità aria ≤ 17 m/s (no chuffing)
  */
 export function calculateBassReflex(driver: SpeakerDriver): BassReflexResult {
-  const { fs, qts, vas, sd, xmax } = driver.thielSmall;
+  const ts = tsFromDriver(driver);
 
-  // Volume cassa bass-reflex (allineamento QB3)
-  // Vb ≈ 15 × Vas × Qts^2.87 (approssimazione pratica)
-  let volume = 15 * vas * Math.pow(qts, 2.87);
+  // Allineamento in base al Qts (identico ad autoEnclosure)
+  const alignment: AlignmentType = ts.qts < 0.3 ? 'QB3' : ts.qts > 0.45 ? 'C4' : 'B4';
 
-  // Limiti pratici
-  const minVolume = (driver.size <= 8) ? 5 : (driver.size <= 12) ? 15 : (driver.size <= 15) ? 40 : 80;
-  const maxVolume = (driver.size <= 8) ? 30 : (driver.size <= 12) ? 80 : (driver.size <= 15) ? 200 : 400;
-  volume = Math.max(minVolume, Math.min(maxVolume, volume));
+  // Sceglie il diametro porta più piccolo che mantiene la velocità ≤ 17 m/s
+  const candidates = [50, 65, 80, 100, 120, 150, 180];
+  let dv = candidates[candidates.length - 1];
+  for (const c of candidates) {
+    const test = ventedDesign(ts, alignment, c);
+    if (test.portVelocity <= 17) { dv = c; break; }
+    dv = c;
+  }
 
-  // Frequenza di accordo della porta
-  // fb ≈ fs × 0.42 (per QB3)
-  const fb = Math.round(fs * 0.42);
+  const v = ventedDesign(ts, alignment, dv);
 
-  // Calcolo porta circolare
-  const port = calculatePort(volume, fb, driver);
-
-  // F3 stimata (approssimazione)
-  const f3 = Math.round(fb * 0.75);
-
-  return { volume, port, f3, fb };
-}
-
-/**
- * Calcola le dimensioni della porta bass-reflex
- */
-function calculatePort(volumeLiters: number, tuningFreq: number, driver: SpeakerDriver): PortDesign {
-  const volumeM3 = volumeLiters / 1000;
-
-  // Diametro porta basato sulla dimensione del driver
-  // Regola pratica: diametro porta ≈ 1/3 ~ 1/4 del diametro del driver
-  let portDiameter: number;
-  if (driver.size <= 8) portDiameter = 50;
-  else if (driver.size <= 10) portDiameter = 65;
-  else if (driver.size <= 12) portDiameter = 80;
-  else if (driver.size <= 15) portDiameter = 100;
-  else portDiameter = 120; // 18" e 21"
-
-  const portRadiusM = (portDiameter / 2) / 1000;
-  const portAreaM2 = Math.PI * portRadiusM ** 2;
-
-  // Lunghezza porta dalla formula di Helmholtz:
-  // Lp = (c² × Sp) / (4π² × fb² × Vb) - 0.825 × √(Sp)
-  // dove c = velocità del suono, Sp = area porta, fb = freq accordo, Vb = volume
-  const Lp = (SPEED_OF_SOUND ** 2 * portAreaM2) / (4 * Math.PI ** 2 * tuningFreq ** 2 * volumeM3)
-    - 0.825 * Math.sqrt(portAreaM2);
-
-  const portLengthMm = Math.max(50, Math.round(Lp * 1000));
-
-  // Verifica velocità dell'aria nella porta
-  // v = Xmax × Sd × 2π × fb / Sp
-  const sdM2 = (driver.thielSmall.sd || 500) / 10000;
-  const xmaxM = (driver.thielSmall.xmax || 5) / 1000;
-  const airVelocity = xmaxM * sdM2 * 2 * Math.PI * tuningFreq / portAreaM2;
+  const port: PortDesign = {
+    shape: 'circular',
+    diameter: v.portDiameter,
+    length: Math.max(50, Math.round(v.portLength)),
+    tuningFrequency: Math.round(v.fb),
+    airVelocity: Math.round(v.portVelocity * 10) / 10,
+  };
 
   return {
-    shape: 'circular',
-    diameter: portDiameter,
-    length: portLengthMm,
-    tuningFrequency: tuningFreq,
-    airVelocity: Math.round(airVelocity * 10) / 10,
+    volume: Math.max(v.vb, 3),
+    port,
+    f3: Math.round(v.f3),
+    fb: Math.round(v.fb),
   };
 }
+
+// La porta bass-reflex è ora dimensionata dal motore acustico condiviso
+// (audio/enclosure.ts → ventedDesign), che usa la formula di Helmholtz con
+// correzione terminale e il controllo di velocità aria. Vedi calculateBassReflex.
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CALCOLO DIMENSIONI PANNELLI
@@ -698,21 +663,35 @@ export function scoreAmplifierMatch(
   }
 
   // ─── Potenza adeguata ────────────────────────────────────────────────────
+  // Best practice pro-audio: ampli RMS = 1.5–2× la potenza continua (AES/RMS)
+  // del driver, CON limiter tarato a proteggere il driver.
+  // Un ampli 1:1 va in clipping ai picchi e il clipping distrugge i driver.
+  // Sottodimensionato è il caso più pericoloso (clipping costante).
   const ampPower = amp.powerPerChannel[String(driver.impedance)] || 0;
   const powerRatio = ampPower / driver.powerRMS;
 
-  if (powerRatio >= 0.5 && powerRatio <= 1.5) {
-    score += 20;
-    reasons.push(`Potenza ${ampPower}W ben dimensionata per driver ${driver.powerRMS}W`);
-  } else if (powerRatio > 1.5) {
+  if (powerRatio >= 1.5 && powerRatio <= 2.2) {
+    // zona ideale: massimo headroom pulito, limiter protegge il driver
+    score += 25;
+    reasons.push(`Potenza ${ampPower}W ideale per driver ${driver.powerRMS}W RMS (1.5–2× con limiter)`);
+  } else if (powerRatio > 2.2 && powerRatio <= 3) {
+    // accettabile ma richiede limiter tarato con cura
+    score += 12;
+    warnings.push(`Ampli molto potente (${ampPower}W vs ${driver.powerRMS}W) — limiter OBBLIGATORIO e ben tarato`);
+  } else if (powerRatio > 3) {
+    // rischioso: facile mandare il driver oltre Xmax/termico per errore
+    score -= 10;
+    warnings.push(`Ampli sovradimensionato oltre 3× (${ampPower}W vs ${driver.powerRMS}W) — rischio danno se il limiter è errato`);
+  } else if (powerRatio >= 1.0) {
+    // sufficiente ma poco headroom: rischio clipping ai picchi
     score += 10;
-    warnings.push(`Amplificatore sovradimensionato (${ampPower}W vs ${driver.powerRMS}W) — usare limiter`);
-  } else if (powerRatio >= 0.3) {
-    score += 5;
-    reasons.push(`Potenza ${ampPower}W accettabile per uso domestico`);
+    warnings.push(`Headroom limitato (${ampPower}W vs ${driver.powerRMS}W) — consigliato ≥1.5× per evitare clipping`);
+  } else if (powerRatio >= 0.5) {
+    score -= 5;
+    warnings.push(`Ampli sottodimensionato (${ampPower}W per driver da ${driver.powerRMS}W) — rischio clipping che danneggia il driver`);
   } else {
-    score -= 20;
-    warnings.push(`Amplificatore sottodimensionato (${ampPower}W per driver da ${driver.powerRMS}W)`);
+    score -= 25;
+    warnings.push(`Ampli gravemente sottodimensionato (${ampPower}W per driver da ${driver.powerRMS}W)`);
   }
 
   // ─── DSP per uso professionale ───────────────────────────────────────────

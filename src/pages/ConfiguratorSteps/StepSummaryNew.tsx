@@ -8,6 +8,7 @@ import {
 import type { SpeakerDriver, Amplifier, CabinetDesign } from '../../types/speaker';
 import { DriverVisual, AmpVisual } from '../../components/configurator/ComponentVisuals';
 import { calculateConfiguratorPrice, formatPrice } from '../../utils/configuratorPricing';
+import { limiterThreshold } from '../../utils/audio';
 import { db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { StripeCheckout } from './StripeCheckout';
@@ -43,6 +44,12 @@ export function StepSummaryNew({
   // Calcola il prezzo
   const pricing = calculateConfiguratorPrice(driver, amplifier, cabinet);
 
+  // Taratura limiter per PROTEGGERE il driver: soglia RMS = √(Pe · Z) sulla
+  // potenza continua del driver, non dell'ampli. È il valore da impostare nel
+  // DSP/limiter affinché il driver non superi mai la sua potenza nominale.
+  const limiterVrms = limiterThreshold(driver.powerRMS, driver.impedance);
+  const limiterDbu = 20 * Math.log10(limiterVrms / 0.775);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) {
@@ -71,6 +78,9 @@ export function StepSummaryNew({
         cabinetName: cabinet.name,
         cabinetDimensions: cabinet.externalDimensions,
         cabinetMaterial: `${cabinet.woodType} ${cabinet.woodThickness}mm`,
+        cabinetTuningHz: cabinet.port?.tuningFrequency ?? null,
+        limiterVrms: Math.round(limiterVrms * 10) / 10,
+        limiterDbu: Math.round(limiterDbu * 10) / 10,
         pricing: pricing,
         createdAt: new Date().toISOString(),
       });
@@ -177,6 +187,29 @@ export function StepSummaryNew({
               <div className="border-t border-white/5 pt-2 flex justify-between text-lg font-bold">
                 <span>Totale</span>
                 <span className="text-brand-orange">{formatPrice(pricing.total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Taratura limiter — protezione driver */}
+          <div className="bg-zinc-900/50 border border-amber-500/30 rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <h3 className="text-base font-bold">Taratura Limiter (protezione driver)</h3>
+            </div>
+            <p className="text-xs text-zinc-400 mb-4">
+              Imposta il limiter RMS del DSP/amplificatore a questa soglia per non superare mai
+              la potenza continua del driver ({driver.powerRMS}W @ {driver.impedance}Ω). Senza
+              limiter tarato correttamente il driver può danneggiarsi.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-zinc-950/50 border border-white/5 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-amber-400 font-mono">{limiterVrms.toFixed(1)}<span className="text-sm text-zinc-500 ml-1">Vrms</span></div>
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wide mt-1">Soglia RMS</div>
+              </div>
+              <div className="bg-zinc-950/50 border border-white/5 rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-amber-400 font-mono">{limiterDbu.toFixed(1)}<span className="text-sm text-zinc-500 ml-1">dBu</span></div>
+                <div className="text-[10px] text-zinc-500 uppercase tracking-wide mt-1">Soglia (dBu)</div>
               </div>
             </div>
           </div>
