@@ -10,6 +10,8 @@ import { DriverVisual, AmpVisual } from '../../components/configurator/Component
 import { calculateConfiguratorPrice, formatPrice } from '../../utils/configuratorPricing';
 import { db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { StripeCheckout } from './StripeCheckout';
+import { StripeProvider } from '../../components/StripeProvider';
 
 interface StepSummaryNewProps {
   driver: SpeakerDriver;
@@ -32,6 +34,7 @@ export function StepSummaryNew({
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'quote' | 'cart'>('quote');
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const addToCart = useCartStore((state) => state.addItem);
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
@@ -302,27 +305,60 @@ export function StepSummaryNew({
               animate={{ scale: 1, opacity: 1 }}
               className="bg-zinc-900 border border-brand-orange/30 rounded-2xl p-8"
             >
-              <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <CartIcon className="w-5 h-5 text-brand-orange" />
-                {t('configurator.buyNow')}
-              </h3>
+              {!isCheckingOut ? (
+                <>
+                  <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
+                    <CartIcon className="w-5 h-5 text-brand-orange" />
+                    {t('configurator.buyNow')}
+                  </h3>
 
-              <div className="mb-6 p-4 bg-brand-orange/10 rounded-lg border border-brand-orange/20">
-                <div className="text-2xl font-bold text-brand-orange">{formatPrice(pricing.total)}</div>
-                <p className="text-xs text-zinc-400 mt-1">{t('configurator.total')} (IVA inclusa)</p>
-              </div>
+                  <div className="mb-6 p-4 bg-brand-orange/10 rounded-lg border border-brand-orange/20">
+                    <div className="text-2xl font-bold text-brand-orange">{formatPrice(pricing.total)}</div>
+                    <p className="text-xs text-zinc-400 mt-1">{t('configurator.total')} (IVA inclusa)</p>
+                  </div>
 
-              <button
-                onClick={handleAddToCart}
-                className="w-full py-4 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg font-bold transition-all flex items-center justify-center gap-2 mb-4"
-              >
-                <CartIcon className="w-5 h-5" />
-                {t('configurator.addToCart')}
-              </button>
+                  <div className="space-y-3">
+                    <button
+                      onClick={() => setIsCheckingOut(true)}
+                      className="w-full py-4 bg-brand-orange hover:bg-brand-orange/90 text-white rounded-lg font-bold transition-all"
+                    >
+                      Paga con carta
+                    </button>
+                    <button
+                      onClick={handleAddToCart}
+                      className="w-full py-4 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-bold transition-all border border-white/10"
+                    >
+                      {t('configurator.addToCart')}
+                    </button>
+                  </div>
 
-              <p className="text-xs text-zinc-500 text-center">
-                La configurazione verrà aggiunta al tuo carrello. Potrai rivedere e acquistare al checkout.
-              </p>
+                  <p className="text-xs text-zinc-500 text-center mt-4">
+                    Paga ora con Stripe o aggiungi al carrello per acquistare dopo.
+                  </p>
+                </>
+              ) : (
+                <StripeProvider>
+                  <div>
+                    <button
+                      onClick={() => setIsCheckingOut(false)}
+                      className="text-sm text-zinc-400 hover:text-white mb-6"
+                    >
+                      ← Indietro
+                    </button>
+                    <h3 className="text-lg font-bold mb-6">Checkout Sicuro</h3>
+                    <StripeCheckout
+                      driver={driver}
+                      amplifier={amplifier}
+                      cabinet={cabinet}
+                      userEmail={form.email}
+                      onSuccess={() => {
+                        setIsCheckingOut(false);
+                        setActiveTab('quote');
+                      }}
+                    />
+                  </div>
+                </StripeProvider>
+              )}
             </motion.div>
           )}
         </div>

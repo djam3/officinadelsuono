@@ -543,3 +543,73 @@ exports.fetchSocialStats = functions
 
     res.json(stats);
   });
+
+/**
+ * Stripe: crea un payment intent per il configuratore
+ */
+exports.createPaymentIntent = functions
+  .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+  .https.onRequest(async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.status(200).send('');
+      return;
+    }
+
+    if (req.method !== 'POST') {
+      res.status(400).json({ error: 'POST only' });
+      return;
+    }
+
+    const { amount, email, description, metadata } = req.body;
+
+    if (!amount || !email || !process.env.STRIPE_SECRET_KEY) {
+      res.status(400).json({ error: 'Missing required fields or STRIPE_SECRET_KEY not set' });
+      return;
+    }
+
+    try {
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const admin = require('firebase-admin');
+      if (!admin.apps.length) admin.initializeApp();
+
+      // Crea payment intent
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: Math.round(amount * 100), // Stripe usa centesimi
+        currency: 'eur',
+        description: description || 'Configurazione Speaker',
+        receipt_email: email,
+        metadata: metadata || {},
+      });
+
+      // Salva ordine preliminare in Firestore
+      const ordersRef = admin.firestore().collection('orders');
+      const newOrderRef = ordersRef.doc();
+
+      const orderData = {
+        id: newOrderRef.id,
+        stripePaymentIntentId: paymentIntent.id,
+        amount: amount,
+        currency: 'EUR',
+        customerEmail: email,
+        paymentMethod: 'stripe',
+        status: 'pending_payment',
+        metadata: metadata || {},
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      };
+
+      await newOrderRef.set(orderData);
+
+      res.json({
+        clientSecret: paymentIntent.client_secret,
+        orderId: newOrderRef.id,
+      });
+    } catch (err) {
+      console.error('Stripe error:', err);
+      res.status(500).json({ error: err.message || 'Payment intent creation failed' });
+    }
+  });
