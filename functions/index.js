@@ -545,10 +545,16 @@ exports.fetchSocialStats = functions
   });
 
 /**
- * Stripe: crea un payment intent per il configuratore
+ * Stripe: crea un payment intent per il configuratore.
+ *
+ * NB: il secret STRIPE_SECRET_KEY NON è dichiarato in runWith di proposito,
+ * così il deploy NON fallisce finché Stripe non è configurato.
+ * Per ATTIVARE i pagamenti Stripe:
+ *   1) crea il secret:  firebase functions:secrets:set STRIPE_SECRET_KEY
+ *   2) ri-aggiungi qui: .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
+ * Senza chiave, la funzione risponde 503 e il frontend degrada (nessun crash).
  */
 exports.createPaymentIntent = functions
-  .runWith({ secrets: ['STRIPE_SECRET_KEY'] })
   .https.onRequest(async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -564,10 +570,16 @@ exports.createPaymentIntent = functions
       return;
     }
 
+    // Stripe non configurato → degrada con messaggio chiaro (no crash, no deploy fail)
+    if (!process.env.STRIPE_SECRET_KEY) {
+      res.status(503).json({ error: 'Pagamenti Stripe non ancora configurati. Usa "Richiedi preventivo".' });
+      return;
+    }
+
     const { amount, email, description, metadata } = req.body;
 
-    if (!amount || !email || !process.env.STRIPE_SECRET_KEY) {
-      res.status(400).json({ error: 'Missing required fields or STRIPE_SECRET_KEY not set' });
+    if (!amount || !email) {
+      res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
