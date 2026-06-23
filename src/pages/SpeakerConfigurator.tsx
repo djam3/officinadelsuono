@@ -436,7 +436,10 @@ function StepCabinetPreview({
                     <span className="font-bold">{cabinetDesign.port.tuningFrequency} Hz</span>
                   </div>
                   <div className="text-xs text-zinc-500 mt-1">
-                    Porta Ø {cabinetDesign.port.diameter}mm, lunga {cabinetDesign.port.length}mm
+                    {(cabinetDesign.port.count ?? 1) > 1
+                      ? `${cabinetDesign.port.count}× porte Ø ${cabinetDesign.port.diameter}mm, lunghe ${cabinetDesign.port.length}mm`
+                      : `Porta Ø ${cabinetDesign.port.diameter}mm, lunga ${cabinetDesign.port.length}mm`}
+                    {cabinetDesign.port.airVelocity != null && ` · aria ${cabinetDesign.port.airVelocity} m/s`}
                   </div>
                   <div className="h-[1px] w-full bg-white/5 mt-2" />
                 </div>

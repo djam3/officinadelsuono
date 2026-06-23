@@ -129,21 +129,33 @@ export function calculateBassReflex(driver: SpeakerDriver): BassReflexResult {
   // Allineamento in base al Qts (identico ad autoEnclosure)
   const alignment: AlignmentType = ts.qts < 0.3 ? 'QB3' : ts.qts > 0.45 ? 'C4' : 'B4';
 
-  // Sceglie il diametro porta più piccolo che mantiene la velocità ≤ 17 m/s
-  const candidates = [50, 65, 80, 100, 120, 150, 180];
-  let dv = candidates[candidates.length - 1];
-  for (const c of candidates) {
-    const test = ventedDesign(ts, alignment, c);
-    if (test.portVelocity <= 17) { dv = c; break; }
-    dv = c;
+  const MAX_VELOCITY = 17; // m/s — oltre si ha "chuffing" (rumore d'aria)
+  const diameters = [50, 65, 80, 100, 120, 150, 180];
+  const maxPorts = 4; // fino a 4 porte identiche per driver ad alta escursione
+
+  // Cerca la combinazione (n. porte, diametro) col MINOR numero di porte e poi
+  // minor diametro che mantiene la velocità ≤ 17 m/s. Più porte = più area
+  // totale = velocità più bassa (la lunghezza di ciascuna porta cresce per
+  // mantenere lo stesso accordo Fb).
+  let chosen = ventedDesign(ts, alignment, diameters[diameters.length - 1], maxPorts);
+  let found = false;
+  for (let np = 1; np <= maxPorts && !found; np++) {
+    for (const dv of diameters) {
+      const test = ventedDesign(ts, alignment, dv, np);
+      if (test.portVelocity <= MAX_VELOCITY) {
+        chosen = test;
+        found = true;
+        break;
+      }
+    }
   }
 
-  const v = ventedDesign(ts, alignment, dv);
-
+  const v = chosen;
   const port: PortDesign = {
     shape: 'circular',
     diameter: v.portDiameter,
     length: Math.max(50, Math.round(v.portLength)),
+    count: v.portCount,
     tuningFrequency: Math.round(v.fb),
     airVelocity: Math.round(v.portVelocity * 10) / 10,
   };
@@ -264,16 +276,24 @@ export function generatePanels(
     label: `Foro driver ${driver.brand} ${driver.model} — Ø${driverMountDiameter}mm — 8 fori M6 su cerchio Ø${driverMountDiameter + 20}mm`,
   });
 
-  // Foro porta bass-reflex (se presente)
+  // Fori porta bass-reflex (se presenti) — uno per ciascuna porta
   if (port && port.shape === 'circular' && port.diameter) {
-    frontHoles.push({
-      type: 'port',
-      shape: 'circle',
-      diameter: port.diameter,
-      x: Math.round(internalW / 2),
-      y: Math.round(internalH * 0.2), // basso sul frontale
-      label: `Porta bass-reflex Ø${port.diameter}mm — tubo lungo ${port.length}mm`,
-    });
+    const portCount = Math.max(1, port.count ?? 1);
+    const yPort = Math.round(internalH * 0.2); // basso sul frontale
+    for (let i = 0; i < portCount; i++) {
+      // Distribuisce le porte uniformemente sulla larghezza interna
+      const x = Math.round((internalW * (i + 1)) / (portCount + 1));
+      frontHoles.push({
+        type: 'port',
+        shape: 'circle',
+        diameter: port.diameter,
+        x,
+        y: yPort,
+        label: portCount > 1
+          ? `Porta bass-reflex ${i + 1}/${portCount} Ø${port.diameter}mm — tubo lungo ${port.length}mm`
+          : `Porta bass-reflex Ø${port.diameter}mm — tubo lungo ${port.length}mm`,
+      });
+    }
   }
 
   const panels: CabinetPanel[] = [

@@ -147,6 +147,7 @@ export interface PortDesign {
   slotWidth?: number;          // mm (per porta a fessura)
   slotHeight?: number;         // mm
   length: number;              // mm profondità porta
+  count?: number;              // numero di porte identiche (default 1)
   tuningFrequency: number;     // Hz frequenza di accordo
   airVelocity?: number;        // m/s (ideale < 17 m/s)
 }
