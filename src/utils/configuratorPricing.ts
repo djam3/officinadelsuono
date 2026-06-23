@@ -1,0 +1,121 @@
+/**
+ * Pricing Calculator — Preventivi automatici configuratore
+ *
+ * Calcola il prezzo di una configurazione personalizzata basato su:
+ * - Driver
+ * - Amplificatore
+ * - Materiali della cassa
+ * - Dimensioni
+ * - Lavorazione
+ */
+
+import type { SpeakerDriver, Amplifier, CabinetDesign } from '../types/speaker';
+
+interface PricingConfig {
+  basePriceDriver: number;
+  basePriceAmp: number;
+  baseCabinetPrice: number;
+  materialsMultiplier: Record<string, number>;
+  finishMultiplier: Record<string, number>;
+  laborPerLiter: number;
+  vat: number;
+}
+
+const DEFAULT_PRICING: PricingConfig = {
+  basePriceDriver: 0, // Usato il prezzo del driver dal database
+  basePriceAmp: 0,    // Usato il prezzo dell'amp dal database
+  baseCabinetPrice: 150, // Base per la cassa (legno, pannelli, porta)
+  materialsMultiplier: {
+    'mdf-18': 1.0,
+    'mdf-21': 1.1,
+    'mdf-25': 1.25,
+    'plywood-18': 1.3,
+    'plywood-21': 1.45,
+    'plywood-25': 1.65,
+  },
+  finishMultiplier: {
+    'natural': 1.0,
+    'black': 1.2,
+    'white': 1.2,
+  },
+  laborPerLiter: 8, // €/litro di volume interno
+  vat: 0.22,
+};
+
+export interface ConfiguratorPrice {
+  driverPrice: number;
+  ampPrice: number;
+  cabinetPrice: number;
+  cabinetSubtotal: number;
+  subtotal: number;
+  vat: number;
+  total: number;
+  breakdown: {
+    materials: number;
+    labor: number;
+    base: number;
+  };
+}
+
+/**
+ * Calcola il prezzo di una configurazione completa
+ */
+export function calculateConfiguratorPrice(
+  driver: SpeakerDriver,
+  amplifier: Amplifier,
+  cabinet: CabinetDesign,
+  customFinish?: string,
+  config: PricingConfig = DEFAULT_PRICING
+): ConfiguratorPrice {
+  // Prezzo driver (usa campo price se disponibile)
+  const driverPrice = (driver as any).price || 200;
+
+  // Prezzo amplificatore
+  const ampPrice = (amplifier as any).price || 300;
+
+  // Calcolo prezzo cassa
+  const materialKey = `${cabinet.woodType}-${cabinet.woodThickness}`;
+  const materialMult = config.materialsMultiplier[materialKey] || 1.0;
+  const finishMult = config.finishMultiplier[customFinish || cabinet.name] || 1.0;
+
+  // Costo materiali e base
+  const materialsCost = config.baseCabinetPrice * materialMult * finishMult;
+
+  // Costo lavorazione basato su volume
+  const laborCost = cabinet.internalVolume * config.laborPerLiter;
+
+  const cabinetSubtotal = materialsCost + laborCost;
+  const subtotal = driverPrice + ampPrice + cabinetSubtotal;
+  const vatAmount = subtotal * config.vat;
+  const total = subtotal + vatAmount;
+
+  return {
+    driverPrice,
+    ampPrice,
+    cabinetPrice: cabinetSubtotal,
+    cabinetSubtotal,
+    subtotal,
+    vat: vatAmount,
+    total,
+    breakdown: {
+      materials: materialsCost,
+      labor: laborCost,
+      base: config.baseCabinetPrice,
+    },
+  };
+}
+
+/**
+ * Arrotonda un prezzo a 99 cents (es: 499.99)
+ */
+export function roundPrice(price: number): number {
+  const base = Math.floor(price);
+  return base + 0.99;
+}
+
+/**
+ * Formatta un prezzo come stringa con simbolo €
+ */
+export function formatPrice(price: number, decimals: number = 2): string {
+  return `€${price.toFixed(decimals).replace('.', ',')}`;
+}

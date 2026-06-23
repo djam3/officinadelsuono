@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, ChevronRight, ChevronLeft,
-  CheckCircle, Music, Zap, Layers, Cpu, Box,
+  CheckCircle, Music, Zap, Layers, Cpu, Box, Palette,
   Check, AlertTriangle, Send, Loader2, Mail, User, Phone, MessageSquare
 } from 'lucide-react';
 
@@ -19,20 +20,25 @@ import * as Audio from '../utils/audio';
 import { subscribeDrivers } from '../services/driverLibrary';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { StepCustomizeCabinet } from './ConfiguratorSteps/StepCustomizeCabinet';
+import { StepSummaryNew } from './ConfiguratorSteps/StepSummaryNew';
 
 const STEPS = [
   { id: 1, title: 'Il Tuo Sound', icon: Music },
   { id: 2, title: 'Scegli il Driver', icon: Settings },
   { id: 3, title: 'La Tua Cassa', icon: Box },
-  { id: 4, title: 'Amplificazione', icon: Zap },
-  { id: 5, title: 'Il Tuo Progetto', icon: CheckCircle }
+  { id: 4, title: 'Personalizza', icon: Palette },
+  { id: 5, title: 'Amplificazione', icon: Zap },
+  { id: 6, title: 'Il Tuo Progetto', icon: CheckCircle }
 ];
 
 export default function SpeakerConfigurator() {
+  const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [userConfig, setUserConfig] = useState<Partial<UserConfiguration>>({ quantity: 1 });
   const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
   const [selectedAmpId, setSelectedAmpId] = useState<string | null>(null);
+  const [customCabinet, setCustomCabinet] = useState<Partial<CabinetDesign> | null>(null);
   const [drivers, setDrivers] = useState<SpeakerDriver[]>(DRIVERS);
   useEffect(() => subscribeDrivers(list => setDrivers(list.length ? list : DRIVERS)), []);
 
@@ -41,17 +47,23 @@ export default function SpeakerConfigurator() {
 
   const cabinetDesign = useMemo(() => {
     if (!selectedDriver || !userConfig.useCase) return null;
+
+    // Se esiste un cabinet personalizzato, usalo
+    if (customCabinet) {
+      return { ...cabinetDesign, ...customCabinet } as CabinetDesign;
+    }
+
     const recommendedType = recommendCabinetType(selectedDriver, userConfig.useCase as UseCase, 'indoor-medium');
     const hasAmp = !!selectedAmpId;
     const ampDimensions = selectedAmplifier ? selectedAmplifier.dimensions : undefined;
-    
+
     try {
       const calc = calculateFullCabinet(
-        selectedDriver, 
-        recommendedType, 
-        userConfig.useCase as UseCase, 
-        'indoor-medium', 
-        hasAmp, 
+        selectedDriver,
+        recommendedType,
+        userConfig.useCase as UseCase,
+        'indoor-medium',
+        hasAmp,
         ampDimensions
       );
       return calc.cabinetDesign;
@@ -59,7 +71,7 @@ export default function SpeakerConfigurator() {
       console.error(e);
       return null;
     }
-  }, [selectedDriver, userConfig.useCase, selectedAmpId, selectedAmplifier]);
+  }, [selectedDriver, userConfig.useCase, selectedAmpId, selectedAmplifier, customCabinet]);
 
   const handleNext = () => setStep(s => Math.min(STEPS.length, s + 1));
   const handlePrev = () => setStep(s => Math.max(1, s - 1));
@@ -67,7 +79,9 @@ export default function SpeakerConfigurator() {
   const isNextDisabled = () => {
     if (step === 1 && !userConfig.useCase) return true;
     if (step === 2 && !selectedDriverId) return true;
-    if (step === 4 && !selectedAmpId) return true;
+    if (step === 3 && !cabinetDesign) return true;
+    if (step === 4) return false; // Personalizzazione sempre abilitata
+    if (step === 5 && !selectedAmpId) return true;
     return false;
   };
 
@@ -78,10 +92,10 @@ export default function SpeakerConfigurator() {
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className="text-[#F27D26]">Speaker</span>Configurator
+              <span className="text-[#F27D26]">Speaker</span>{t('configurator.title')}
             </h1>
             <div className="text-sm font-medium text-zinc-400">
-              Step {step} di {STEPS.length}
+              Step {step} {t('common.loading').split(' ')[0]} {STEPS.length}
             </div>
           </div>
           
@@ -141,22 +155,28 @@ export default function SpeakerConfigurator() {
               />
             )}
             {step === 3 && selectedDriver && cabinetDesign && (
-              <StepCabinetPreview 
-                driver={selectedDriver} 
-                cabinetDesign={cabinetDesign} 
+              <StepCabinetPreview
+                driver={selectedDriver}
+                cabinetDesign={cabinetDesign}
               />
             )}
-            {step === 4 && selectedDriver && (
-              <StepAmpSelect 
-                driver={selectedDriver} 
-                useCase={userConfig.useCase as UseCase} 
-                amplifiers={AMPLIFIERS} 
-                selectedId={selectedAmpId} 
-                onSelect={setSelectedAmpId} 
+            {step === 4 && selectedDriver && cabinetDesign && (
+              <StepCustomizeCabinet
+                cabinet={cabinetDesign}
+                onUpdate={(updates) => setCustomCabinet(updates)}
               />
             )}
-            {step === 5 && selectedDriver && selectedAmplifier && cabinetDesign && (
-              <StepSummary
+            {step === 5 && selectedDriver && (
+              <StepAmpSelect
+                driver={selectedDriver}
+                useCase={userConfig.useCase as UseCase}
+                amplifiers={AMPLIFIERS}
+                selectedId={selectedAmpId}
+                onSelect={setSelectedAmpId}
+              />
+            )}
+            {step === 6 && selectedDriver && selectedAmplifier && cabinetDesign && (
+              <StepSummaryNew
                 driver={selectedDriver}
                 amplifier={selectedAmplifier}
                 cabinet={cabinetDesign}
@@ -176,21 +196,21 @@ export default function SpeakerConfigurator() {
             className="flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all text-zinc-300 hover:text-white disabled:opacity-50 disabled:hover:text-zinc-300 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-5 h-5" />
-            Indietro
+            {t('configurator.back')}
           </button>
-          
+
           {step < STEPS.length ? (
             <button
               onClick={handleNext}
               disabled={isNextDisabled()}
               className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold transition-all bg-[#F27D26] hover:bg-[#E06C1C] text-white shadow-lg shadow-[#F27D26]/20 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed disabled:hover:bg-[#F27D26]"
             >
-              Avanti
+              {t('configurator.next')}
               <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
             <span className="text-xs text-zinc-500 max-w-[16rem] text-right">
-              Compila il modulo per ricevere il preventivo personalizzato.
+              {t('configurator.checkAndOrder')}
             </span>
           )}
         </div>
