@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "shop": "ショップ",
+    "blog": "ブログ",
+    "quiz": "クイズ",
+    "about": "について",
+    "contact": "お問い合わせ",
+    "compare": "比較",
+    "cart": "カート",
+    "profile": "プロフィール",
+    "admin": "管理者",
+    "usato": "中古",
+    "configuratore": "コンフィギュレータ"
+  },
+  "common": {
+    "loading": "エクスペリエンスを読み込み中...",
+    "error": "エラー",
+    "success": "成功",
+    "cancel": "キャンセル",
+    "confirm": "確認",
+    "save": "保存",
+    "delete": "削除",
+    "edit": "編集",
+    "language": "言語"
+  },
+  "payment": {
+    "completed": "支払い完了!",
+    "completedDescription": "まもなく注文の詳細が記載された確認メールが届きます。",
+    "canceled": "支払いがキャンセルされました",
+    "canceledDescription": "ご注文は処理されませんでした。いつでも再度お試しいただけます。"
+  },
+  "compare": {
+    "maxLimit": "比較用に3製品の最大数に達しました。"
+  }
+}

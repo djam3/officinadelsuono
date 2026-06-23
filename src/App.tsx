@@ -21,6 +21,7 @@ import { Product as ProductType } from './types/admin';
 import { trackPageView } from './utils/analytics';
 import { captureUTMs } from './utils/utm';
 import { ExitIntentPopup } from './components/ExitIntentPopup';
+import { useTranslation } from 'react-i18next';
 
 // ─── URL ↔ page mapping ───────────────────────────────────────────────────────
 const PAGE_TO_PATH: Record<string, string> = {
@@ -78,12 +79,15 @@ const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })))
 const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
 const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
 
-const PageLoader = () => (
-  <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-    <Loader2 className="w-12 h-12 text-brand-orange animate-spin" />
-    <p className="text-zinc-500 font-black uppercase tracking-[0.3em] text-[10px]">Caricamento Esperienza...</p>
-  </div>
-);
+const PageLoader = () => {
+  const { t } = useTranslation();
+  return (
+    <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+      <Loader2 className="w-12 h-12 text-brand-orange animate-spin" />
+      <p className="text-zinc-500 font-black uppercase tracking-[0.3em] text-[10px]">{t('common.loading')}</p>
+    </div>
+  );
+};
 
 interface Toast {
   id: string;
@@ -99,6 +103,7 @@ interface FlyingItem {
 }
 
 export default function App() {
+  const { t } = useTranslation();
   const initialRoute = pathToPage(window.location.pathname);
   const [currentPage, setCurrentPage] = useState(initialRoute.page);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(initialRoute.id || null);
@@ -137,7 +142,7 @@ export default function App() {
       if (prev.length < 3) {
         return [...prev, product];
       }
-      showToast("Hai raggiunto il limite massimo di 3 prodotti per il confronto.", "info");
+      showToast(t('compare.maxLimit'), "info");
       return prev;
     });
   };
@@ -256,7 +261,7 @@ export default function App() {
       {/* Payment Status Toasts */}
       <AnimatePresence>
         {paymentStatus === 'success' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
@@ -266,8 +271,8 @@ export default function App() {
               <CheckCircle2 className="w-6 h-6 text-green-500" />
             </div>
             <div className="flex-1">
-              <h4 className="font-black text-lg tracking-tight">Pagamento Completato!</h4>
-              <p className="text-sm text-zinc-400">Riceverai a breve un'email di conferma con i dettagli dell'ordine.</p>
+              <h4 className="font-black text-lg tracking-tight">{t('payment.completed')}</h4>
+              <p className="text-sm text-zinc-400">{t('payment.completedDescription')}</p>
             </div>
             <button onClick={() => setPaymentStatus(null)} className="text-zinc-500 hover:text-white transition-colors">
               <X className="w-5 h-5" />
@@ -276,7 +281,7 @@ export default function App() {
         )}
         
         {paymentStatus === 'canceled' && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -100 }}
@@ -286,8 +291,8 @@ export default function App() {
               <AlertCircle className="w-6 h-6 text-zinc-400" />
             </div>
             <div className="flex-1">
-              <h4 className="font-black text-lg tracking-tight">Pagamento Annullato</h4>
-              <p className="text-sm text-zinc-400">Il tuo ordine non è stato processato. Puoi riprovare quando vuoi.</p>
+              <h4 className="font-black text-lg tracking-tight">{t('payment.canceled')}</h4>
+              <p className="text-sm text-zinc-400">{t('payment.canceledDescription')}</p>
             </div>
             <button onClick={() => setPaymentStatus(null)} className="text-zinc-500 hover:text-white transition-colors">
               <X className="w-5 h-5" />

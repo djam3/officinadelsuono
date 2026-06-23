@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "首页",
+    "shop": "商店",
+    "blog": "博客",
+    "quiz": "测验",
+    "about": "关于我们",
+    "contact": "联系",
+    "compare": "比较",
+    "cart": "购物车",
+    "profile": "个人资料",
+    "admin": "管理员",
+    "usato": "二手",
+    "configuratore": "配置器"
+  },
+  "common": {
+    "loading": "正在加载体验...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "language": "语言"
+  },
+  "payment": {
+    "completed": "付款已完成！",
+    "completedDescription": "您很快就会收到包含订单详情的确认电子邮件。",
+    "canceled": "付款已取消",
+    "canceledDescription": "您的订单未被处理。您可以随时重试。"
+  },
+  "compare": {
+    "maxLimit": "您已达到比较的最多3个产品的限制。"
+  }
+}

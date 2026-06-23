@@ -8,6 +8,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
 import { CATEGORIES_DATA } from '../constants';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface NavbarProps {
   onNavigate: (page: string) => void;
@@ -98,6 +99,9 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
+            <div className="hidden sm:block">
+              <LanguageSwitcher />
+            </div>
             {user ? (
               <div className="relative group">
                 <button className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-full text-sm font-bold transition-all border border-white/10">
@@ -183,7 +187,11 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
               <button onClick={() => { onNavigate('compare'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Confronta</button>
               <button onClick={() => { onNavigate('about'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Chi Siamo</button>
               <button onClick={() => { onNavigate('contact'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Contatti</button>
-              
+
+              <div className="px-4 py-4 border-b border-white/5">
+                <LanguageSwitcher />
+              </div>
+
               {!user ? (
                 <button 
                   onClick={() => { setIsAuthModalOpen(true); setIsMenuOpen(false); }} 

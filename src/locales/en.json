@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "Home",
+    "shop": "Shop",
+    "blog": "Blog",
+    "quiz": "Quiz",
+    "about": "About Us",
+    "contact": "Contact",
+    "compare": "Compare",
+    "cart": "Cart",
+    "profile": "Profile",
+    "admin": "Admin",
+    "usato": "Used",
+    "configuratore": "Configurator"
+  },
+  "common": {
+    "loading": "Loading Experience...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "language": "Language"
+  },
+  "payment": {
+    "completed": "Payment Completed!",
+    "completedDescription": "You will soon receive a confirmation email with your order details.",
+    "canceled": "Payment Canceled",
+    "canceledDescription": "Your order was not processed. You can try again anytime."
+  },
+  "compare": {
+    "maxLimit": "You have reached the maximum limit of 3 products for comparison."
+  }
+}

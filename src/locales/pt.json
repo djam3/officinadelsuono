@@ -1,0 +1,36 @@
+{
+  "nav": {
+    "home": "Início",
+    "shop": "Loja",
+    "blog": "Blog",
+    "quiz": "Quiz",
+    "about": "Sobre Nós",
+    "contact": "Contato",
+    "compare": "Comparar",
+    "cart": "Carrinho",
+    "profile": "Perfil",
+    "admin": "Admin",
+    "usato": "Usado",
+    "configuratore": "Configurador"
+  },
+  "common": {
+    "loading": "Carregando Experiência...",
+    "error": "Erro",
+    "success": "Sucesso",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "save": "Salvar",
+    "delete": "Deletar",
+    "edit": "Editar",
+    "language": "Idioma"
+  },
+  "payment": {
+    "completed": "Pagamento Concluído!",
+    "completedDescription": "Você receberá em breve um email de confirmação com os detalhes do seu pedido.",
+    "canceled": "Pagamento Cancelado",
+    "canceledDescription": "Seu pedido não foi processado. Você pode tentar novamente a qualquer momento."
+  },
+  "compare": {
+    "maxLimit": "Você atingiu o limite máximo de 3 produtos para comparação."
+  }
+}

@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './i18n';
 
 // Suppress specific environment-related errors and warnings
 if (typeof window !== 'undefined') {
