@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useCartStore } from '../../store/cartStore';
 import {
-  Settings, Send, Loader2, Mail, User, Phone, MessageSquare, CheckCircle, AlertTriangle, ShoppingCart as CartIcon
+  Settings, Send, Loader2, Mail, User, Phone, MessageSquare, CheckCircle, AlertTriangle, ShoppingCart as CartIcon, FileDown
 } from 'lucide-react';
 import type { SpeakerDriver, Amplifier, CabinetDesign } from '../../types/speaker';
 import { DriverVisual, AmpVisual } from '../../components/configurator/ComponentVisuals';
+import { CabinetViewer3D } from '../../components/configurator/CabinetViewer3D';
 import { calculateConfiguratorPrice, formatPrice } from '../../utils/configuratorPricing';
+import { generateConfiguratorPDF } from '../../utils/generateConfiguratorPDF';
 import { limiterThreshold } from '../../utils/audio';
 import { db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -49,6 +51,23 @@ export function StepSummaryNew({
   // DSP/limiter affinché il driver non superi mai la sua potenza nominale.
   const limiterVrms = limiterThreshold(driver.powerRMS, driver.impedance);
   const limiterDbu = 20 * Math.log10(limiterVrms / 0.775);
+
+  // Renderer 3D per catturare il render nel PDF
+  const glRef = useRef<any>(null);
+
+  const handleDownloadPDF = () => {
+    let renderImage: string | null = null;
+    try {
+      renderImage = glRef.current?.domElement?.toDataURL('image/png') ?? null;
+    } catch {
+      renderImage = null; // cattura opzionale
+    }
+    const doc = generateConfiguratorPDF({
+      driver, amplifier, cabinet, pricing, limiterVrms, limiterDbu, renderImage,
+    });
+    const safeName = (cabinet.name || 'configurazione').replace(/[^a-z0-9]+/gi, '-').slice(0, 40);
+    doc.save(`OfficinaDelSuono-${safeName}.pdf`);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +131,20 @@ export function StepSummaryNew({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Sinistra: Configurazione */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Render 3D del prodotto finale + export PDF */}
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-2 relative overflow-hidden">
+            <div className="h-[420px] rounded-xl overflow-hidden">
+              <CabinetViewer3D cabinet={cabinet} glRef={glRef} allowExplode />
+            </div>
+            <button
+              onClick={handleDownloadPDF}
+              className="absolute bottom-5 left-5 z-10 flex items-center gap-2 bg-white text-zinc-900 hover:bg-zinc-200 px-4 py-2.5 rounded-lg font-bold text-sm transition-colors shadow-lg"
+            >
+              <FileDown className="w-4 h-4" />
+              Scarica scheda PDF
+            </button>
+          </div>
+
           {/* Componenti */}
           <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-8">
             <h3 className="text-xl font-bold mb-6 flex items-center gap-3">

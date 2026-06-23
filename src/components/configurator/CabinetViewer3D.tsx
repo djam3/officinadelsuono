@@ -1,6 +1,7 @@
-import React, { useMemo, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { useMemo, Suspense, useState } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer } from '@react-three/drei';
+import { Layers, Box as BoxIcon } from 'lucide-react';
 import * as THREE from 'three';
 import { CabinetDesign } from '../../types/speaker';
 
@@ -8,7 +9,20 @@ interface CabinetViewer3DProps {
   cabinet: CabinetDesign;
   showDimensions?: boolean;
   exploded?: boolean;
+  /** Mostra il pulsante toggle "vista esplosa" nell'overlay */
+  allowExplode?: boolean;
+  /** Ref popolato col renderer WebGL per catturare screenshot (PDF/PNG) */
+  glRef?: React.MutableRefObject<THREE.WebGLRenderer | null>;
 }
+
+// Ponte per esporre il renderer al parent (cattura immagine per il PDF)
+const CaptureBridge = ({ glRef }: { glRef?: React.MutableRefObject<THREE.WebGLRenderer | null> }) => {
+  const { gl } = useThree();
+  React.useEffect(() => {
+    if (glRef) glRef.current = gl;
+  }, [gl, glRef]);
+  return null;
+};
 
 const ACCENT = '#F27D26';
 
@@ -248,7 +262,7 @@ const RearPanel3D = ({
 };
 
 // ─── Modello completo della cassa ─────────────────────────────────────────────
-const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
+const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; exploded?: boolean }) => {
   const bumpTex = useMemo(() => createTexturedBump(), []);
   const woodTex = useMemo(() => createWoodTexture(), []);
   const finish = resolveFinish(cabinet.finish);
@@ -313,6 +327,10 @@ const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
     [-w / 2 + footR * 1.6, -h / 2 - footH / 2, -d / 2 + footR * 1.6],
   ];
 
+  // Vista esplosa: componenti frontali avanti, piastra posteriore indietro
+  const exF = exploded ? d * 0.55 : 0; // offset avanti (driver/porte/badge)
+  const exR = exploded ? d * 0.55 : 0; // offset indietro (piastra retro)
+
   return (
     <group>
       {/* Corpo cassa — materiale in base alla finitura scelta */}
@@ -334,25 +352,25 @@ const CabinetModel = ({ cabinet }: { cabinet: CabinetDesign }) => {
       </mesh>
 
       {/* Driver */}
-      <group position={[0, driverY, 0]}>
+      <group position={[0, driverY, exF]}>
         <Driver3D mountRadius={driverR} boltCount={cabinet.driverCutout.boltCount} z={d / 2 + 0.004} />
       </group>
 
       {/* Porte bass-reflex (una o più) */}
       {ports.map((p, i) => (
-        <group key={i} position={[p.px, p.py, 0]}>
+        <group key={i} position={[p.px, p.py, exF * 0.6]}>
           <Port3D radius={p.pr} length={portLen} z={d / 2 + 0.002} />
         </group>
       ))}
 
       {/* Badge brand sul baffle */}
-      <mesh position={[0, -h / 2 + bevel + 0.018, d / 2 + 0.003]}>
+      <mesh position={[0, -h / 2 + bevel + 0.018, d / 2 + 0.003 + exF]}>
         <boxGeometry args={[Math.min(w * 0.22, 0.13), 0.006, 0.002]} />
         <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.18} roughness={0.5} metalness={0.3} />
       </mesh>
 
       {/* Piastra posteriore */}
-      <RearPanel3D hasAmp={rearHasAmp} z={-d / 2 - 0.001} y={-h * 0.12} />
+      <RearPanel3D hasAmp={rearHasAmp} z={-d / 2 - 0.001 - exR} y={-h * 0.12} />
 
       {/* Piedini */}
       {footPositions.map((p, i) => (
@@ -401,7 +419,12 @@ const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
 export const CabinetViewer3D = ({
   cabinet,
   exploded = false,
+  allowExplode = false,
+  glRef,
 }: CabinetViewer3DProps) => {
+  const [explodedState, setExplodedState] = useState(exploded);
+  const isExploded = allowExplode ? explodedState : exploded;
+
   const maxDim = Math.max(
     cabinet.externalDimensions.width,
     cabinet.externalDimensions.height,
@@ -421,7 +444,8 @@ export const CabinetViewer3D = ({
 
   return (
     <div className="w-full h-full min-h-[400px] bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
-      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 42 }}>
+      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 42 }} gl={{ preserveDrawingBuffer: true }}>
+        <CaptureBridge glRef={glRef} />
         <color attach="background" args={['#0c0c0e']} />
         <fog attach="fog" args={['#0c0c0e', dist * 2, dist * 4.5]} />
 
@@ -432,7 +456,7 @@ export const CabinetViewer3D = ({
 
         <Suspense fallback={null}>
           <group position={[0, groundY * -0.15, 0]}>
-            <CabinetModel cabinet={cabinet} />
+            <CabinetModel cabinet={cabinet} exploded={isExploded} />
           </group>
 
           {/* Riflessi da studio (procedurali, senza rete) */}
@@ -457,7 +481,7 @@ export const CabinetViewer3D = ({
 
         <OrbitControls
           makeDefault
-          autoRotate={!exploded}
+          autoRotate={!isExploded}
           autoRotateSpeed={0.7}
           enablePan={false}
           enableZoom
@@ -474,6 +498,24 @@ export const CabinetViewer3D = ({
           {cabinet.name}
         </div>
       </div>
+
+      {/* Toggle vista esplosa */}
+      {allowExplode && (
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button
+            onClick={() => setExplodedState(v => !v)}
+            className={`backdrop-blur-md border px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors ${
+              isExploded
+                ? 'bg-brand-orange text-white border-brand-orange'
+                : 'bg-zinc-900/80 text-white/80 border-white/10 hover:border-white/30'
+            }`}
+          >
+            {isExploded ? <BoxIcon className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
+            {isExploded ? 'Vista assemblata' : 'Vista esplosa'}
+          </button>
+        </div>
+      )}
+
       <div className="absolute bottom-4 right-4 flex gap-2">
         <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/50 font-medium flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />

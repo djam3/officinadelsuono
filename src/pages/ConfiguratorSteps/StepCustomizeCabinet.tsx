@@ -231,7 +231,7 @@ export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinet
               </span>
             </div>
             <div className="h-[460px] rounded-xl overflow-hidden">
-              <CabinetViewer3D cabinet={cabinet} />
+              <CabinetViewer3D cabinet={cabinet} allowExplode />
             </div>
           </div>
 
