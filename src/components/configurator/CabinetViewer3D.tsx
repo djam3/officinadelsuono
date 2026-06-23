@@ -1,6 +1,7 @@
-import React, { useMemo, Suspense, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer } from '@react-three/drei';
+import React, { useMemo, Suspense, useState, useRef } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer, MeshReflectorMaterial, Float } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
 import { Layers, Box as BoxIcon } from 'lucide-react';
 import * as THREE from 'three';
 import { CabinetDesign } from '../../types/speaker';
@@ -184,7 +185,7 @@ const Port3D = ({ radius, length, z }: { radius: number; length: number; z: numb
     <group position={[0, 0, z]}>
       {/* Svasatura anteriore */}
       <mesh position={[0, 0, 0]}>
-        <torusGeometry args={[radius, radius * 0.22, 16, 40]} />
+        <torusGeometry args={[radius, radius * 0.14, 16, 40]} />
         <meshStandardMaterial color="#0c0c0d" roughness={0.6} metalness={0.2} />
       </mesh>
       {/* Tubo interno */}
@@ -282,38 +283,40 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
   const wtMm = cabinet.woodThickness;
   const internalWmm = widthMm - 2 * wtMm;
 
+  const hasFrontPorts = (front?.holes?.filter((hh) => hh.type === 'port').length ?? 0) > 0;
   const driverRraw = ((driverHole?.diameter ?? cabinet.driverCutout.diameter) / 2) / 1000;
-  // Clamp: il driver non deve mai eccedere il baffle (alcuni progetti generano
-  // casse leggermente più piccole del driver). Mantiene il render plausibile.
-  const baffleMaxR = (Math.min(w, h) / 2) * 0.9;
+  // Clamp: il driver non deve mai eccedere il baffle. Se ci sono porte frontali
+  // lascia spazio sotto, quindi lo limita un filo di più.
+  const baffleMaxR = (Math.min(w, h) / 2) * (hasFrontPorts ? 0.82 : 0.9);
   const driverR = Math.min(driverRraw, baffleMaxR);
-  let driverY = driverHole
-    ? (-heightMm / 2 + wtMm + driverHole.y) / 1000
-    : h * 0.06;
+  // Con porte frontali, alza il driver per liberare la fila inferiore.
+  let driverY = hasFrontPorts ? (h * 0.5 - driverR - 0.02) : (driverHole ? (-heightMm / 2 + wtMm + driverHole.y) / 1000 : h * 0.06);
   // Mantieni il driver interamente dentro l'altezza della cassa
   const driverYLimit = h / 2 - driverR - 0.006;
   driverY = Math.max(-driverYLimit, Math.min(driverYLimit, driverY));
 
-  const portR = portHoles[0]?.diameter ? (portHoles[0].diameter / 2) / 1000 : 0;
   const portLen = cabinet.port?.length ? Math.min(cabinet.port.length / 1000, d * 0.7) : 0.1;
 
-  // Calcola la posizione (x,y) di ciascuna porta sul baffle, con anti-collisione
-  // rispetto al driver: se una porta finisce sotto il driver, scende in basso.
-  const ports = portHoles.map((ph, i) => {
-    const pr = ph.diameter ? (ph.diameter / 2) / 1000 : portR;
-    let px = ((ph.x - internalWmm / 2) / 1000);
-    let py = (-heightMm / 2 + wtMm + ph.y) / 1000;
-    const verticalGap = Math.abs(driverY - py);
-    if (verticalGap < driverR + pr * 1.4) {
-      py = (-h / 2) + pr + 0.022;
-      // distribuisce le porte basse simmetricamente se più di una
-      if (portHoles.length > 1) {
-        const spread = (w / 2) - pr - 0.022;
-        px = -spread + (2 * spread * i) / (portHoles.length - 1 || 1);
-      }
-    }
-    return { px, py, pr };
-  });
+  // Disposizione porte: fila ordinata lungo il bordo inferiore del baffle.
+  // Raggio "visivo" limitato così N porte stanno in fila senza accavallarsi
+  // né invadere il driver (le specifiche reali sono nei dati/PDF).
+  const nPorts = portHoles.length;
+  const ports = (() => {
+    if (nPorts === 0) return [] as { px: number; py: number; pr: number }[];
+    const realPr = portHoles[0].diameter ? (portHoles[0].diameter / 2) / 1000 : 0.04;
+    const gap = 0.012;
+    // raggio massimo che fa stare nPorts in fila nell'85% della larghezza
+    const fitPr = ((w * 0.85) / nPorts) / 2 - gap;
+    const pr = Math.max(0.018, Math.min(realPr, fitPr, h * 0.13));
+    const rowY = (-h / 2) + pr + 0.018; // appena sopra il bordo inferiore
+    const totalW = nPorts * (2 * pr) + (nPorts - 1) * gap;
+    const startX = -totalW / 2 + pr;
+    return portHoles.map((_, i) => ({
+      px: startX + i * (2 * pr + gap),
+      py: rowY,
+      pr,
+    }));
+  })();
   const rearHasAmp = !!cabinet.ampCutout;
 
   const bevel = Math.min(w, h, d) * 0.025;
@@ -333,15 +336,18 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
 
   return (
     <group>
-      {/* Corpo cassa — materiale in base alla finitura scelta */}
+      {/* Corpo cassa — materiale fisico con clearcoat (effetto laccato premium) */}
       <RoundedBox args={[w, h, d]} radius={bevel} smoothness={4} castShadow receiveShadow>
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           color={finish.color}
           roughness={finish.roughness}
           metalness={finish.metalness}
           map={finish.useWood ? woodTex : undefined}
           bumpMap={finish.useWood ? woodTex : bumpTex}
           bumpScale={finish.useWood ? 0.004 : 0.0018}
+          clearcoat={finish.useWood ? 0.2 : 0.7}
+          clearcoatRoughness={finish.useWood ? 0.5 : 0.28}
+          envMapIntensity={1.1}
         />
       </RoundedBox>
 
@@ -416,6 +422,46 @@ const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
   );
 };
 
+// ─── Reveal + showcase: entra in scala e poi oscilla dolcemente attorno al
+//     fronte (mostra sempre il driver, mai il retro spoglio) ──────────────────
+const RevealGroup = ({ children, sway = true }: { children: React.ReactNode; sway?: boolean }) => {
+  const ref = useRef<THREE.Group>(null);
+  const t = useRef(0);
+  useFrame((_, delta) => {
+    if (!ref.current) return;
+    t.current += delta;
+    const intro = Math.min(1, t.current / 0.9);
+    const e = 1 - Math.pow(1 - intro, 3); // ease-out cubic
+    ref.current.scale.setScalar(0.82 + 0.18 * e);
+    // oscillazione lieve (~7°) attorno al fronte: vita senza nascondere il driver
+    const swayAngle = sway ? Math.sin(t.current * 0.5) * 0.12 : 0;
+    ref.current.rotation.y = (1 - e) * -0.35 + swayAngle * e;
+  });
+  return <group ref={ref}>{children}</group>;
+};
+
+// ─── Spotlight da palco con cono morbido ──────────────────────────────────────
+const StageLight = ({ y }: { y: number }) => {
+  const target = useMemo(() => new THREE.Object3D(), []);
+  return (
+    <>
+      <primitive object={target} position={[0, y, 0]} />
+      <spotLight
+        position={[0, 4.2, 1.2]}
+        target={target}
+        angle={0.6}
+        penumbra={1}
+        intensity={4.2}
+        distance={16}
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0001}
+        color="#fff4ea"
+      />
+    </>
+  );
+};
+
 export const CabinetViewer3D = ({
   cabinet,
   exploded = false,
@@ -430,8 +476,9 @@ export const CabinetViewer3D = ({
     cabinet.externalDimensions.height,
     cabinet.externalDimensions.depth
   ) / 1000;
-  const dist = Math.max(maxDim * 2.1, 0.9);
-  const camPos: [number, number, number] = [dist * 0.78, dist * 0.42, dist * 0.95];
+  const dist = Math.max(maxDim * 2.0, 0.9);
+  // Camera quasi frontale, leggermente di 3/4: il driver resta protagonista
+  const camPos: [number, number, number] = [dist * 0.42, dist * 0.3, dist * 1.15];
   const groundY = -(cabinet.externalDimensions.height / 1000) / 2 - 0.014;
 
   if (!isWebGLAvailable()) {
@@ -443,59 +490,114 @@ export const CabinetViewer3D = ({
   }
 
   return (
-    <div className="w-full h-full min-h-[400px] bg-gradient-to-b from-zinc-900 to-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
-      <Canvas shadows dpr={[1, 2]} camera={{ position: camPos, fov: 42 }} gl={{ preserveDrawingBuffer: true }}>
+    <div className="w-full h-full min-h-[400px] rounded-2xl border border-white/5 overflow-hidden relative">
+      {/* Backdrop a gradiente radiale dietro la scena (profondità da showroom) */}
+      <div
+        className="absolute inset-0 -z-0"
+        style={{
+          background:
+            'radial-gradient(120% 90% at 50% 18%, #20222b 0%, #131418 42%, #07070a 100%)',
+        }}
+      />
+      <Canvas
+        shadows
+        dpr={[1, 2]}
+        camera={{ position: camPos, fov: 40 }}
+        gl={{ preserveDrawingBuffer: true, antialias: true, toneMappingExposure: 1.45 }}
+        style={{ background: 'transparent' }}
+      >
         <CaptureBridge glRef={glRef} />
-        <color attach="background" args={['#0c0c0e']} />
-        <fog attach="fog" args={['#0c0c0e', dist * 2, dist * 4.5]} />
+        <fog attach="fog" args={['#0b0b0f', dist * 3.2, dist * 6.5]} />
 
-        <ambientLight intensity={0.35} />
-        <directionalLight position={[3, 5, 4]} intensity={1.4} castShadow shadow-mapSize={[1024, 1024]} />
-        <directionalLight position={[-4, 2, -2]} intensity={0.5} color="#9db4ff" />
-        <pointLight position={[0, 1, 3]} intensity={0.4} />
+        {/* Studio a 3 punti, luminoso e drammatico */}
+        <ambientLight intensity={0.5} />
+        <hemisphereLight intensity={0.5} color="#ffffff" groundColor="#1a1a22" />
+        <StageLight y={groundY} />
+        {/* Key light calda */}
+        <spotLight position={[4, 6, 5]} angle={0.5} penumbra={0.85} intensity={5.5} distance={22} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} color="#fff4e8" />
+        {/* Fill fredda */}
+        <directionalLight position={[-5, 2.5, 3]} intensity={1.3} color="#bcd0ff" />
+        {/* Rim light arancione dietro per stacco drammatico */}
+        <spotLight position={[-3, 2.2, -4]} angle={0.8} penumbra={1} intensity={4.5} color={ACCENT} distance={16} />
+        <pointLight position={[4, 1, -3]} intensity={1.1} color="#ffb877" />
 
         <Suspense fallback={null}>
-          <group position={[0, groundY * -0.15, 0]}>
-            <CabinetModel cabinet={cabinet} exploded={isExploded} />
-          </group>
+          <RevealGroup sway={!isExploded}>
+            <Float speed={1.1} rotationIntensity={0} floatIntensity={isExploded ? 0 : 0.35} floatingRange={[-0.008, 0.018]}>
+              <group position={[0, groundY * -0.15, 0]}>
+                <CabinetModel cabinet={cabinet} exploded={isExploded} />
+              </group>
+            </Float>
+          </RevealGroup>
 
-          {/* Riflessi da studio (procedurali, senza rete) */}
-          <Environment resolution={256}>
-            <Lightformer intensity={2.2} position={[0, 3, 2]} scale={[4, 4, 1]} />
-            <Lightformer intensity={1.1} position={[-3, 1, 2]} scale={[3, 3, 1]} color="#aac4ff" />
-            <Lightformer intensity={1.3} position={[3, 2, 1]} scale={[2, 2, 1]} color="#ffd9b0" />
-            <Lightformer intensity={0.8} position={[0, -2, -2]} scale={[4, 2, 1]} />
-          </Environment>
+          {/* Pavimento riflettente da showroom */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, groundY, 0]} receiveShadow>
+            <planeGeometry args={[50, 50]} />
+            <MeshReflectorMaterial
+              resolution={1024}
+              mixBlur={1}
+              mixStrength={6}
+              blur={[420, 120]}
+              roughness={0.92}
+              depthScale={1.1}
+              minDepthThreshold={0.4}
+              maxDepthThreshold={1.4}
+              color="#0a0a0d"
+              metalness={0.55}
+              mirror={0.35}
+            />
+          </mesh>
 
-          {/* Ombra di contatto a terra */}
+          {/* Ombra di contatto morbida sopra il pavimento */}
           <ContactShadows
-            position={[0, groundY, 0]}
-            opacity={0.55}
-            scale={Math.max(w_scale(cabinet), 1.2)}
-            blur={2.4}
-            far={maxDim * 1.2}
-            resolution={512}
+            position={[0, groundY + 0.001, 0]}
+            opacity={0.65}
+            scale={Math.max(w_scale(cabinet), 1.4)}
+            blur={2.8}
+            far={maxDim * 1.4}
+            resolution={1024}
             color="#000000"
           />
+
+          {/* Riflessi da studio (procedurali, senza rete) */}
+          <Environment resolution={512}>
+            <Lightformer intensity={2.6} position={[0, 3, 2]} scale={[5, 5, 1]} />
+            <Lightformer intensity={1.3} position={[-4, 1, 2]} scale={[3, 4, 1]} color="#aac4ff" />
+            <Lightformer intensity={1.6} position={[4, 2, 1]} scale={[2.5, 3, 1]} color="#ffd9b0" />
+            <Lightformer intensity={1.0} position={[0, -2, -3]} scale={[6, 3, 1]} color={ACCENT} />
+          </Environment>
         </Suspense>
+
+        {/* Post-processing: bloom sugli accenti + vignettatura + antialias */}
+        <EffectComposer multisampling={0} enableNormalPass={false}>
+          <Bloom mipmapBlur intensity={0.7} luminanceThreshold={0.7} luminanceSmoothing={0.3} radius={0.8} />
+          <Vignette eskil={false} offset={0.4} darkness={0.5} />
+          <SMAA />
+        </EffectComposer>
 
         <OrbitControls
           makeDefault
-          autoRotate={!isExploded}
-          autoRotateSpeed={0.7}
+          autoRotate={false}
           enablePan={false}
           enableZoom
+          enableDamping
+          dampingFactor={0.08}
           minDistance={dist * 0.55}
           maxDistance={dist * 2.4}
-          minPolarAngle={Math.PI * 0.12}
-          maxPolarAngle={Math.PI * 0.62}
+          minPolarAngle={Math.PI * 0.1}
+          maxPolarAngle={Math.PI * 0.6}
         />
       </Canvas>
 
-      {/* Overlay UI */}
-      <div className="absolute top-4 left-4 flex gap-2">
-        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/70 font-medium">
-          {cabinet.name}
+      {/* Cornice luminosa interna (vetro premium) */}
+      <div className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/10" />
+      <div className="pointer-events-none absolute -inset-px rounded-2xl" style={{ boxShadow: 'inset 0 1px 40px rgba(242,125,38,0.06)' }} />
+
+      {/* Badge nome progetto */}
+      <div className="absolute top-4 left-4 flex flex-col gap-2">
+        <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3.5 py-2 rounded-xl shadow-lg">
+          <div className="text-[9px] uppercase tracking-[0.2em] text-brand-orange font-black">Officina del Suono</div>
+          <div className="text-xs text-white/90 font-bold leading-tight mt-0.5 max-w-[180px] truncate">{cabinet.name}</div>
         </div>
       </div>
 
@@ -504,10 +606,10 @@ export const CabinetViewer3D = ({
         <div className="absolute top-4 right-4 flex gap-2">
           <button
             onClick={() => setExplodedState(v => !v)}
-            className={`backdrop-blur-md border px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors ${
+            className={`backdrop-blur-xl border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg ${
               isExploded
-                ? 'bg-brand-orange text-white border-brand-orange'
-                : 'bg-zinc-900/80 text-white/80 border-white/10 hover:border-white/30'
+                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_0_20px_rgba(242,125,38,0.45)]'
+                : 'bg-black/40 text-white/80 border-white/10 hover:border-white/30 hover:text-white'
             }`}
           >
             {isExploded ? <BoxIcon className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
@@ -516,10 +618,10 @@ export const CabinetViewer3D = ({
         </div>
       )}
 
-      <div className="absolute bottom-4 right-4 flex gap-2">
-        <div className="bg-zinc-900/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-xs text-white/50 font-medium flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-brand-orange animate-pulse" />
-          Trascina per ruotare
+      <div className="pointer-events-none absolute bottom-4 right-4 flex gap-2">
+        <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-xl text-[11px] text-white/60 font-medium flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse" />
+          Trascina per ruotare · scorri per zoom
         </div>
       </div>
     </div>

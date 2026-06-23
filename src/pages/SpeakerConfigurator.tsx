@@ -109,7 +109,16 @@ export default function SpeakerConfigurator() {
         <div className="max-w-6xl mx-auto px-6 py-6">
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold tracking-tight">
-              <span className="text-[#F27D26]">Speaker</span>{t('configurator.title')}
+              {(() => {
+                const title = t('configurator.title');
+                const [first, ...rest] = title.split(' ');
+                return (
+                  <>
+                    <span className="text-[#F27D26]">{first}</span>
+                    {rest.length > 0 ? ` ${rest.join(' ')}` : ''}
+                  </>
+                );
+              })()}
             </h1>
             <div className="text-sm font-medium text-zinc-400 tabular-nums">
               Step <span className="text-white font-bold">{step}</span> / {STEPS.length}
