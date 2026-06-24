@@ -597,7 +597,9 @@ export function calculateFullCabinet(
     driverCutout,
     ampCutout,
     handleCutouts,
-    finish: 'Vernice nera testurizzata anti-graffio (o a scelta cliente)',
+    // Di default la cassa è mostrata in LEGNO GREZZO alle misure reali.
+    // Le finiture (nero/bianco) si applicano solo se scelte dal cliente (step 4).
+    finish: 'natural',
     estimatedWeight,
     assemblyNotes,
   };

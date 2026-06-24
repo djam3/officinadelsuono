@@ -54,7 +54,10 @@ const createTexturedBump = () => {
   return texture;
 };
 
-// ─── Texture procedurale: venatura legno (color map per finitura naturale) ───
+// ─── Texture procedurale: MDF/HDF GREZZO realistico (color map) ──────────────
+//  L'MDF reale è una superficie opaca, color tabacco chiaro uniforme, con
+//  grana fibrosa finissima e qualche micro-screziatura più scura. NON ha
+//  venature marcate (quello è il legno massello/multistrato).
 const createWoodTexture = () => {
   const w = 512, h = 512;
   const canvas = document.createElement('canvas');
@@ -62,32 +65,36 @@ const createWoodTexture = () => {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    // base legno chiaro (betulla/multistrato)
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, '#c79a68');
-    grad.addColorStop(0.5, '#b8895a');
-    grad.addColorStop(1, '#a87a4d');
-    ctx.fillStyle = grad;
+    // base tabacco chiaro tipica dell'MDF
+    ctx.fillStyle = '#c2a06e';
     ctx.fillRect(0, 0, w, h);
-    // venature verticali ondulate
-    for (let i = 0; i < 90; i++) {
-      const x = Math.random() * w;
-      const amp = 4 + Math.random() * 12;
-      const tone = 90 + Math.random() * 70;
-      ctx.strokeStyle = `rgba(${tone - 30},${tone - 55},${tone - 80},${0.06 + Math.random() * 0.12})`;
-      ctx.lineWidth = 0.5 + Math.random() * 2.2;
+    // micro-fibra: tantissimi punti fini chiari/scuri (aspetto pressato)
+    for (let i = 0; i < 60000; i++) {
+      const x = Math.random() * w, y = Math.random() * h;
+      const d = (Math.random() - 0.5) * 46;
+      const r = 168 + d, g = 134 + d * 0.85, b = 92 + d * 0.7;
+      ctx.fillStyle = `rgba(${r|0},${g|0},${b|0},0.5)`;
+      ctx.fillRect(x, y, 1, 1);
+    }
+    // leggere chiazze morbide di densità (non uniformità del pannello)
+    for (let i = 0; i < 60; i++) {
+      const x = Math.random() * w, y = Math.random() * h;
+      const rad = 20 + Math.random() * 70;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      const a = 0.04 + Math.random() * 0.05;
+      g.addColorStop(0, `rgba(120,92,55,${a})`);
+      g.addColorStop(1, 'rgba(120,92,55,0)');
+      ctx.fillStyle = g;
       ctx.beginPath();
-      for (let y = 0; y <= h; y += 8) {
-        const xx = x + Math.sin((y / h) * Math.PI * (1 + Math.random())) * amp;
-        y === 0 ? ctx.moveTo(xx, y) : ctx.lineTo(xx, y);
-      }
-      ctx.stroke();
+      ctx.arc(x, y, rad, 0, Math.PI * 2);
+      ctx.fill();
     }
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1.5, 1.5);
+  texture.repeat.set(2.2, 2.2);
+  texture.anisotropy = 8;
   return texture;
 };
 
@@ -100,15 +107,18 @@ interface FinishStyle {
   useWood: boolean;
 }
 const FINISH_STYLES: Record<string, FinishStyle> = {
-  natural: { color: '#b8895a', baffleColor: '#8a6038', roughness: 0.72, metalness: 0.05, useWood: true },
+  // color bianco = lascia trasparire i colori veri della texture MDF (la map moltiplica)
+  natural: { color: '#ffffff', baffleColor: '#b59468', roughness: 0.86, metalness: 0.0, useWood: true },
   black:   { color: '#191a1d', baffleColor: '#0f1012', roughness: 0.82, metalness: 0.14, useWood: false },
   white:   { color: '#e9e9ec', baffleColor: '#cfd0d4', roughness: 0.55, metalness: 0.10, useWood: false },
 };
 const resolveFinish = (finish?: string): FinishStyle => {
   const f = (finish || '').toLowerCase();
-  if (f.includes('natural') || f.includes('legno')) return FINISH_STYLES.natural;
+  // Solo se il cliente sceglie esplicitamente nero/bianco si applica la vernice.
+  if (f.includes('black') || f.includes('ner')) return FINISH_STYLES.black;
   if (f.includes('white') || f.includes('bianc')) return FINISH_STYLES.white;
-  return FINISH_STYLES.black;
+  // Default: LEGNO GREZZO alle misure reali (prima visualizzazione).
+  return FINISH_STYLES.natural;
 };
 
 // ─── Driver 3D realistico (cestello, sospensione, cono, dust cap, bulloni) ───
@@ -297,23 +307,24 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
 
   const portLen = cabinet.port?.length ? Math.min(cabinet.port.length / 1000, d * 0.7) : 0.1;
 
-  // Disposizione porte: fila ordinata lungo il bordo inferiore del baffle.
-  // Raggio "visivo" limitato così N porte stanno in fila senza accavallarsi
-  // né invadere il driver (le specifiche reali sono nei dati/PDF).
+  // Disposizione porte negli ANGOLI liberi del baffle: un driver grande occupa
+  // il centro (cerchio), gli angoli restano liberi. Così le porte non si
+  // accavallano mai col driver. Ordine: basso-dx, basso-sx, alto-dx, alto-sx.
   const nPorts = portHoles.length;
   const ports = (() => {
     if (nPorts === 0) return [] as { px: number; py: number; pr: number }[];
     const realPr = portHoles[0].diameter ? (portHoles[0].diameter / 2) / 1000 : 0.04;
-    const gap = 0.012;
-    // raggio massimo che fa stare nPorts in fila nell'85% della larghezza
-    const fitPr = ((w * 0.85) / nPorts) / 2 - gap;
-    const pr = Math.max(0.018, Math.min(realPr, fitPr, h * 0.13));
-    const rowY = (-h / 2) + pr + 0.018; // appena sopra il bordo inferiore
-    const totalW = nPorts * (2 * pr) + (nPorts - 1) * gap;
-    const startX = -totalW / 2 + pr;
-    return portHoles.map((_, i) => ({
-      px: startX + i * (2 * pr + gap),
-      py: rowY,
+    const m = 0.02; // margine dal bordo
+    const pr = Math.max(0.016, Math.min(realPr, 0.05, (Math.min(w, h) * 0.5 - driverR) * 0.42));
+    const corners: [number, number][] = [
+      [ (w / 2 - pr - m),  -(h / 2 - pr - m)],
+      [-(w / 2 - pr - m),  -(h / 2 - pr - m)],
+      [ (w / 2 - pr - m),   (h / 2 - pr - m)],
+      [-(w / 2 - pr - m),   (h / 2 - pr - m)],
+    ];
+    return portHoles.slice(0, 4).map((_, i) => ({
+      px: corners[i][0],
+      py: corners[i][1],
       pr,
     }));
   })();
@@ -345,16 +356,22 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
           map={finish.useWood ? woodTex : undefined}
           bumpMap={finish.useWood ? woodTex : bumpTex}
           bumpScale={finish.useWood ? 0.004 : 0.0018}
-          clearcoat={finish.useWood ? 0.2 : 0.7}
-          clearcoatRoughness={finish.useWood ? 0.5 : 0.28}
-          envMapIntensity={1.1}
+          clearcoat={finish.useWood ? 0.05 : 0.7}
+          clearcoatRoughness={finish.useWood ? 0.6 : 0.28}
+          envMapIntensity={finish.useWood ? 0.6 : 1.1}
         />
       </RoundedBox>
 
-      {/* Baffle frontale leggermente ribassato per profondità visiva */}
+      {/* Baffle frontale leggermente ribassato per profondità visiva.
+          In legno grezzo usa la stessa texture MDF (stesso materiale del corpo). */}
       <mesh position={[0, 0, d / 2 + 0.0008]}>
         <planeGeometry args={[w - bevel * 2, h - bevel * 2]} />
-        <meshStandardMaterial color={finish.baffleColor} roughness={0.7} metalness={finish.metalness + 0.04} />
+        <meshStandardMaterial
+          color={finish.useWood ? '#efe0c6' : finish.baffleColor}
+          map={finish.useWood ? woodTex : undefined}
+          roughness={finish.useWood ? 0.85 : 0.7}
+          metalness={finish.useWood ? 0 : finish.metalness + 0.04}
+        />
       </mesh>
 
       {/* Driver */}
