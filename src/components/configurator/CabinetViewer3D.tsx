@@ -336,6 +336,104 @@ const RearPanel3D = ({
   );
 };
 
+// ─── Texture forata per la griglia metallica (alphaMap) ──────────────────────
+//  bianco = metallo (opaco), nero = foro (trasparente)
+const createGrilleAlpha = () => {
+  const s = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = s;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, s, s);
+    const step = 13, rad = 4.6;
+    ctx.fillStyle = '#000000';
+    let row = 0;
+    for (let y = step / 2; y < s; y += step, row++) {
+      for (let x = step / 2; x < s; x += step) {
+        const ox = row % 2 ? step / 2 : 0; // fori sfalsati (nido d'ape)
+        ctx.beginPath();
+        ctx.arc(x + ox, y, rad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+  const t = new THREE.CanvasTexture(canvas);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+};
+
+// ─── Griglia metallica forata professionale (stile FBT/RCF) ──────────────────
+const FrontGrille = ({ w, h, z }: { w: number; h: number; z: number }) => {
+  const alpha = useMemo(() => {
+    const t = createGrilleAlpha();
+    t.repeat.set(Math.max(6, Math.round(w * 22)), Math.max(6, Math.round(h * 22)));
+    t.anisotropy = 16;
+    return t;
+  }, [w, h]);
+  const fr = 0.014; // spessore cornice
+  const frameMat = <meshStandardMaterial color="#0b0b0c" roughness={0.5} metalness={0.6} />;
+  return (
+    <group position={[0, 0, z]}>
+      {/* tela forata (driver visibile in trasparenza attraverso i fori) */}
+      <mesh>
+        <planeGeometry args={[w, h]} />
+        <meshStandardMaterial
+          color="#15161a" metalness={0.9} roughness={0.42}
+          alphaMap={alpha} transparent alphaTest={0.5} side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* cornice perimetrale (4 barre) */}
+      <mesh position={[0, h / 2 - fr / 2, 0.002]}><boxGeometry args={[w, fr, 0.01]} />{frameMat}</mesh>
+      <mesh position={[0, -h / 2 + fr / 2, 0.002]}><boxGeometry args={[w, fr, 0.01]} />{frameMat}</mesh>
+      <mesh position={[-w / 2 + fr / 2, 0, 0.002]}><boxGeometry args={[fr, h, 0.01]} />{frameMat}</mesh>
+      <mesh position={[w / 2 - fr / 2, 0, 0.002]}><boxGeometry args={[fr, h, 0.01]} />{frameMat}</mesh>
+    </group>
+  );
+};
+
+// ─── Paraspigolo in ABS (corner protector, stile pro) ────────────────────────
+const CornerGuard = ({ pos, s }: { pos: [number, number, number]; s: number }) => (
+  <mesh position={pos} castShadow>
+    <boxGeometry args={[s, s, s]} />
+    <meshStandardMaterial color="#0a0a0b" roughness={0.7} metalness={0.15} />
+  </mesh>
+);
+
+// ─── Maniglia laterale incassata (barra in alluminio) ────────────────────────
+const SideHandle = ({ x, y, depth }: { x: number; y: number; depth: number }) => {
+  const sign = Math.sign(x) || 1;
+  const recessW = Math.min(depth * 0.5, 0.16);
+  return (
+    <group position={[x, y, 0]} rotation={[0, sign * Math.PI / 2, 0]}>
+      {/* incasso scuro */}
+      <mesh position={[0, 0, -0.006]}>
+        <boxGeometry args={[recessW, 0.075, 0.03]} />
+        <meshStandardMaterial color="#050506" roughness={0.85} />
+      </mesh>
+      {/* barra di presa */}
+      <mesh position={[0, 0, 0.004]}>
+        <boxGeometry args={[recessW * 0.82, 0.022, 0.016]} />
+        <meshStandardMaterial color="#3a3d42" roughness={0.4} metalness={0.85} />
+      </mesh>
+    </group>
+  );
+};
+
+// ─── Coppa per palo M20 (recessed pole cup) ──────────────────────────────────
+const PoleCup = ({ y, up }: { y: number; up: boolean }) => (
+  <group position={[0, y, 0]} rotation={[up ? -Math.PI / 2 : Math.PI / 2, 0, 0]}>
+    <mesh>
+      <cylinderGeometry args={[0.026, 0.026, 0.018, 24]} />
+      <meshStandardMaterial color="#1a1b1e" roughness={0.5} metalness={0.7} />
+    </mesh>
+    <mesh position={[0, 0.006, 0]}>
+      <cylinderGeometry args={[0.019, 0.019, 0.02, 24]} />
+      <meshStandardMaterial color="#050506" roughness={0.9} />
+    </mesh>
+  </group>
+);
+
 // ─── Modello completo della cassa ─────────────────────────────────────────────
 const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: CabinetDesign; exploded?: boolean; baffleDrivers?: SpeakerDriver[] }) => {
   const bumpTex = useMemo(() => createTexturedBump(), []);
@@ -429,6 +527,17 @@ const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: C
     [-w / 2 + footR * 1.6, -h / 2 - footH / 2, -d / 2 + footR * 1.6],
   ];
 
+  // Top (2/3 vie con tromba/tweeter) vs Sub (solo grave)
+  const types = (baffleDrivers ?? []).map((dr) => dr.type);
+  const isTop = types.includes('tweeter') || types.includes('compression-driver');
+
+  // Paraspigoli agli 8 vertici
+  const cs = Math.min(w, h, d) * 0.085; // lato del paraspigolo
+  const cornerGuards: [number, number, number][] = [
+    [w / 2, h / 2, d / 2], [-w / 2, h / 2, d / 2], [w / 2, -h / 2, d / 2], [-w / 2, -h / 2, d / 2],
+    [w / 2, h / 2, -d / 2], [-w / 2, h / 2, -d / 2], [w / 2, -h / 2, -d / 2], [-w / 2, -h / 2, -d / 2],
+  ];
+
   // Vista esplosa: componenti frontali avanti, piastra posteriore indietro
   const exF = exploded ? d * 0.55 : 0; // offset avanti (driver/porte/badge)
   const exR = exploded ? d * 0.55 : 0; // offset indietro (piastra retro)
@@ -498,6 +607,26 @@ const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: C
           <meshStandardMaterial color="#050506" roughness={0.9} metalness={0.1} />
         </mesh>
       ))}
+
+      {/* ─── HARDWARE PRO (stile FBT/RCF) — non in vista esplosa ─────────── */}
+      {!exploded && (
+        <>
+          {/* Griglia metallica forata sul fronte (driver visibile attraverso i fori) */}
+          <FrontGrille w={w - bevel * 1.4} h={h - bevel * 1.4} z={d / 2 + 0.02} />
+
+          {/* Maniglie laterali incassate */}
+          <SideHandle x={w / 2 + 0.001} y={h * 0.18} depth={d} />
+          <SideHandle x={-w / 2 - 0.001} y={h * 0.18} depth={d} />
+
+          {/* Coppa per palo: sotto se è un top, sopra (per impilare) se è un sub */}
+          <PoleCup y={isTop ? -h / 2 - 0.0005 : h / 2 + 0.0005} up={!isTop} />
+
+          {/* Paraspigoli ABS agli 8 vertici */}
+          {cornerGuards.map((p, i) => (
+            <CornerGuard key={i} pos={p} s={cs} />
+          ))}
+        </>
+      )}
     </group>
   );
 };
