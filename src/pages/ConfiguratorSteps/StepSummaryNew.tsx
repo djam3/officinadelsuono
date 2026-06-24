@@ -48,8 +48,13 @@ export function StepSummaryNew({
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim());
   const canSubmit = form.name.trim().length > 1 && emailValid && !submitting;
 
-  // Calcola il prezzo
-  const pricing = calculateConfiguratorPrice(driver, amplifier, cabinet);
+  // Driver delle vie alte (medio + tweeter/compressione) oltre al woofer
+  const extraDrivers = (baffleDrivers || []).filter((d) => d.id !== driver.id);
+
+  // Calcola il prezzo (woofer + extra driver + crossover + ampli + cassa)
+  const pricing = calculateConfiguratorPrice(
+    driver, amplifier, cabinet, undefined, undefined, extraDrivers, crossover.length,
+  );
 
   // Taratura limiter per PROTEGGERE il driver: soglia RMS = √(Pe · Z) sulla
   // potenza continua del driver, non dell'ampli. È il valore da impostare nel
@@ -69,6 +74,7 @@ export function StepSummaryNew({
     }
     const doc = generateConfiguratorPDF({
       driver, amplifier, cabinet, pricing, limiterVrms, limiterDbu, renderImage,
+      extraDrivers, crossover,
     });
     const safeName = (cabinet.name || 'configurazione').replace(/[^a-z0-9]+/gi, '-').slice(0, 40);
     doc.save(`OfficinaDelSuono-${safeName}.pdf`);
@@ -172,6 +178,36 @@ export function StepSummaryNew({
               </div>
             </div>
 
+            {/* Driver vie alte (medio / tweeter / compressione) */}
+            {extraDrivers.map((hd) => (
+              <div key={hd.id} className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5 mb-4">
+                <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
+                  <DriverVisual driver={hd} showLabel={false} className="w-full h-full" />
+                </div>
+                <div>
+                  <div className="text-xs text-brand-orange font-bold uppercase">{hd.brand}</div>
+                  <div className="text-lg font-bold">{hd.model}</div>
+                  <div className="text-sm text-zinc-400">
+                    {hd.type === 'compression-driver' ? 'Driver a compressione' : hd.type === 'tweeter' ? 'Tweeter' : 'Medio'} • {hd.powerRMS}W • {hd.impedance}Ω
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Crossover */}
+            {crossover.length > 0 && (
+              <div className="bg-zinc-950/50 p-4 rounded-xl border border-brand-orange/20 mb-4">
+                <div className="text-xs text-brand-orange font-bold uppercase mb-2">Crossover {crossover.length === 1 ? '2 vie' : '3 vie'} (passivo)</div>
+                <div className="flex flex-wrap gap-2">
+                  {crossover.map((x, i) => (
+                    <span key={i} className="text-sm font-mono bg-zinc-900 border border-white/10 rounded-lg px-3 py-1.5">
+                      {x.fc} Hz <span className="text-zinc-500">· {x.order}° {x.family === 'butterworth' ? 'BW' : x.family}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Amplificatore */}
             <div className="flex gap-6 items-center bg-zinc-950/50 p-4 rounded-xl border border-white/5 mb-4">
               <div className="w-20 h-20 bg-zinc-900 rounded-lg flex items-center justify-center p-1.5 shrink-0">
@@ -206,6 +242,26 @@ export function StepSummaryNew({
 
             {/* Breakdown dettagliato */}
             <div className="bg-zinc-950/50 border border-white/5 rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Woofer</span>
+                <span className="font-mono">{formatPrice(pricing.driverPrice)}</span>
+              </div>
+              {pricing.hfMidPrice > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Medio + alti</span>
+                  <span className="font-mono">{formatPrice(pricing.hfMidPrice)}</span>
+                </div>
+              )}
+              {pricing.crossoverPrice > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Crossover</span>
+                  <span className="font-mono">{formatPrice(pricing.crossoverPrice)}</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Amplificazione</span>
+                <span className="font-mono">{formatPrice(pricing.ampPrice)}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-zinc-400">Legno e materiali</span>
                 <span className="font-mono">{formatPrice(pricing.breakdown.materials)}</span>

@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import type { SpeakerDriver, Amplifier, CabinetDesign } from '../types/speaker';
 import type { ConfiguratorPrice } from './configuratorPricing';
 import { formatPrice } from './configuratorPricing';
+import type { XoverPoint } from './crossoverDesign';
 
 interface ConfiguratorPDFData {
   driver: SpeakerDriver;
@@ -11,6 +12,8 @@ interface ConfiguratorPDFData {
   limiterVrms: number;
   limiterDbu: number;
   renderImage?: string | null; // dataURL PNG del render 3D
+  extraDrivers?: SpeakerDriver[];
+  crossover?: XoverPoint[];
 }
 
 const ORANGE: [number, number, number] = [242, 125, 38];
@@ -21,7 +24,7 @@ const DARK: [number, number, number] = [24, 24, 27];
  * pensata come allegato al preventivo per il cliente.
  */
 export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
-  const { driver, amplifier, cabinet, pricing, limiterVrms, limiterDbu, renderImage } = data;
+  const { driver, amplifier, cabinet, pricing, limiterVrms, limiterDbu, renderImage, extraDrivers = [], crossover = [] } = data;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const W = 210;
 
@@ -87,10 +90,21 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
   };
 
   section('Componenti');
-  row('Driver', `${driver.brand} ${driver.model}`);
-  row('Specifiche driver', `${driver.size}" • ${driver.powerRMS}W RMS • ${driver.impedance}Ω`);
+  row('Woofer (grave)', `${driver.brand} ${driver.model}`);
+  row('Specifiche woofer', `${driver.size}" • ${driver.powerRMS}W RMS • ${driver.impedance}Ω`);
+  extraDrivers.forEach((hd) => {
+    const role = hd.type === 'compression-driver' ? 'Driver a compressione' : hd.type === 'tweeter' ? 'Tweeter' : 'Medio';
+    row(role, `${hd.brand} ${hd.model} • ${hd.powerRMS}W • ${hd.impedance}Ω`);
+  });
   row('Amplificatore', `${amplifier.brand} ${amplifier.model}`);
   row('Classe / DSP', `Classe ${amplifier.classType}${amplifier.hasDSP ? ' • DSP integrato' : ''}`);
+
+  if (crossover.length > 0) {
+    section(`Crossover passivo (${crossover.length === 1 ? '2 vie' : '3 vie'})`);
+    crossover.forEach((x) => {
+      row(`Incrocio ${x.from} → ${x.to}`, `${x.fc} Hz • ${x.order}° ord. ${x.family} • ${x.z}Ω`);
+    });
+  }
 
   section('Cassa acustica');
   row('Tipo', cabinet.type === 'sealed' ? 'Cassa chiusa' : 'Bass-reflex');
@@ -114,7 +128,9 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
   y += 8;
 
   section('Preventivo');
-  row('Driver', formatPrice(pricing.driverPrice));
+  row('Woofer', formatPrice(pricing.driverPrice));
+  if (pricing.hfMidPrice > 0) row('Medio + alti', formatPrice(pricing.hfMidPrice));
+  if (pricing.crossoverPrice > 0) row('Crossover', formatPrice(pricing.crossoverPrice));
   row('Amplificatore', formatPrice(pricing.ampPrice));
   row('Cassa (materiali + lavorazione)', formatPrice(pricing.cabinetPrice));
   row('Subtotale', formatPrice(pricing.subtotal));

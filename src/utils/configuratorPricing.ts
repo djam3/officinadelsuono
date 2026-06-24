@@ -43,7 +43,9 @@ const DEFAULT_PRICING: PricingConfig = {
 };
 
 export interface ConfiguratorPrice {
-  driverPrice: number;
+  driverPrice: number;       // woofer (LF)
+  hfMidPrice: number;        // medio + tweeter/driver (vie alte)
+  crossoverPrice: number;    // rete crossover passiva
   ampPrice: number;
   cabinetPrice: number;
   cabinetSubtotal: number;
@@ -58,17 +60,27 @@ export interface ConfiguratorPrice {
 }
 
 /**
- * Calcola il prezzo di una configurazione completa
+ * Calcola il prezzo di una configurazione completa.
+ * @param extraDrivers altoparlanti aggiuntivi (medio, tweeter/driver) oltre al woofer
+ * @param crossoverPoints numero di punti di incrocio (0 sub, 1 due vie, 2 tre vie)
  */
 export function calculateConfiguratorPrice(
   driver: SpeakerDriver,
   amplifier: Amplifier,
   cabinet: CabinetDesign,
   customFinish?: string,
-  config: PricingConfig = DEFAULT_PRICING
+  config: PricingConfig = DEFAULT_PRICING,
+  extraDrivers: SpeakerDriver[] = [],
+  crossoverPoints: number = 0,
 ): ConfiguratorPrice {
   // Prezzo driver (usa campo price se disponibile)
   const driverPrice = (driver as any).price || 200;
+
+  // Prezzo medio + tweeter/driver a compressione
+  const hfMidPrice = extraDrivers.reduce((s, d) => s + ((d as any).price || 0), 0);
+
+  // Rete crossover passiva: ~45€ a punto di incrocio (componenti + circuito)
+  const crossoverPrice = crossoverPoints * 45;
 
   // Prezzo amplificatore
   const ampPrice = (amplifier as any).price || 300;
@@ -85,12 +97,14 @@ export function calculateConfiguratorPrice(
   const laborCost = cabinet.internalVolume * config.laborPerLiter;
 
   const cabinetSubtotal = materialsCost + laborCost;
-  const subtotal = driverPrice + ampPrice + cabinetSubtotal;
+  const subtotal = driverPrice + hfMidPrice + crossoverPrice + ampPrice + cabinetSubtotal;
   const vatAmount = subtotal * config.vat;
   const total = subtotal + vatAmount;
 
   return {
     driverPrice,
+    hfMidPrice,
+    crossoverPrice,
     ampPrice,
     cabinetPrice: cabinetSubtotal,
     cabinetSubtotal,
