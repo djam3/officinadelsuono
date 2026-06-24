@@ -285,11 +285,43 @@ export function StepSummaryNew({
             </div>
           </div>
 
-          {/* Taratura limiter — protezione driver */}
+          {/* Modulo amplificatore + DSP integrato (predisposizione cassa) */}
+          <div className="bg-zinc-900/50 border border-brand-orange/30 rounded-2xl p-6">
+            <h3 className="text-base font-bold flex items-center gap-2 mb-3">
+              <Settings className="w-5 h-5 text-brand-orange" />
+              Modulo Amplificatore + DSP (sul retro)
+            </h3>
+            <p className="text-xs text-zinc-400 mb-4">
+              La cassa è <strong className="text-zinc-200">attiva</strong>: sul pannello posteriore è ricavata la sede
+              per il modulo <strong className="text-zinc-200">{amplifier.brand} {amplifier.model}</strong>, che integra
+              il <strong className="text-zinc-200">DSP</strong>. Dentro al DSP stanno i <strong className="text-zinc-200">filtri crossover</strong> e
+              il <strong className="text-zinc-200">limiter</strong> — non servono componenti passivi.
+            </p>
+            <div className="space-y-2 text-sm">
+              {cabinet.ampCutout && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Sede ampli (fresatura retro)</span>
+                  <span className="font-mono">{cabinet.ampCutout.width}×{cabinet.ampCutout.height}mm</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span className="text-zinc-400">Ventilazione + presa IEC</span>
+                <span className="font-mono">prevista</span>
+              </div>
+              {crossover.length > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Filtri DSP (crossover)</span>
+                  <span className="font-mono">{crossover.map(x => `${x.fc}Hz`).join(' / ')}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Taratura limiter — parametro del DSP, protegge il driver */}
           <div className="bg-zinc-900/50 border border-amber-500/30 rounded-2xl p-6">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-5 h-5 text-amber-400" />
-              <h3 className="text-base font-bold">Taratura Limiter (protezione driver)</h3>
+              <h3 className="text-base font-bold">Limiter (nel DSP) — protezione driver</h3>
             </div>
             <p className="text-xs text-zinc-400 mb-4">
               Imposta il limiter RMS del DSP/amplificatore a questa soglia per non superare mai

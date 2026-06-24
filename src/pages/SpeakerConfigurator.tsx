@@ -74,8 +74,11 @@ export default function SpeakerConfigurator() {
     if (!selectedDriver || !userConfig.useCase) return null;
 
     const recommendedType = recommendCabinetType(selectedDriver, userConfig.useCase as UseCase, 'indoor-medium');
-    const hasAmp = !!selectedAmpId;
-    const ampDimensions = selectedAmplifier ? selectedAmplifier.dimensions : undefined;
+    // Build ATTIVO: la cassa riserva SEMPRE la predisposizione del modulo
+    // amplificatore + DSP (sede sul retro, ventilazione, presa IEC). Finché
+    // l'ampli non è scelto si usa una piastra standard, poi si affina.
+    const hasAmp = true;
+    const ampDimensions = selectedAmplifier ? selectedAmplifier.dimensions : { width: 220, height: 220, depth: 90 };
 
     try {
       const calc = calculateFullCabinet(
@@ -569,6 +572,9 @@ function StepCabinetPreview({
                 <li className="flex gap-2"><span className="text-[#F27D26]">•</span> {cabinetDesign.dampingMaterial}</li>
                 <li className="flex gap-2"><span className="text-[#F27D26]">•</span> {cabinetDesign.panels.length} pannelli fresati a CNC</li>
                 <li className="flex gap-2"><span className="text-[#F27D26]">•</span> {cabinetDesign.bracing.length} rinforzi interni strutturali</li>
+                {cabinetDesign.ampCutout && (
+                  <li className="flex gap-2"><span className="text-[#F27D26]">•</span> Sede modulo ampli+DSP sul retro ({cabinetDesign.ampCutout.width}×{cabinetDesign.ampCutout.height}mm) + ventilazione e presa IEC</li>
+                )}
               </ul>
             </div>
           </div>

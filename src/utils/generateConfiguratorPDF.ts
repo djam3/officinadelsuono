@@ -119,12 +119,20 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
   }
   row('Peso stimato (vuota)', `${cabinet.estimatedWeight} kg`);
 
-  section('Protezione — taratura limiter');
+  section('Predisposizioni cassa attiva (retro)');
+  if (cabinet.ampCutout) {
+    row('Sede modulo amplificatore', `fresatura ${cabinet.ampCutout.width}×${cabinet.ampCutout.height}mm + fori M4`);
+  }
+  row('Ventilazione modulo', 'apertura 60×30mm sopra la sede');
+  row('Alimentazione', 'presa IEC + interruttore + fusibile');
+  row('Filtri crossover + limiter', `nel DSP del modulo ${amplifier.brand} ${amplifier.model}`);
+
+  section('Limiter (nel DSP) — protezione driver');
   row('Soglia RMS', `${limiterVrms.toFixed(1)} Vrms  (${limiterDbu.toFixed(1)} dBu)`);
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
   doc.setTextColor(140, 140, 140);
-  doc.text('Imposta il limiter del DSP/amplificatore a questa soglia per proteggere il driver.', 16, y);
+  doc.text('Programma questa soglia nel limiter del DSP del modulo amplificatore per proteggere il driver.', 16, y);
   y += 8;
 
   section('Preventivo');
