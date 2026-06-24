@@ -20,8 +20,10 @@ export interface ThieleSmallParams {
 }
 
 // ─── Driver / Cono Speaker ─────────────────────────────────────────────────────
-export type DriverType = 'subwoofer' | 'woofer' | 'midrange' | 'mid-bass' | 'full-range' | 'tweeter' | 'coaxial';
-export type DriverSize = 6.5 | 8 | 10 | 12 | 15 | 18 | 21;
+export type DriverType = 'subwoofer' | 'woofer' | 'midrange' | 'mid-bass' | 'full-range' | 'tweeter' | 'compression-driver' | 'coaxial';
+// pollici: woofer/sub 6.5–21; per tweeter/driver a compressione si usano valori
+// piccoli (1 / 1.4 / 3) → tipo allargato a number
+export type DriverSize = number;
 
 export interface SpeakerDriver {
   id: string;
