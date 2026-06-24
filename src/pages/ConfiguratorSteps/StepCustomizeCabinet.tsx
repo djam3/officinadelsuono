@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Sliders, Palette, Box } from 'lucide-react';
-import type { CabinetDesign } from '../../types/speaker';
+import type { CabinetDesign, SpeakerDriver } from '../../types/speaker';
 import { CabinetViewer3D } from '../../components/configurator/CabinetViewer3D';
 
 interface StepCustomizeCabinetProps {
   cabinet: CabinetDesign;
+  baffleDrivers?: SpeakerDriver[];
   onUpdate: (updates: Partial<CabinetDesign>) => void;
 }
 
@@ -14,7 +15,7 @@ const WOOD_TYPES = ['MDF', 'MDF-HDF'] as const;
 const THICKNESSES = [18, 21, 25] as const;
 const FINISHES = ['natural', 'black', 'white'] as const;
 
-export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinetProps) {
+export function StepCustomizeCabinet({ cabinet, baffleDrivers, onUpdate }: StepCustomizeCabinetProps) {
   const { t } = useTranslation();
   const [customDims, setCustomDims] = useState({
     width: cabinet.externalDimensions?.width || 400,
@@ -231,7 +232,7 @@ export function StepCustomizeCabinet({ cabinet, onUpdate }: StepCustomizeCabinet
               </span>
             </div>
             <div className="h-[460px] rounded-xl overflow-hidden">
-              <CabinetViewer3D cabinet={cabinet} allowExplode />
+              <CabinetViewer3D cabinet={cabinet} baffleDrivers={baffleDrivers} allowExplode />
             </div>
           </div>
 

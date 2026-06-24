@@ -22,6 +22,9 @@ import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { StepCustomizeCabinet } from './ConfiguratorSteps/StepCustomizeCabinet';
 import { StepSummaryNew } from './ConfiguratorSteps/StepSummaryNew';
+import {
+  computeCrossover, isWooferRole, isMidRole, isTweeterRole, type SystemType,
+} from '../utils/crossoverDesign';
 
 const STEPS = [
   { id: 1, title: 'Il Tuo Sound', icon: Music },
@@ -36,14 +39,34 @@ export default function SpeakerConfigurator() {
   const { t } = useTranslation();
   const [step, setStep] = useState(1);
   const [userConfig, setUserConfig] = useState<Partial<UserConfiguration>>({ quantity: 1 });
-  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null);
+  const [systemType, setSystemType] = useState<SystemType>('2way');
+  const [selectedDriverId, setSelectedDriverId] = useState<string | null>(null); // woofer / LF
+  const [selectedMidId, setSelectedMidId] = useState<string | null>(null);       // medio (3 vie)
+  const [selectedTweeterId, setSelectedTweeterId] = useState<string | null>(null); // alti
   const [selectedAmpId, setSelectedAmpId] = useState<string | null>(null);
   const [customCabinet, setCustomCabinet] = useState<Partial<CabinetDesign> | null>(null);
   const [drivers, setDrivers] = useState<SpeakerDriver[]>(DRIVERS);
   useEffect(() => subscribeDrivers(list => setDrivers(list.length ? list : DRIVERS)), []);
 
   const selectedDriver = useMemo(() => drivers.find(d => d.id === selectedDriverId) || null, [drivers, selectedDriverId]);
+  const selectedMid = useMemo(() => drivers.find(d => d.id === selectedMidId) || null, [drivers, selectedMidId]);
+  const selectedTweeter = useMemo(() => drivers.find(d => d.id === selectedTweeterId) || null, [drivers, selectedTweeterId]);
   const selectedAmplifier = useMemo(() => AMPLIFIERS.find(a => a.id === selectedAmpId) || null, [selectedAmpId]);
+
+  // Crossover (1 punto per 2 vie, 2 per 3 vie)
+  const crossover = useMemo(
+    () => computeCrossover(systemType, selectedDriver, selectedMid, selectedTweeter),
+    [systemType, selectedDriver, selectedMid, selectedTweeter],
+  );
+
+  // Altoparlanti montati sul baffle (dal grave all'acuto) per il 3D e il riepilogo
+  const baffleDrivers = useMemo(() => {
+    const list: SpeakerDriver[] = [];
+    if (selectedDriver) list.push(selectedDriver);
+    if (systemType === '3way' && selectedMid) list.push(selectedMid);
+    if (systemType !== 'sub' && selectedTweeter) list.push(selectedTweeter);
+    return list;
+  }, [systemType, selectedDriver, selectedMid, selectedTweeter]);
 
   // Progetto acustico BASE — calcolato dal motore condiviso con l'Admin.
   // Non dipende dalle personalizzazioni: è la sorgente di verità degli acustici.
@@ -81,7 +104,12 @@ export default function SpeakerConfigurator() {
 
   const isNextDisabled = () => {
     if (step === 1 && !userConfig.useCase) return true;
-    if (step === 2 && !selectedDriverId) return true;
+    if (step === 2) {
+      if (!selectedDriverId) return true;
+      if (systemType !== 'sub' && !selectedTweeterId) return true;
+      if (systemType === '3way' && !selectedMidId) return true;
+      return false;
+    }
     if (step === 3 && !cabinetDesign) return true;
     if (step === 4) return false; // Personalizzazione sempre abilitata
     if (step === 5 && !selectedAmpId) return true;
@@ -174,21 +202,29 @@ export default function SpeakerConfigurator() {
               />
             )}
             {step === 2 && (
-              <StepDriverSelect 
+              <StepSystemSelect
                 drivers={drivers}
-                selectedId={selectedDriverId} 
-                onSelect={setSelectedDriverId} 
+                systemType={systemType}
+                onSystemType={setSystemType}
+                wooferId={selectedDriverId}
+                midId={selectedMidId}
+                tweeterId={selectedTweeterId}
+                onWoofer={setSelectedDriverId}
+                onMid={setSelectedMidId}
+                onTweeter={setSelectedTweeterId}
               />
             )}
             {step === 3 && selectedDriver && cabinetDesign && (
               <StepCabinetPreview
                 driver={selectedDriver}
                 cabinetDesign={cabinetDesign}
+                baffleDrivers={baffleDrivers}
               />
             )}
             {step === 4 && selectedDriver && cabinetDesign && (
               <StepCustomizeCabinet
                 cabinet={cabinetDesign}
+                baffleDrivers={baffleDrivers}
                 onUpdate={(updates) => setCustomCabinet(updates)}
               />
             )}
@@ -207,6 +243,8 @@ export default function SpeakerConfigurator() {
                 amplifier={selectedAmplifier}
                 cabinet={cabinetDesign}
                 userConfig={userConfig}
+                baffleDrivers={baffleDrivers}
+                crossover={crossover}
               />
             )}
           </motion.div>
@@ -288,98 +326,140 @@ function StepUseCase({
   );
 }
 
-function StepDriverSelect({ 
-  drivers, 
-  selectedId, 
-  onSelect 
-}: { 
-  drivers: SpeakerDriver[], 
-  selectedId: string | null, 
-  onSelect: (id: string) => void 
+// Card compatta per la selezione di un driver in un ruolo
+function DriverCard({ driver, selected, onSelect }: { driver: SpeakerDriver; selected: boolean; onSelect: () => void }) {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      onClick={onSelect}
+      className={`relative overflow-hidden rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col shrink-0 w-64
+        ${selected
+          ? 'bg-[#F27D26]/10 border-[#F27D26] shadow-lg shadow-[#F27D26]/10'
+          : 'bg-zinc-900/50 border-white/10 hover:bg-zinc-900 hover:border-white/20'}`}
+    >
+      {selected && (
+        <div className="absolute top-3 right-3 bg-[#F27D26] text-white p-1 rounded-full z-10">
+          <Check className="w-4 h-4" />
+        </div>
+      )}
+      <div className="aspect-[4/3] bg-gradient-to-br from-zinc-800/40 to-zinc-950 p-5 flex items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent z-0" />
+        <DriverVisual driver={driver} className="w-full h-full relative z-10 drop-shadow-2xl" />
+        <span className="absolute bottom-2 left-2 z-10 text-[9px] font-bold uppercase tracking-wider text-zinc-300 bg-zinc-950/70 px-2 py-0.5 rounded-md backdrop-blur-sm">
+          {driver.type.replace('-', ' ')}
+        </span>
+      </div>
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="text-xs font-bold text-[#F27D26] uppercase tracking-wider">{driver.brand}</div>
+        <h3 className="text-lg font-bold mb-2 leading-tight">{driver.model}</h3>
+        <div className="grid grid-cols-2 gap-2 text-xs mt-auto pt-3 border-t border-white/5">
+          <div><span className="block text-zinc-500">Misura</span><span className="font-semibold">{driver.size}"</span></div>
+          <div><span className="block text-zinc-500">Potenza</span><span className="font-semibold">{driver.powerRMS}W</span></div>
+          <div><span className="block text-zinc-500">Imp.</span><span className="font-semibold">{driver.impedance}Ω</span></div>
+          <div><span className="block text-zinc-500">Sens.</span><span className="font-semibold">{driver.sensitivity}dB</span></div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Fila orizzontale di driver per un ruolo
+function DriverRow({ title, hint, list, selectedId, onSelect }: {
+  title: string; hint: string; list: SpeakerDriver[]; selectedId: string | null; onSelect: (id: string) => void;
 }) {
   return (
-    <div className="space-y-8">
-      <div className="text-center max-w-2xl mx-auto mb-12">
-        <h2 className="text-4xl font-bold mb-4">Scegli il Cuore del Sistema</h2>
-        <p className="text-zinc-400 text-lg">Seleziona il driver perfetto per le tue esigenze. Solo i migliori brand mondiali.</p>
+    <div>
+      <div className="flex items-baseline gap-3 mb-3">
+        <h3 className="text-lg font-black uppercase tracking-wide text-white">{title}</h3>
+        <span className="text-xs text-zinc-500">{hint}</span>
+      </div>
+      {list.length === 0 ? (
+        <div className="text-sm text-zinc-600 italic py-6">Nessun componente disponibile per questo ruolo.</div>
+      ) : (
+        <div className="flex gap-4 overflow-x-auto pb-3 -mx-1 px-1">
+          {list.map(d => (
+            <DriverCard key={d.id} driver={d} selected={selectedId === d.id} onSelect={() => onSelect(d.id)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StepSystemSelect({
+  drivers, systemType, onSystemType, wooferId, midId, tweeterId, onWoofer, onMid, onTweeter,
+}: {
+  drivers: SpeakerDriver[];
+  systemType: SystemType;
+  onSystemType: (t: SystemType) => void;
+  wooferId: string | null; midId: string | null; tweeterId: string | null;
+  onWoofer: (id: string) => void; onMid: (id: string) => void; onTweeter: (id: string) => void;
+}) {
+  const woofers = useMemo(() => drivers.filter(isWooferRole), [drivers]);
+  const mids = useMemo(() => drivers.filter(isMidRole), [drivers]);
+  const tweeters = useMemo(() => drivers.filter(isTweeterRole), [drivers]);
+
+  const TYPES: { key: SystemType; label: string; desc: string }[] = [
+    { key: 'sub', label: 'Subwoofer', desc: 'Solo grave' },
+    { key: '2way', label: '2 Vie', desc: 'Woofer + Alti' },
+    { key: '3way', label: '3 Vie', desc: 'Woofer + Medio + Alti' },
+  ];
+
+  return (
+    <div className="space-y-10">
+      <div className="text-center max-w-2xl mx-auto mb-2">
+        <h2 className="text-4xl font-bold mb-4">Costruisci il Tuo Sistema</h2>
+        <p className="text-zinc-400 text-lg">Scegli la configurazione e seleziona gli altoparlanti. Calcoliamo noi i crossover.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {drivers.map(driver => {
-          const isSelected = selectedId === driver.id;
-          return (
-            <motion.div
-              key={driver.id}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => onSelect(driver.id)}
-              className={`relative overflow-hidden rounded-2xl border cursor-pointer transition-all duration-200 flex flex-col h-full
-                ${isSelected 
-                  ? 'bg-[#F27D26]/10 border-[#F27D26] shadow-lg shadow-[#F27D26]/10' 
-                  : 'bg-zinc-900/50 border-white/10 hover:bg-zinc-900 hover:border-white/20'}`}
+      {/* Toggle topologia */}
+      <div className="flex justify-center">
+        <div className="inline-flex gap-2 bg-zinc-900 border border-white/10 rounded-2xl p-2">
+          {TYPES.map(t => (
+            <button
+              key={t.key}
+              onClick={() => onSystemType(t.key)}
+              className={`px-5 py-3 rounded-xl text-left transition-all ${
+                systemType === t.key ? 'bg-[#F27D26] text-white shadow-lg shadow-[#F27D26]/30' : 'text-zinc-300 hover:bg-white/5'
+              }`}
             >
-              {isSelected && (
-                <div className="absolute top-4 right-4 bg-[#F27D26] text-white p-1 rounded-full z-10">
-                  <Check className="w-4 h-4" />
-                </div>
-              )}
-              
-              <div className="aspect-square bg-gradient-to-br from-zinc-800/40 to-zinc-950 p-6 flex items-center justify-center relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-t from-zinc-900/80 to-transparent z-0" />
-                <DriverVisual driver={driver} className="w-full h-full relative z-10 drop-shadow-2xl" />
-                <span className="absolute bottom-3 left-3 z-10 text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-950/70 px-2 py-1 rounded-md backdrop-blur-sm">
-                  {driver.type.replace('-', ' ')}
-                </span>
-              </div>
-              
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="text-sm font-bold text-[#F27D26] uppercase tracking-wider mb-1">
-                  {driver.brand}
-                </div>
-                <h3 className="text-2xl font-bold mb-2">{driver.model}</h3>
-                <p className="text-zinc-400 text-sm mb-4 line-clamp-2 flex-1">
-                  {driver.description}
-                </p>
-                
-                <div className="grid grid-cols-2 gap-4 text-sm mt-auto pt-4 border-t border-white/5">
-                  <div>
-                    <span className="block text-zinc-500 mb-1">Dimensioni</span>
-                    <span className="font-semibold text-zinc-200">{driver.size}" {driver.type}</span>
-                  </div>
-                  <div>
-                    <span className="block text-zinc-500 mb-1">Potenza</span>
-                    <span className="font-semibold text-zinc-200">{driver.powerRMS}W RMS</span>
-                  </div>
-                  <div>
-                    <span className="block text-zinc-500 mb-1">Impedenza</span>
-                    <span className="font-semibold text-zinc-200">{driver.impedance} Ω</span>
-                  </div>
-                  <div>
-                    <span className="block text-zinc-500 mb-1">Sensibilità</span>
-                    <span className="font-semibold text-zinc-200">{driver.sensitivity} dB</span>
-                  </div>
-                </div>
-                
-                <div className="mt-6 pt-4 border-t border-white/5 flex justify-end items-center">
-                  <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded">
-                    {driver.madeIn}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
+              <div className="font-black text-sm uppercase tracking-wide">{t.label}</div>
+              <div className={`text-[11px] ${systemType === t.key ? 'text-white/80' : 'text-zinc-500'}`}>{t.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-8">
+        <DriverRow
+          title={systemType === 'sub' ? 'Subwoofer / Woofer' : 'Woofer (grave)'}
+          hint="determina la cassa e il volume"
+          list={woofers} selectedId={wooferId} onSelect={onWoofer}
+        />
+        {systemType === '3way' && (
+          <DriverRow title="Medio" hint="sezione voci/strumenti" list={mids} selectedId={midId} onSelect={onMid} />
+        )}
+        {systemType !== 'sub' && (
+          <DriverRow
+            title="Alti (tweeter / driver a compressione)"
+            hint="dettaglio e brillantezza"
+            list={tweeters} selectedId={tweeterId} onSelect={onTweeter}
+          />
+        )}
       </div>
     </div>
   );
 }
 
 function StepCabinetPreview({
-  driver, 
-  cabinetDesign 
+  driver,
+  cabinetDesign,
+  baffleDrivers,
 }: {
   driver: SpeakerDriver,
-  cabinetDesign: CabinetDesign
+  cabinetDesign: CabinetDesign,
+  baffleDrivers: SpeakerDriver[],
 }) {
   const splCurve = useMemo(() => {
     try {
@@ -404,7 +484,7 @@ function StepCabinetPreview({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Viewer 3D Reale */}
         <div className="rounded-2xl overflow-hidden min-h-[500px] relative shadow-2xl">
-          <CabinetViewer3D cabinet={cabinetDesign} showDimensions={true} exploded={false} />
+          <CabinetViewer3D cabinet={cabinetDesign} baffleDrivers={baffleDrivers} showDimensions={true} exploded={false} />
           
           <div className="absolute bottom-6 left-6 right-6 p-4 bg-zinc-950/60 backdrop-blur-md rounded-xl border border-white/10 z-10 flex justify-between items-center pointer-events-none">
             <div>

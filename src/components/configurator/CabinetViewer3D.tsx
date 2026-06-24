@@ -4,12 +4,15 @@ import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer, Me
 import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
 import { Layers, Box as BoxIcon } from 'lucide-react';
 import * as THREE from 'three';
-import { CabinetDesign } from '../../types/speaker';
+import { CabinetDesign, SpeakerDriver } from '../../types/speaker';
 
 interface CabinetViewer3DProps {
   cabinet: CabinetDesign;
   showDimensions?: boolean;
   exploded?: boolean;
+  /** Altoparlanti montati sul baffle, dal grave (primo) all'acuto (ultimo).
+   *  Se assente si mostra il solo driver del progetto (compatibilità). */
+  baffleDrivers?: SpeakerDriver[];
   /** Mostra il pulsante toggle "vista esplosa" nell'overlay */
   allowExplode?: boolean;
   /** Ref popolato col renderer WebGL per catturare screenshot (PDF/PNG) */
@@ -212,6 +215,67 @@ const Port3D = ({ radius, length, z }: { radius: number; length: number; z: numb
   );
 };
 
+// ─── Tweeter a cupola (faceplate + cupola morbida) ────────────────────────────
+const DomeTweeter3D = ({ r, z }: { r: number; z: number }) => (
+  <group position={[0, 0, z]}>
+    {/* Faceplate circolare */}
+    <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.004]}>
+      <cylinderGeometry args={[r, r, 0.008, 40]} />
+      <meshStandardMaterial color="#202227" roughness={0.45} metalness={0.55} />
+    </mesh>
+    {/* Guida d'onda concava */}
+    <mesh position={[0, 0, -0.002]}>
+      <torusGeometry args={[r * 0.62, r * 0.18, 16, 40]} />
+      <meshStandardMaterial color="#0c0c0e" roughness={0.6} metalness={0.3} />
+    </mesh>
+    {/* Cupola */}
+    <mesh position={[0, 0, 0.004]}>
+      <sphereGeometry args={[r * 0.52, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2]} />
+      <meshStandardMaterial color="#3a3d42" roughness={0.3} metalness={0.7} />
+    </mesh>
+  </group>
+);
+
+// ─── Driver a compressione su tromba (waveguide rettangolare svasata) ─────────
+const Horn3D = ({ r, z }: { r: number; z: number }) => {
+  // r = mezza-larghezza nominale; la tromba è più larga che alta
+  const halfW = r;
+  const halfH = r * 0.66;
+  const depth = r * 0.7;
+  return (
+    <group position={[0, 0, z]}>
+      {/* Bocca della tromba (cornice svasata) */}
+      <mesh position={[0, 0, -depth / 2]}>
+        <boxGeometry args={[halfW * 2, halfH * 2, depth]} />
+        <meshStandardMaterial color="#0e0f11" roughness={0.55} metalness={0.4} />
+      </mesh>
+      {/* Imboccatura chiara svasata */}
+      <mesh position={[0, 0, 0.001]}>
+        <boxGeometry args={[halfW * 2.04, halfH * 2.04, 0.01]} />
+        <meshStandardMaterial color="#202227" roughness={0.4} metalness={0.6} />
+      </mesh>
+      {/* Gola scura al centro */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -depth * 0.5]}>
+        <cylinderGeometry args={[r * 0.18, r * 0.32, depth, 28, 1, true]} />
+        <meshStandardMaterial color="#050506" roughness={0.8} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Anello accento */}
+      <mesh position={[0, 0, 0.006]}>
+        <torusGeometry args={[Math.min(halfW, halfH) * 0.5, r * 0.03, 12, 32]} />
+        <meshStandardMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.18} roughness={0.5} />
+      </mesh>
+    </group>
+  );
+};
+
+// Sceglie la geometria giusta in base al tipo di driver
+const DriverOnBaffle = ({ driver, r, z }: { driver: SpeakerDriver; r: number; z: number }) => {
+  if (driver.type === 'compression-driver') return <Horn3D r={r} z={z} />;
+  if (driver.type === 'tweeter') return <DomeTweeter3D r={r} z={z} />;
+  const bolts = driver.size >= 15 ? 8 : driver.size >= 10 ? 6 : 4;
+  return <Driver3D mountRadius={r} boltCount={bolts} z={z} />;
+};
+
 // ─── Piastra connettori / amplificatore sul retro ────────────────────────────
 const RearPanel3D = ({
   hasAmp,
@@ -273,7 +337,7 @@ const RearPanel3D = ({
 };
 
 // ─── Modello completo della cassa ─────────────────────────────────────────────
-const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; exploded?: boolean }) => {
+const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: CabinetDesign; exploded?: boolean; baffleDrivers?: SpeakerDriver[] }) => {
   const bumpTex = useMemo(() => createTexturedBump(), []);
   const woodTex = useMemo(() => createWoodTexture(), []);
   const finish = resolveFinish(cabinet.finish);
@@ -330,6 +394,30 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
   })();
   const rearHasAmp = !!cabinet.ampCutout;
 
+  // Layout multi-via: impila i driver sul baffle dal grave (basso) all'acuto (alto).
+  const mounts = (() => {
+    if (!baffleDrivers || baffleDrivers.length === 0) return null;
+    const innerW = w - 2 * wt;
+    const innerH = h - 2 * wt;
+    const maxR = (Math.min(innerW, innerH) / 2) * 0.94;
+    const raw = baffleDrivers.map((dr) => {
+      const md = ((dr.mountingDiameter ?? dr.overallDiameter ?? dr.size * 25.4) / 2) / 1000;
+      return { dr, r: Math.max(0.02, Math.min(md, maxR)) };
+    });
+    const gap = 0.022;
+    const total = raw.reduce((s, it) => s + 2 * it.r, 0) + gap * (raw.length - 1);
+    const avail = innerH - 0.03;
+    const scale = total > avail ? avail / total : 1;
+    let y = -(total * scale) / 2; // centra verticalmente lo stack
+    return raw.map((it) => {
+      const r = it.r * scale;
+      y += r;
+      const py = y;
+      y += r + gap * scale;
+      return { dr: it.dr, r, py };
+    });
+  })();
+
   const bevel = Math.min(w, h, d) * 0.025;
   const footR = Math.min(w, d) * 0.05;
   const footH = 0.012;
@@ -374,10 +462,18 @@ const CabinetModel = ({ cabinet, exploded = false }: { cabinet: CabinetDesign; e
         />
       </mesh>
 
-      {/* Driver */}
-      <group position={[0, driverY, exF]}>
-        <Driver3D mountRadius={driverR} boltCount={cabinet.driverCutout.boltCount} z={d / 2 + 0.004} />
-      </group>
+      {/* Driver: stack multi-via se fornito, altrimenti singolo (compatibilità) */}
+      {mounts ? (
+        mounts.map((mn, i) => (
+          <group key={i} position={[0, mn.py, exF]}>
+            <DriverOnBaffle driver={mn.dr} r={mn.r} z={d / 2 + 0.004} />
+          </group>
+        ))
+      ) : (
+        <group position={[0, driverY, exF]}>
+          <Driver3D mountRadius={driverR} boltCount={cabinet.driverCutout.boltCount} z={d / 2 + 0.004} />
+        </group>
+      )}
 
       {/* Porte bass-reflex (una o più) */}
       {ports.map((p, i) => (
@@ -483,6 +579,7 @@ export const CabinetViewer3D = ({
   cabinet,
   exploded = false,
   allowExplode = false,
+  baffleDrivers,
   glRef,
 }: CabinetViewer3DProps) => {
   const [explodedState, setExplodedState] = useState(exploded);
@@ -542,7 +639,7 @@ export const CabinetViewer3D = ({
           <RevealGroup sway={!isExploded}>
             <Float speed={1.1} rotationIntensity={0} floatIntensity={isExploded ? 0 : 0.35} floatingRange={[-0.008, 0.018]}>
               <group position={[0, groundY * -0.15, 0]}>
-                <CabinetModel cabinet={cabinet} exploded={isExploded} />
+                <CabinetModel cabinet={cabinet} exploded={isExploded} baffleDrivers={baffleDrivers} />
               </group>
             </Float>
           </RevealGroup>

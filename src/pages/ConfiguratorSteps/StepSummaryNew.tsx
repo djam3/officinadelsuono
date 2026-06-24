@@ -15,12 +15,15 @@ import { db } from '../../firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { StripeCheckout } from './StripeCheckout';
 import { StripeProvider } from '../../components/StripeProvider';
+import type { XoverPoint } from '../../utils/crossoverDesign';
 
 interface StepSummaryNewProps {
   driver: SpeakerDriver;
   amplifier: Amplifier;
   cabinet: CabinetDesign;
   userConfig: any;
+  baffleDrivers?: SpeakerDriver[];
+  crossover?: XoverPoint[];
   onNavigate?: (page: string) => void;
 }
 
@@ -29,6 +32,8 @@ export function StepSummaryNew({
   amplifier,
   cabinet,
   userConfig,
+  baffleDrivers,
+  crossover = [],
   onNavigate,
 }: StepSummaryNewProps) {
   const { t } = useTranslation();
@@ -134,7 +139,7 @@ export function StepSummaryNew({
           {/* Render 3D del prodotto finale + export PDF */}
           <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-2 relative overflow-hidden">
             <div className="h-[420px] rounded-xl overflow-hidden">
-              <CabinetViewer3D cabinet={cabinet} glRef={glRef} allowExplode />
+              <CabinetViewer3D cabinet={cabinet} baffleDrivers={baffleDrivers} glRef={glRef} allowExplode />
             </div>
             <button
               onClick={handleDownloadPDF}
