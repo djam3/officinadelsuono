@@ -1,6 +1,5 @@
 /** Primitivi UI condivisi per i calcolatori (input, risultati, grafico SVG) */
 import React from 'react';
-import { useCalcLang } from '../../../i18n/CalcLang';
 
 const ACCENT = '#F27D26';
 
@@ -76,16 +75,9 @@ export function CalcShell({ title, subtitle, inputs, results }: {
   );
 }
 
+// Disclaimer rimosso su richiesta: non mostra più alcun testo sotto i calcolatori.
 export function Disclaimer() {
-  const { tx } = useCalcLang();
-  return (
-    <p className="text-[10px] text-zinc-600 leading-relaxed border-t border-white/5 pt-3">
-      {tx(
-        'Modello lineare small-signal, valido sotto ~200–300 Hz (come WinISD/BassBox). Non considera distorsione, breakup, compressione di potenza né l\'acustica reale della stanza. Verifica l\'accordo Fb con uno sweep d\'impedenza prima della costruzione.',
-        'Linear small-signal model, valid below ~200–300 Hz (like WinISD/BassBox). Ignores distortion, breakup, power compression and real room acoustics. Verify Fb tuning with an impedance sweep before building.'
-      )}
-    </p>
-  );
+  return null;
 }
 
 // ─── Grafico SVG (asse X logaritmico) ─────────────────────────────────────────

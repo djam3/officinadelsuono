@@ -588,7 +588,7 @@ function StepCabinetPreview({
             <Layers className="w-5 h-5 text-[#F27D26]" /> Risposta in Frequenza Stimata
           </h3>
           <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: splCurve.spl }]} yLabel="SPL" yUnit="dB" height={220} />
-          <p className="text-[10px] text-zinc-600 mt-2">Curva indicativa generata dai parametri del driver (modello alle basse frequenze).</p>
+          <p className="text-[10px] text-zinc-600 mt-2">Curva indicativa generata dai parametri del driver.</p>
         </div>
       )}
     </div>

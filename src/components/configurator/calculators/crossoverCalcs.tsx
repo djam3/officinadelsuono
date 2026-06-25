@@ -181,7 +181,7 @@ export function LinkwitzTransformCalc() {
   const [q0, setQ0] = useState<number | ''>(1.2);
   const [fp, setFp] = useState<number | ''>(30);
   const [qp, setQp] = useState<number | ''>(0.707);
-  const grid = useMemo(() => A.logFreqGrid(10, 300, 200), []);
+  const grid = useMemo(() => A.logFreqGrid(10, 2000, 220), []);
   const curve = useMemo(() => A.linkwitzTransformCurve(f0 === '' ? 80 : f0, q0 === '' ? 1.2 : q0, fp === '' ? 30 : fp, qp === '' ? 0.707 : qp, grid), [f0, q0, fp, qp, grid]);
   const maxBoost = useMemo(() => A.linkwitzMaxBoost(f0 === '' ? 80 : f0, q0 === '' ? 1.2 : q0, fp === '' ? 30 : fp, qp === '' ? 0.707 : qp), [f0, q0, fp, qp]);
   return (

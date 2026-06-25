@@ -51,11 +51,13 @@ export interface ResponseInput {
   alpha?: number;    // vented
   ql?: number;       // vented (default 7)
   powerW?: number;   // per excursion
+  fMin?: number;     // range grafico (default 10 Hz)
+  fMax?: number;     // range grafico (default 20 kHz)
 }
 
 export function computeResponse(input: ResponseInput): ResponseCurves {
   const { ts, type } = input;
-  const grid = logFreqGrid(10, 1000, 200);
+  const grid = logFreqGrid(input.fMin ?? 10, input.fMax ?? 20000, 280);
   const ql = input.ql ?? 7;
 
   const Gat = (f: number): Complex => {
