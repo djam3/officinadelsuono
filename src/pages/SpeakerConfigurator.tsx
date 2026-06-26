@@ -556,11 +556,50 @@ function StepCabinetPreview({
     } catch { return null; }
   }, [driver, cabinetDesign]);
 
+  // Traduzione in "linguaggio cliente": estensione bassi, quanto spinge, carattere
+  const friendly = useMemo(() => {
+    // Estensione bassi = accordo bass-reflex (vented) o F3 calcolato (sealed).
+    let f3: number;
+    if (cabinetDesign.type === 'sealed') {
+      try {
+        const ts = Audio.tsFromDriver(driver);
+        f3 = Math.round(Audio.sealedFromVb(ts, cabinetDesign.internalVolume).f3);
+      } catch { f3 = Math.round(driver.thielSmall.fs); }
+    } else {
+      f3 = cabinetDesign.port?.tuningFrequency || Math.round(driver.thielSmall.fs * 0.9);
+    }
+    const bassLabel = f3 <= 40 ? 'Bassi profondissimi' : f3 <= 55 ? 'Bassi profondi' : f3 <= 75 ? 'Bassi pieni' : 'Bassi controllati';
+    const splMax = Math.round(driver.sensitivity + 10 * Math.log10(Math.max(driver.powerRMS, 1)));
+    const loud = splMax >= 128 ? 'Fortissimo' : splMax >= 122 ? 'Molto forte' : splMax >= 116 ? 'Forte' : 'Equilibrato';
+    const carattere = cabinetDesign.type === 'sealed'
+      ? 'Bassi asciutti e precisi (cassa chiusa)'
+      : 'Massima resa e bassi profondi (bass-reflex)';
+    return { f3, bassLabel, splMax, loud, carattere };
+  }, [splCurve, cabinetDesign, driver]);
+
   return (
     <div className="space-y-8">
-      <div className="text-center max-w-2xl mx-auto mb-12">
+      <div className="text-center max-w-2xl mx-auto mb-8">
         <h2 className="text-4xl font-bold mb-4">La Tua Cassa</h2>
-        <p className="text-zinc-400 text-lg">Progetto acustico generato automaticamente in base ai parametri Thiele-Small del {driver.model}.</p>
+        <p className="text-zinc-400 text-lg">Ecco com'è e cosa aspettarti. I dettagli tecnici sono più sotto.</p>
+      </div>
+
+      {/* Cosa aspettarti — linguaggio cliente */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center">
+          <div className="text-3xl mb-1">🔊</div>
+          <div className="text-2xl font-black text-brand-orange">{friendly.bassLabel}</div>
+          <div className="text-xs text-zinc-500 mt-1">scendono fino a ~{friendly.f3} Hz</div>
+        </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center">
+          <div className="text-3xl mb-1">📢</div>
+          <div className="text-2xl font-black text-brand-orange">{friendly.loud}</div>
+          <div className="text-xs text-zinc-500 mt-1">fino a ~{friendly.splMax} dB di picco</div>
+        </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center flex flex-col justify-center">
+          <div className="text-3xl mb-1">🎚️</div>
+          <div className="text-sm font-bold leading-tight">{friendly.carattere}</div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
