@@ -48,6 +48,7 @@ export interface ConfiguratorPrice {
   crossoverPrice: number;    // rete crossover passiva
   ampPrice: number;
   cabinetPrice: number;
+  accessoriesPrice: number;  // griglia, ruote, maniglie, pole mount, RAL
   cabinetSubtotal: number;
   subtotal: number;
   vat: number;
@@ -58,6 +59,9 @@ export interface ConfiguratorPrice {
     base: number;
   };
 }
+
+// Prezzi accessori (€)
+const ACCESSORY_PRICES = { grille: 40, handles: 15, wheels: 35, poleMount: 20, ral: 30 };
 
 /**
  * Calcola il prezzo di una configurazione completa.
@@ -96,8 +100,17 @@ export function calculateConfiguratorPrice(
   // Costo lavorazione basato su volume
   const laborCost = cabinet.internalVolume * config.laborPerLiter;
 
+  // Accessori scelti dal cliente
+  const acc = cabinet.accessories || {};
+  let accessoriesPrice = 0;
+  if (acc.grille) accessoriesPrice += ACCESSORY_PRICES.grille;
+  if (acc.handles) accessoriesPrice += ACCESSORY_PRICES.handles;
+  if (acc.wheels) accessoriesPrice += ACCESSORY_PRICES.wheels;
+  if (acc.poleMount) accessoriesPrice += ACCESSORY_PRICES.poleMount;
+  if (acc.ralColor && acc.ralColor.trim()) accessoriesPrice += ACCESSORY_PRICES.ral;
+
   const cabinetSubtotal = materialsCost + laborCost;
-  const subtotal = driverPrice + hfMidPrice + crossoverPrice + ampPrice + cabinetSubtotal;
+  const subtotal = driverPrice + hfMidPrice + crossoverPrice + ampPrice + cabinetSubtotal + accessoriesPrice;
   const vatAmount = subtotal * config.vat;
   const total = subtotal + vatAmount;
 
@@ -107,6 +120,7 @@ export function calculateConfiguratorPrice(
     crossoverPrice,
     ampPrice,
     cabinetPrice: cabinetSubtotal,
+    accessoriesPrice,
     cabinetSubtotal,
     subtotal,
     vat: vatAmount,

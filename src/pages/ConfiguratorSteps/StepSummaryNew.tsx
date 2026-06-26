@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useCartStore } from '../../store/cartStore';
 import {
-  Settings, Send, Loader2, Mail, User, Phone, MessageSquare, CheckCircle, AlertTriangle, ShoppingCart as CartIcon, FileDown
+  Settings, Send, Loader2, Mail, User, Phone, MessageSquare, CheckCircle, AlertTriangle, ShoppingCart as CartIcon, FileDown,
+  Truck, ShieldCheck, Clock, MessageCircle
 } from 'lucide-react';
 import type { SpeakerDriver, Amplifier, CabinetDesign } from '../../types/speaker';
 import { DriverVisual, AmpVisual } from '../../components/configurator/ComponentVisuals';
@@ -61,6 +62,17 @@ export function StepSummaryNew({
   // DSP/limiter affinché il driver non superi mai la sua potenza nominale.
   const limiterVrms = limiterThreshold(driver.powerRMS, driver.impedance);
   const limiterDbu = 20 * Math.log10(limiterVrms / 0.775);
+
+  // Messaggio WhatsApp pre-compilato con la configurazione (Amerigo: +39 347 739 7016)
+  const altri = (baffleDrivers || []).filter(d => d.id !== driver.id).map(d => `${d.brand} ${d.model}`);
+  const waMsg =
+    `Ciao Amerigo! Vorrei un preventivo per questa cassa configurata sul sito:%0A` +
+    `• Woofer: ${driver.brand} ${driver.model} (${driver.size}")%0A` +
+    (altri.length ? `• Vie alte: ${altri.join(', ')}%0A` : '') +
+    `• Amplificatore: ${amplifier.brand} ${amplifier.model}%0A` +
+    `• Cassa: ${cabinet.externalDimensions.width}×${cabinet.externalDimensions.height}×${cabinet.externalDimensions.depth}mm, ${cabinet.woodType} ${cabinet.woodThickness}mm, finitura ${cabinet.finish}%0A` +
+    `• Totale stimato: ${formatPrice(pricing.total)}`;
+  const whatsappUrl = `https://wa.me/393477397016?text=${waMsg}`;
 
   // Renderer 3D per catturare il render nel PDF
   const glRef = useRef<any>(null);
@@ -270,6 +282,12 @@ export function StepSummaryNew({
                 <span className="text-zinc-400">Lavorazione ({cabinet.internalVolume}L)</span>
                 <span className="font-mono">{formatPrice(pricing.breakdown.labor)}</span>
               </div>
+              {pricing.accessoriesPrice > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Accessori</span>
+                  <span className="font-mono">{formatPrice(pricing.accessoriesPrice)}</span>
+                </div>
+              )}
               <div className="border-t border-white/5 pt-2 flex justify-between font-bold">
                 <span>Subtotale</span>
                 <span className="text-brand-orange">{formatPrice(pricing.subtotal)}</span>
@@ -343,6 +361,36 @@ export function StepSummaryNew({
 
         {/* Destra: Form e Carrello */}
         <div className="space-y-6">
+          {/* Fiducia: consegna, garanzia, cosa include */}
+          <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 space-y-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Clock className="w-4 h-4 text-brand-orange shrink-0" />
+              <span className="text-zinc-300">Consegna stimata <strong className="text-white">3–4 settimane</strong> (costruita a mano)</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <ShieldCheck className="w-4 h-4 text-brand-orange shrink-0" />
+              <span className="text-zinc-300">Garanzia <strong className="text-white">2 anni</strong> · collaudo incluso</span>
+            </div>
+            <div className="flex items-center gap-3 text-sm">
+              <Truck className="w-4 h-4 text-brand-orange shrink-0" />
+              <span className="text-zinc-300">Spedizione assicurata in tutta Italia</span>
+            </div>
+            <div className="text-[11px] text-zinc-500 border-t border-white/5 pt-3">
+              Incluso: cassa finita, altoparlanti montati, modulo ampli+DSP con limiter tarato, collaudo.
+            </div>
+          </div>
+
+          {/* Parla con Amerigo (WhatsApp) */}
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-xl font-bold bg-[#25D366] hover:bg-[#1fb855] text-black transition-colors"
+          >
+            <MessageCircle className="w-5 h-5" />
+            Parlane con Amerigo
+          </a>
+
           {/* Tabs */}
           <div className="flex gap-2 bg-zinc-900 rounded-lg p-1">
             <button
