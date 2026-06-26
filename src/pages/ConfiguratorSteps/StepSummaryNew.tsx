@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { useCartStore } from '../../store/cartStore';
 import {
   Settings, Send, Loader2, Mail, User, Phone, MessageSquare, CheckCircle, AlertTriangle, ShoppingCart as CartIcon, FileDown,
-  Truck, ShieldCheck, Clock, MessageCircle
+  Truck, ShieldCheck, Clock, MessageCircle, Link2, Check
 } from 'lucide-react';
 import type { SpeakerDriver, Amplifier, CabinetDesign } from '../../types/speaker';
 import { DriverVisual, AmpVisual } from '../../components/configurator/ComponentVisuals';
@@ -25,6 +25,7 @@ interface StepSummaryNewProps {
   userConfig: any;
   baffleDrivers?: SpeakerDriver[];
   crossover?: XoverPoint[];
+  shareUrl?: string;
   onNavigate?: (page: string) => void;
 }
 
@@ -35,9 +36,18 @@ export function StepSummaryNew({
   userConfig,
   baffleDrivers,
   crossover = [],
+  shareUrl,
   onNavigate,
 }: StepSummaryNewProps) {
   const { t } = useTranslation();
+  const [copied, setCopied] = useState(false);
+  const copyShare = async () => {
+    if (!shareUrl) return;
+    try { await navigator.clipboard.writeText(shareUrl); }
+    catch { /* fallback: selezione manuale */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2200);
+  };
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -390,6 +400,21 @@ export function StepSummaryNew({
             <MessageCircle className="w-5 h-5" />
             Parlane con Amerigo
           </a>
+
+          {/* Copia link configurazione condivisibile */}
+          {shareUrl && (
+            <button
+              onClick={copyShare}
+              className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-bold border transition-colors ${
+                copied
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                  : 'bg-zinc-900 border-white/10 text-zinc-300 hover:border-white/30'
+              }`}
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+              {copied ? 'Link copiato!' : 'Copia link configurazione'}
+            </button>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-2 bg-zinc-900 rounded-lg p-1">

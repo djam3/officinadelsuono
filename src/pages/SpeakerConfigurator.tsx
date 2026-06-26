@@ -36,6 +36,14 @@ const STEPS = [
   { id: 6, title: 'Il Tuo Progetto', icon: CheckCircle }
 ];
 
+// Encode/decode della configurazione per il link condivisibile (base64 UTF-8 safe)
+function encodeCfg(o: unknown): string {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); } catch { return ''; }
+}
+function decodeCfg(s: string): any {
+  try { return JSON.parse(decodeURIComponent(escape(atob(s)))); } catch { return null; }
+}
+
 export default function SpeakerConfigurator() {
   const { t } = useTranslation();
   const [mode, setMode] = useState<'intro' | 'config'>('intro');
@@ -104,32 +112,55 @@ export default function SpeakerConfigurator() {
     return customCabinet ? { ...baseCabinet, ...customCabinet } : baseCabinet;
   }, [baseCabinet, customCabinet]);
 
-  // ── Salva / riprendi configurazione (localStorage) ──────────────────────────
+  // ── Caricamento: link condivisibile (URL ?c=) > localStorage ────────────────
+  const applySaved = (s: any) => {
+    if (!s) return false;
+    if (s.useCase) setUserConfig(c => ({ ...c, useCase: s.useCase }));
+    if (s.systemType) setSystemType(s.systemType);
+    if (s.wooferId) setSelectedDriverId(s.wooferId);
+    if (s.midId) setSelectedMidId(s.midId);
+    if (s.tweeterId) setSelectedTweeterId(s.tweeterId);
+    if (s.ampId) setSelectedAmpId(s.ampId);
+    if (s.customCabinet) setCustomCabinet(s.customCabinet);
+    if (s.step) setStep(s.step);
+    return true;
+  };
+
   useEffect(() => {
     try {
+      // 1) link condivisibile nell'URL
+      const param = new URLSearchParams(window.location.search).get('c');
+      if (param) {
+        const s = decodeCfg(param);
+        if (s && applySaved(s)) { setStep(s.step || 6); setMode('config'); return; }
+      }
+      // 2) ultima sessione salvata in locale
       const raw = localStorage.getItem('ods-configurator');
       if (!raw) return;
       const s = JSON.parse(raw);
-      if (s.useCase) setUserConfig(c => ({ ...c, useCase: s.useCase }));
-      if (s.systemType) setSystemType(s.systemType);
-      if (s.wooferId) setSelectedDriverId(s.wooferId);
-      if (s.midId) setSelectedMidId(s.midId);
-      if (s.tweeterId) setSelectedTweeterId(s.tweeterId);
-      if (s.ampId) setSelectedAmpId(s.ampId);
-      if (s.step) { setStep(s.step); setMode('config'); }
-    } catch { /* ignora storage non valido */ }
+      if (applySaved(s) && s.step) setMode('config');
+    } catch { /* ignora dati non validi */ }
   }, []);
+
+  // Stato serializzabile della configurazione (per salvataggio e link)
+  const configState = useMemo(() => ({
+    useCase: userConfig.useCase, systemType,
+    wooferId: selectedDriverId, midId: selectedMidId,
+    tweeterId: selectedTweeterId, ampId: selectedAmpId,
+    customCabinet, step,
+  }), [userConfig.useCase, systemType, selectedDriverId, selectedMidId, selectedTweeterId, selectedAmpId, customCabinet, step]);
 
   useEffect(() => {
     if (mode !== 'config') return;
-    try {
-      localStorage.setItem('ods-configurator', JSON.stringify({
-        useCase: userConfig.useCase, systemType,
-        wooferId: selectedDriverId, midId: selectedMidId,
-        tweeterId: selectedTweeterId, ampId: selectedAmpId, step,
-      }));
-    } catch { /* storage pieno/non disponibile */ }
-  }, [mode, userConfig.useCase, systemType, selectedDriverId, selectedMidId, selectedTweeterId, selectedAmpId, step]);
+    try { localStorage.setItem('ods-configurator', JSON.stringify(configState)); }
+    catch { /* storage pieno/non disponibile */ }
+  }, [mode, configState]);
+
+  // Link condivisibile (include topologia, componenti, personalizzazioni)
+  const shareUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/configuratore?c=${encodeURIComponent(encodeCfg(configState))}`;
+  }, [configState]);
 
   // ── Modalità Guidami: applica un preset dalle risposte e va alla cassa ──────
   const applyGuided = (g: { useCase: UseCase; system: SystemType; size: 'small' | 'medium' | 'large' }) => {
@@ -327,6 +358,7 @@ export default function SpeakerConfigurator() {
                 userConfig={userConfig}
                 baffleDrivers={baffleDrivers}
                 crossover={crossover}
+                shareUrl={shareUrl}
               />
             )}
           </motion.div>
