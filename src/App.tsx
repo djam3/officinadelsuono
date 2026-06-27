@@ -39,6 +39,7 @@ const PAGE_TO_PATH: Record<string, string> = {
   admin: '/admin',
   usato: '/usato',
   configuratore: '/configuratore',
+  'configuratore-esperto': '/configuratore-esperto',
 };
 
 function pathToPage(pathname: string): { page: string; id?: string } {
@@ -77,7 +78,9 @@ const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
 const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
+const ClientConfigurator = lazy(() => import('./pages/ClientConfigurator'));
 const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
+const CustomerConfigurator = lazy(() => import('./pages/CustomerConfigurator'));
 
 const PageLoader = () => {
   const { t } = useTranslation();
@@ -329,7 +332,8 @@ export default function App() {
               {currentPage === 'privacy' && <Privacy />}
               {currentPage === 'cookie-policy' && <CookiePolicy />}
               {currentPage === 'usato' && <UsedMarket onNavigate={handleNavigate} showToast={showToast} />}
-              {currentPage === 'configuratore' && <SpeakerConfigurator />}
+              {currentPage === 'configuratore' && <CustomerConfigurator onNavigate={handleNavigate} />}
+              {currentPage === 'configuratore-esperto' && <SpeakerConfigurator />}
             </motion.div>
           </AnimatePresence>
         </Suspense>
