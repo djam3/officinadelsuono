@@ -294,6 +294,18 @@ export function generatePanels(
           : `Porta bass-reflex Ø${port.diameter}mm — tubo lungo ${port.length}mm`,
       });
     }
+  } else if (port && port.shape === 'slot' && port.slotWidth && port.slotHeight) {
+    // Porta a SLOT (rettangolare) — fessura larga in basso sul frontale
+    frontHoles.push({
+      type: 'port',
+      shape: 'rounded-rect',
+      width: port.slotWidth,
+      height: port.slotHeight,
+      cornerRadius: Math.min(10, Math.round(port.slotHeight / 2)),
+      x: Math.round(internalW / 2),
+      y: Math.round(port.slotHeight / 2) + 12, // appoggiata sopra il bordo inferiore
+      label: `Porta bass-reflex a SLOT ${port.slotWidth}×${port.slotHeight}mm — condotto profondo ${port.length}mm`,
+    });
   }
 
   const panels: CabinetPanel[] = [
@@ -528,6 +540,25 @@ export function calculateFullCabinet(
     internalVolume, woodThickness, driver, hasAmplifier
   );
 
+  // Per i subwoofer grandi (≥15"), converti la porta tonda in porta a SLOT
+  // (rettangolare), come fanno i costruttori pro: stessa area/accordo, ma una
+  // fessura larga e bassa sul frontale. Più elegante e meno profonda di un tubo.
+  if (port && port.shape === 'circular' && port.diameter && driver.size >= 15) {
+    const internalW = dimensions.width - 2 * woodThickness;
+    const areaTot = Math.PI * Math.pow(port.diameter / 2, 2) * (port.count || 1); // mm²
+    const slotWidth = Math.round(internalW * 0.75);
+    const slotHeight = Math.max(20, Math.round(areaTot / slotWidth));
+    port = {
+      shape: 'slot',
+      slotWidth,
+      slotHeight,
+      length: port.length,
+      count: 1,
+      tuningFrequency: port.tuningFrequency,
+      airVelocity: port.airVelocity,
+    };
+  }
+
   // Genera pannelli
   const panels = generatePanels(
     dimensions, woodThickness, woodType, driver, port, hasAmplifier, ampDimensions
@@ -567,11 +598,45 @@ export function calculateFullCabinet(
     position: 'sides' as const,
   } : undefined;
 
+  // Griglia frontale di protezione — copre il baffle con 8mm di margine per lato
+  const isPro = ['dj-club', 'dj-festival', 'pa-events', 'band-live'].includes(useCase);
+  const grilleSpec = {
+    width: Math.round(dimensions.width - 16),
+    height: Math.round(dimensions.height - 16),
+    frameDepthMm: 14,
+    mount: isPro ? 'Telaio metallico forato + viti M5 con gommini anti-vibrazione' : 'Telaio in tessuto acustico su magneti al neodimio',
+    fixingPoints: dimensions.height > 600 ? 8 : 6,
+  };
+
+  // Angolari di protezione — necessari per uso pro/touring o casse grandi
+  const cornersNeeded = isPro || driver.size >= 15;
+  const cornerProtectors = {
+    needed: cornersNeeded,
+    count: cornersNeeded ? 8 : 0,
+    type: 'ABS rinforzato a sfera (con foro maniglia se richiesto)',
+  };
+
   // Nome progetto
   const cabinetName = `${driver.brand} ${driver.model} — ${cabinetType === 'sealed' ? 'Cassa Chiusa' : 'Bass Reflex'} ${Math.round(internalVolume)}L`;
 
   // Note assemblaggio per il falegname
   const assemblyNotes = generateAssemblyNotes(cabinetType, driver, woodType, woodThickness, port);
+  // Griglia frontale
+  assemblyNotes.push(`Griglia frontale ${grilleSpec.width}×${grilleSpec.height}mm — ${grilleSpec.mount} (${grilleSpec.fixingPoints} punti di fissaggio)`);
+  // Angolari di protezione
+  if (cornerProtectors.needed) {
+    assemblyNotes.push(`${cornerProtectors.count} angolari di protezione ${cornerProtectors.type} — uno per ogni spigolo`);
+  }
+  // Porta a slot
+  if (port && port.shape === 'slot' && port.slotWidth) {
+    assemblyNotes.push(`Porta bass-reflex a slot ${port.slotWidth}×${port.slotHeight}mm: condotto interno a "L" lungo ${port.length}mm con bordi smussati (raggio 8mm)`);
+  }
+  // Predisposizione amplificatore / connettore
+  if (hasAmplifier && ampDimensions) {
+    assemblyNotes.push(`Sede modulo amplificatore ${ampDimensions.width}×${ampDimensions.height}mm sul retro (misure da scheda tecnica) + apertura ventilazione e presa IEC`);
+  } else {
+    assemblyNotes.push('Cassa PASSIVA: predisporre slot per piastra connettore Speakon NL4 (85×85mm) sul retro');
+  }
 
   const cabinetDesign: CabinetDesign = {
     type: cabinetType,
@@ -597,6 +662,8 @@ export function calculateFullCabinet(
     driverCutout,
     ampCutout,
     handleCutouts,
+    grilleSpec,
+    cornerProtectors,
     // Di default la cassa è mostrata in LEGNO GREZZO alle misure reali.
     // Le finiture (nero/bianco) si applicano solo se scelte dal cliente (step 4).
     finish: 'natural',

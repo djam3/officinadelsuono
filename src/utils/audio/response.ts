@@ -49,10 +49,13 @@ export interface ResponseInput {
   qtc?: number;      // sealed
   fb?: number;       // vented
   alpha?: number;    // vented
-  ql?: number;       // vented (default 7)
-  powerW?: number;   // per excursion
-  fMin?: number;     // range grafico (default 10 Hz)
-  fMax?: number;     // range grafico (default 20 kHz)
+  ql?: number;        // vented (default 7)
+  powerW?: number;    // per excursion
+  fMin?: number;      // range grafico (default 10 Hz)
+  fMax?: number;      // range grafico (default 20 kHz)
+  sensitivity?: number; // dB 1W/1m → curva in SPL assoluto (veritiera)
+  fHigh?: number;     // limite superiore del driver (roll-off in alto realistico)
+  fHighOrder?: number; // ordine del roll-off HF (default 3)
 }
 
 export function computeResponse(input: ResponseInput): ResponseCurves {
@@ -65,7 +68,20 @@ export function computeResponse(input: ResponseInput): ResponseCurves {
     return ventedGImpl(f, ts.fs, input.fb!, input.alpha!, ql, ts.qts, input.fb! / ts.fs);
   };
 
-  const spl: CurvePoint[] = grid.map(f => ({ f, v: 20 * Math.log10(Math.max(cabs(Gat(f)), 1e-6)) }));
+  // Roll-off naturale del driver in alto (massa mobile / breakup) — rende la
+  // curva veritiera oltre la banda utile invece di restare piatta a 20 kHz.
+  const fHigh = input.fHigh;
+  const hfOrder = input.fHighOrder ?? 3;
+  const hfMag = (f: number): number => {
+    if (!fHigh) return 1;
+    return 1 / Math.sqrt(1 + Math.pow(f / fHigh, 2 * hfOrder));
+  };
+  const sens = input.sensitivity ?? 0; // 0 → curva relativa (passband = 0 dB)
+
+  const spl: CurvePoint[] = grid.map(f => {
+    const boxMag = cabs(Gat(f));
+    return { f, v: sens + 20 * Math.log10(Math.max(boxMag * hfMag(f), 1e-6)) };
+  });
 
   // Group delay = -dφ/dω (ms)
   const groupDelay: CurvePoint[] = grid.map(f => {

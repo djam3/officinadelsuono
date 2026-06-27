@@ -222,6 +222,20 @@ export interface CabinetDesign {
     height: number;
     position: 'sides' | 'top';
   };
+  /** Griglia frontale di protezione: misura e fissaggio calcolati */
+  grilleSpec?: {
+    width: number;             // mm — copre il baffle con margine
+    height: number;            // mm
+    frameDepthMm: number;      // profondità telaio/sporgenza
+    mount: string;             // tipo fissaggio (es. magneti, velcro, viti+gommini)
+    fixingPoints: number;      // numero punti di fissaggio
+  };
+  /** Angolari di protezione (per uso pro / touring / outdoor) */
+  cornerProtectors?: {
+    needed: boolean;
+    count: number;             // tipicamente 8 (uno per spigolo)
+    type: string;              // es. 'ABS rinforzato a sfera'
+  };
   finish: string;              // 'Vernice nera testurizzata' etc.
   accessories?: {              // opzioni estetiche/funzionali scelte dal cliente
     grille?: boolean;          // griglia metallica frontale

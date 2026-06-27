@@ -82,15 +82,18 @@ function buildDesign(drivers: SpeakerDriver[], p: Profile): DesignResult | null 
 
   // curva risposta
   const ts = Audio.tsFromDriver(driver);
+  // Curva veritiera: SPL assoluto dalla sensibilità + roll-off reale del driver in alto
+  const sensitivity = driver.sensitivity;
+  const fHigh = driver.frequencyRange?.max || (driver.type === 'subwoofer' ? 900 : 3500);
   let splCurve: { f: number; v: number }[] = [];
   try {
     if (cabinet.type === 'sealed') {
       const sb = Audio.sealedFromVb(ts, cabinet.internalVolume);
-      splCurve = Audio.computeResponse({ ts, type: 'sealed', fc: sb.fc, qtc: sb.qtc }).spl;
+      splCurve = Audio.computeResponse({ ts, type: 'sealed', fc: sb.fc, qtc: sb.qtc, sensitivity, fHigh, fMax: Math.min(fHigh * 3, 20000) }).spl;
     } else {
       const fb = cabinet.port?.tuningFrequency || ts.fs * 0.5;
       const alpha = ts.vas / cabinet.internalVolume;
-      splCurve = Audio.computeResponse({ ts, type: 'vented', fb, alpha, ql: 7 }).spl;
+      splCurve = Audio.computeResponse({ ts, type: 'vented', fb, alpha, ql: 7, sensitivity, fHigh, fMax: Math.min(fHigh * 3, 20000) }).spl;
     }
   } catch { splCurve = []; }
 
