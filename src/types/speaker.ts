@@ -223,6 +223,13 @@ export interface CabinetDesign {
     position: 'sides' | 'top';
   };
   finish: string;              // 'Vernice nera testurizzata' etc.
+  accessories?: {              // opzioni estetiche/funzionali scelte dal cliente
+    grille?: boolean;          // griglia metallica frontale
+    wheels?: boolean;          // ruote / rotelle
+    handles?: boolean;         // maniglie da trasporto
+    poleMount?: boolean;       // incasso per asta (pole mount)
+    ralColor?: string;         // codice colore RAL personalizzato
+  };
   estimatedWeight: number;     // kg (cassa vuota)
   assemblyNotes: string[];     // istruzioni per il falegname
 }

@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Settings, ChevronRight, ChevronLeft,
   CheckCircle, Music, Zap, Layers, Cpu, Box, Palette,
-  Check, AlertTriangle, Send, Loader2, Mail, User, Phone, MessageSquare
+  Check, AlertTriangle, Send, Loader2, Mail, User, Phone, MessageSquare,
+  Wand2, Wrench, ArrowRight, RotateCcw
 } from 'lucide-react';
 
 import { DRIVERS, AMPLIFIERS, USE_CASE_LABELS } from '../data/speakerDatabase';
@@ -35,8 +36,17 @@ const STEPS = [
   { id: 6, title: 'Il Tuo Progetto', icon: CheckCircle }
 ];
 
+// Encode/decode della configurazione per il link condivisibile (base64 UTF-8 safe)
+function encodeCfg(o: unknown): string {
+  try { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))); } catch { return ''; }
+}
+function decodeCfg(s: string): any {
+  try { return JSON.parse(decodeURIComponent(escape(atob(s)))); } catch { return null; }
+}
+
 export default function SpeakerConfigurator() {
   const { t } = useTranslation();
+  const [mode, setMode] = useState<'intro' | 'config'>('intro');
   const [step, setStep] = useState(1);
   const [userConfig, setUserConfig] = useState<Partial<UserConfiguration>>({ quantity: 1 });
   const [systemType, setSystemType] = useState<SystemType>('2way');
@@ -102,6 +112,93 @@ export default function SpeakerConfigurator() {
     return customCabinet ? { ...baseCabinet, ...customCabinet } : baseCabinet;
   }, [baseCabinet, customCabinet]);
 
+  // ── Caricamento: link condivisibile (URL ?c=) > localStorage ────────────────
+  const applySaved = (s: any) => {
+    if (!s) return false;
+    if (s.useCase) setUserConfig(c => ({ ...c, useCase: s.useCase }));
+    if (s.systemType) setSystemType(s.systemType);
+    if (s.wooferId) setSelectedDriverId(s.wooferId);
+    if (s.midId) setSelectedMidId(s.midId);
+    if (s.tweeterId) setSelectedTweeterId(s.tweeterId);
+    if (s.ampId) setSelectedAmpId(s.ampId);
+    if (s.customCabinet) setCustomCabinet(s.customCabinet);
+    if (s.step) setStep(s.step);
+    return true;
+  };
+
+  useEffect(() => {
+    try {
+      // 1) link condivisibile nell'URL
+      const param = new URLSearchParams(window.location.search).get('c');
+      if (param) {
+        const s = decodeCfg(param);
+        if (s && applySaved(s)) { setStep(s.step || 6); setMode('config'); return; }
+      }
+      // 2) ultima sessione salvata in locale
+      const raw = localStorage.getItem('ods-configurator');
+      if (!raw) return;
+      const s = JSON.parse(raw);
+      if (applySaved(s) && s.step) setMode('config');
+    } catch { /* ignora dati non validi */ }
+  }, []);
+
+  // Stato serializzabile della configurazione (per salvataggio e link)
+  const configState = useMemo(() => ({
+    useCase: userConfig.useCase, systemType,
+    wooferId: selectedDriverId, midId: selectedMidId,
+    tweeterId: selectedTweeterId, ampId: selectedAmpId,
+    customCabinet, step,
+  }), [userConfig.useCase, systemType, selectedDriverId, selectedMidId, selectedTweeterId, selectedAmpId, customCabinet, step]);
+
+  useEffect(() => {
+    if (mode !== 'config') return;
+    try { localStorage.setItem('ods-configurator', JSON.stringify(configState)); }
+    catch { /* storage pieno/non disponibile */ }
+  }, [mode, configState]);
+
+  // Link condivisibile (include topologia, componenti, personalizzazioni)
+  const shareUrl = useMemo(() => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${origin}/configuratore?c=${encodeURIComponent(encodeCfg(configState))}`;
+  }, [configState]);
+
+  // ── Modalità Guidami: applica un preset dalle risposte e va alla cassa ──────
+  const applyGuided = (g: { useCase: UseCase; system: SystemType; size: 'small' | 'medium' | 'large' }) => {
+    setUserConfig(c => ({ ...c, useCase: g.useCase }));
+    setSystemType(g.system);
+
+    const woofers = drivers.filter(isWooferRole);
+    const sizePref = g.size === 'large' ? 18 : g.size === 'medium' ? 15 : 12;
+    const woofer = [...woofers].sort((a, b) => Math.abs(a.size - sizePref) - Math.abs(b.size - sizePref))[0] || woofers[0];
+    if (woofer) setSelectedDriverId(woofer.id);
+
+    if (g.system !== 'sub') {
+      const tw = drivers.filter(isTweeterRole)[0];
+      if (tw) setSelectedTweeterId(tw.id);
+    }
+    if (g.system === '3way') {
+      const mid = drivers.filter(isMidRole)[0];
+      if (mid) setSelectedMidId(mid.id);
+    }
+    if (woofer) {
+      const best = [...AMPLIFIERS]
+        .map(a => ({ a, s: scoreAmplifierMatch(woofer, a, g.useCase).score }))
+        .sort((x, y) => y.s - x.s)[0];
+      if (best) setSelectedAmpId(best.a.id);
+    }
+
+    setMode('config');
+    setStep(3); // diretto a "La Tua Cassa" — già tutto pre-compilato
+  };
+
+  const restart = () => {
+    try { localStorage.removeItem('ods-configurator'); } catch { /* noop */ }
+    setUserConfig({ quantity: 1 });
+    setSystemType('2way');
+    setSelectedDriverId(null); setSelectedMidId(null); setSelectedTweeterId(null); setSelectedAmpId(null);
+    setCustomCabinet(null); setStep(1); setMode('intro');
+  };
+
   const handleNext = () => setStep(s => Math.min(STEPS.length, s + 1));
   const handlePrev = () => setStep(s => Math.max(1, s - 1));
 
@@ -118,6 +215,10 @@ export default function SpeakerConfigurator() {
     if (step === 5 && !selectedAmpId) return true;
     return false;
   };
+
+  if (mode === 'intro') {
+    return <GuidedIntro onExpert={() => { setMode('config'); setStep(1); }} onGuided={applyGuided} />;
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col font-sans relative overflow-hidden">
@@ -151,8 +252,17 @@ export default function SpeakerConfigurator() {
                 );
               })()}
             </h1>
-            <div className="text-sm font-medium text-zinc-400 tabular-nums">
-              Step <span className="text-white font-bold">{step}</span> / {STEPS.length}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={restart}
+                className="hidden sm:flex items-center gap-1.5 text-xs font-medium text-zinc-500 hover:text-brand-orange transition-colors"
+                title="Ricomincia da capo"
+              >
+                <RotateCcw className="w-3.5 h-3.5" /> Ricomincia
+              </button>
+              <div className="text-sm font-medium text-zinc-400 tabular-nums">
+                Step <span className="text-white font-bold">{step}</span> / {STEPS.length}
+              </div>
             </div>
           </div>
           
@@ -228,7 +338,7 @@ export default function SpeakerConfigurator() {
               <StepCustomizeCabinet
                 cabinet={cabinetDesign}
                 baffleDrivers={baffleDrivers}
-                onUpdate={(updates) => setCustomCabinet(updates)}
+                onUpdate={(updates) => setCustomCabinet(prev => ({ ...prev, ...updates }))}
               />
             )}
             {step === 5 && selectedDriver && (
@@ -248,6 +358,7 @@ export default function SpeakerConfigurator() {
                 userConfig={userConfig}
                 baffleDrivers={baffleDrivers}
                 crossover={crossover}
+                shareUrl={shareUrl}
               />
             )}
           </motion.div>
@@ -477,11 +588,50 @@ function StepCabinetPreview({
     } catch { return null; }
   }, [driver, cabinetDesign]);
 
+  // Traduzione in "linguaggio cliente": estensione bassi, quanto spinge, carattere
+  const friendly = useMemo(() => {
+    // Estensione bassi = accordo bass-reflex (vented) o F3 calcolato (sealed).
+    let f3: number;
+    if (cabinetDesign.type === 'sealed') {
+      try {
+        const ts = Audio.tsFromDriver(driver);
+        f3 = Math.round(Audio.sealedFromVb(ts, cabinetDesign.internalVolume).f3);
+      } catch { f3 = Math.round(driver.thielSmall.fs); }
+    } else {
+      f3 = cabinetDesign.port?.tuningFrequency || Math.round(driver.thielSmall.fs * 0.9);
+    }
+    const bassLabel = f3 <= 40 ? 'Bassi profondissimi' : f3 <= 55 ? 'Bassi profondi' : f3 <= 75 ? 'Bassi pieni' : 'Bassi controllati';
+    const splMax = Math.round(driver.sensitivity + 10 * Math.log10(Math.max(driver.powerRMS, 1)));
+    const loud = splMax >= 128 ? 'Fortissimo' : splMax >= 122 ? 'Molto forte' : splMax >= 116 ? 'Forte' : 'Equilibrato';
+    const carattere = cabinetDesign.type === 'sealed'
+      ? 'Bassi asciutti e precisi (cassa chiusa)'
+      : 'Massima resa e bassi profondi (bass-reflex)';
+    return { f3, bassLabel, splMax, loud, carattere };
+  }, [splCurve, cabinetDesign, driver]);
+
   return (
     <div className="space-y-8">
-      <div className="text-center max-w-2xl mx-auto mb-12">
+      <div className="text-center max-w-2xl mx-auto mb-8">
         <h2 className="text-4xl font-bold mb-4">La Tua Cassa</h2>
-        <p className="text-zinc-400 text-lg">Progetto acustico generato automaticamente in base ai parametri Thiele-Small del {driver.model}.</p>
+        <p className="text-zinc-400 text-lg">Ecco com'è e cosa aspettarti. I dettagli tecnici sono più sotto.</p>
+      </div>
+
+      {/* Cosa aspettarti — linguaggio cliente */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center">
+          <div className="text-3xl mb-1">🔊</div>
+          <div className="text-2xl font-black text-brand-orange">{friendly.bassLabel}</div>
+          <div className="text-xs text-zinc-500 mt-1">scendono fino a ~{friendly.f3} Hz</div>
+        </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center">
+          <div className="text-3xl mb-1">📢</div>
+          <div className="text-2xl font-black text-brand-orange">{friendly.loud}</div>
+          <div className="text-xs text-zinc-500 mt-1">fino a ~{friendly.splMax} dB di picco</div>
+        </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 text-center flex flex-col justify-center">
+          <div className="text-3xl mb-1">🎚️</div>
+          <div className="text-sm font-bold leading-tight">{friendly.carattere}</div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -890,6 +1040,132 @@ function StepSummary({
           )}
         </div>
 
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  MODALITÀ GUIDAMI — schermata d'ingresso: 3 domande → setup pronto
+// ─────────────────────────────────────────────────────────────────────────────
+
+const USO_OPTS: { label: string; sub: string; icon: string; useCase: UseCase }[] = [
+  { label: 'DJ / Discoteca', sub: 'Bassi potenti per far ballare', icon: '🎧', useCase: 'dj-club' as UseCase },
+  { label: 'Band / Live', sub: 'Voce e strumenti dal vivo', icon: '🎸', useCase: 'band-live' as UseCase },
+  { label: 'PA / Eventi', sub: 'Parlato e musica, eventi', icon: '📢', useCase: 'pa-events' as UseCase },
+  { label: 'Studio / Casa', sub: 'Ascolto preciso e hi-fi', icon: '🏠', useCase: 'home-hifi' as UseCase },
+];
+const SIZE_OPTS: { label: string; sub: string; icon: string; size: 'small' | 'medium' | 'large' }[] = [
+  { label: 'Piccolo', sub: 'Casa, bar, sale fino a ~50 persone', icon: '🔈', size: 'small' },
+  { label: 'Medio', sub: 'Sale e locali fino a ~200 persone', icon: '🔉', size: 'medium' },
+  { label: 'Grande / Outdoor', sub: 'Piazze, capannoni, grandi eventi', icon: '🔊', size: 'large' },
+];
+const TIPO_OPTS: { label: string; sub: string; icon: string; system: SystemType }[] = [
+  { label: 'Cassa completa', sub: 'Woofer + alti — tuttofare (2 vie)', icon: '🔊', system: '2way' as SystemType },
+  { label: 'Solo bassi (sub)', sub: 'Subwoofer per rinforzare i bassi', icon: '💥', system: 'sub' as SystemType },
+  { label: 'Top di gamma', sub: 'Woofer + medio + alti (3 vie)', icon: '⭐', system: '3way' as SystemType },
+];
+
+function GuidedIntro({
+  onExpert,
+  onGuided,
+}: {
+  onExpert: () => void;
+  onGuided: (g: { useCase: UseCase; system: SystemType; size: 'small' | 'medium' | 'large' }) => void;
+}) {
+  const [started, setStarted] = useState(false);
+  const [uso, setUso] = useState<number | null>(null);
+  const [size, setSize] = useState<number | null>(null);
+  const [tipo, setTipo] = useState<number | null>(null);
+  const ready = uso !== null && size !== null && tipo !== null;
+
+  const Card = ({ icon, label, sub, active, onClick }: { icon: string; label: string; sub: string; active: boolean; onClick: () => void }) => (
+    <motion.button
+      whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+      onClick={onClick}
+      className={`text-left p-4 rounded-2xl border transition-all ${active
+        ? 'bg-brand-orange/10 border-brand-orange shadow-lg shadow-brand-orange/10'
+        : 'bg-zinc-900/60 border-white/10 hover:border-white/25'}`}
+    >
+      <div className="text-3xl mb-2">{icon}</div>
+      <div className="font-bold leading-tight">{label}</div>
+      <div className="text-xs text-zinc-400 mt-1">{sub}</div>
+    </motion.button>
+  );
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center justify-center px-6 py-16 relative overflow-hidden font-sans">
+      {/* glow */}
+      <div className="pointer-events-none fixed inset-0 -z-0 overflow-hidden">
+        <motion.div className="absolute -top-40 -left-40 w-[40rem] h-[40rem] rounded-full bg-brand-orange/10 blur-[120px]"
+          animate={{ x: [0, 80, 0], y: [0, 40, 0], opacity: [0.4, 0.7, 0.4] }} transition={{ duration: 14, repeat: Infinity }} />
+        <motion.div className="absolute bottom-0 -right-40 w-[34rem] h-[34rem] rounded-full bg-blue-500/10 blur-[120px]"
+          animate={{ x: [0, -60, 0], opacity: [0.3, 0.6, 0.3] }} transition={{ duration: 18, repeat: Infinity }} />
+      </div>
+
+      <div className="relative z-10 w-full max-w-3xl">
+        {!started ? (
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.25em] text-brand-orange mb-4">
+              <Wand2 className="w-4 h-4" /> Configuratore casse su misura
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+              Costruiamo la cassa <span className="text-brand-orange">giusta per te</span>
+            </h1>
+            <p className="text-zinc-400 text-lg max-w-xl mx-auto mb-10">
+              Rispondi a 3 domande veloci: pensiamo noi al progetto, ai componenti e alla protezione.
+              Oppure vai in modalità esperto e scegli tutto tu.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                onClick={() => setStarted(true)}
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold bg-brand-orange hover:bg-brand-orange/90 text-white shadow-lg shadow-brand-orange/30">
+                <Wand2 className="w-5 h-5" /> Guidami passo-passo
+              </motion.button>
+              <button onClick={onExpert}
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-bold bg-zinc-900 border border-white/10 text-zinc-200 hover:border-white/30 transition-colors">
+                <Wrench className="w-5 h-5" /> Modalità esperto
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            <button onClick={() => setStarted(false)} className="text-xs text-zinc-500 hover:text-white flex items-center gap-1">
+              <ChevronLeft className="w-3 h-3" /> indietro
+            </button>
+
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-wide mb-3">1 · A cosa ti serve?</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {USO_OPTS.map((o, i) => <Card key={i} {...o} active={uso === i} onClick={() => setUso(i)} />)}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-wide mb-3">2 · Quanto in grande?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {SIZE_OPTS.map((o, i) => <Card key={i} {...o} active={size === i} onClick={() => setSize(i)} />)}
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-wide mb-3">3 · Che tipo di cassa?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {TIPO_OPTS.map((o, i) => <Card key={i} {...o} active={tipo === i} onClick={() => setTipo(i)} />)}
+              </div>
+            </div>
+
+            <div className="flex justify-center pt-2">
+              <motion.button
+                whileHover={ready ? { scale: 1.03 } : {}} whileTap={ready ? { scale: 0.97 } : {}}
+                disabled={!ready}
+                onClick={() => ready && onGuided({ useCase: USO_OPTS[uso!].useCase, system: TIPO_OPTS[tipo!].system, size: SIZE_OPTS[size!].size })}
+                className="flex items-center gap-2 px-10 py-4 rounded-xl font-bold bg-brand-orange hover:bg-brand-orange/90 text-white shadow-lg shadow-brand-orange/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none">
+                Crea la mia cassa <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -112,6 +112,16 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
   row('Volume interno netto', `${cabinet.internalVolume} L`);
   row('Materiale', `${cabinet.woodType} ${cabinet.woodThickness}mm`);
   row('Finitura', String(cabinet.finish || '—'));
+  {
+    const a = cabinet.accessories || {};
+    const list: string[] = [];
+    if (a.grille) list.push('griglia metallica');
+    if (a.handles) list.push('maniglie');
+    if (a.wheels) list.push('ruote');
+    if (a.poleMount) list.push('incasso asta');
+    if (a.ralColor && a.ralColor.trim()) list.push(`colore ${a.ralColor.trim()}`);
+    if (list.length) row('Accessori', list.join(', '));
+  }
   if (cabinet.port) {
     const n = cabinet.port.count ?? 1;
     row('Accordo bass-reflex', `${cabinet.port.tuningFrequency} Hz`);
@@ -141,6 +151,7 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
   if (pricing.crossoverPrice > 0) row('Crossover', formatPrice(pricing.crossoverPrice));
   row('Amplificatore', formatPrice(pricing.ampPrice));
   row('Cassa (materiali + lavorazione)', formatPrice(pricing.cabinetPrice));
+  if (pricing.accessoriesPrice > 0) row('Accessori', formatPrice(pricing.accessoriesPrice));
   row('Subtotale', formatPrice(pricing.subtotal));
   row('IVA 22%', formatPrice(pricing.vat));
 
