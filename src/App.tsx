@@ -78,7 +78,6 @@ const Blog = lazy(() => import('./pages/Blog').then(m => ({ default: m.Blog })))
 const BlogPost = lazy(() => import('./pages/BlogPost').then(m => ({ default: m.BlogPost })));
 const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })));
 const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
-const ClientConfigurator = lazy(() => import('./pages/ClientConfigurator'));
 const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
 const CustomerConfigurator = lazy(() => import('./pages/CustomerConfigurator'));
 
