@@ -10,7 +10,9 @@ import {
   Music, Box as BoxIcon, ArrowRight, ArrowLeft, Check, Loader2, Send,
   Sparkles, Volume2, Waves, Settings2, Mail, User, Phone, MessageSquare,
   CheckCircle, Palette, Ruler, Zap, Weight, Wand2, ShieldCheck, Hammer,
+  Headphones, Tent, Guitar, Megaphone, SlidersHorizontal, Sofa, Mic, Clapperboard, Speaker,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { USE_CASE_LABELS, ENVIRONMENT_LABELS, AMPLIFIERS, DRIVERS } from '../data/speakerDatabase';
 import { subscribeDrivers } from '../services/driverLibrary';
@@ -36,6 +38,19 @@ const FINISHES = [
 ];
 
 const STEPS = ['Obiettivo', 'Progetto', 'La tua cassa', 'Personalizza', 'Preventivo'];
+
+// Icone lineari coerenti per ogni uso (sostituiscono le emoji → look premium)
+const USE_CASE_ICONS: Record<string, LucideIcon> = {
+  'dj-club': Headphones,
+  'dj-festival': Tent,
+  'band-live': Guitar,
+  'pa-events': Megaphone,
+  'studio-monitor': SlidersHorizontal,
+  'home-hifi': Sofa,
+  'karaoke': Mic,
+  'cinema-home': Clapperboard,
+  'subwoofer-dedicato': Speaker,
+};
 
 // ─── Selezione automatica del driver dal profilo (deterministica) ─────────────
 function pickDriver(drivers: SpeakerDriver[], p: Profile): SpeakerDriver {
@@ -155,12 +170,12 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" role="list" aria-label={`Passo ${step + 1} di ${STEPS.length}: ${STEPS[step]}`}>
             {STEPS.map((s, i) => (
-              <div key={s} className="flex-1 flex items-center gap-2">
+              <div key={s} className="flex-1 flex items-center gap-2" role="listitem" aria-current={i === step ? 'step' : undefined}>
                 <div className={`flex items-center gap-1.5 ${i <= step ? 'text-[#F27D26]' : 'text-zinc-600'}`}>
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border ${i < step ? 'bg-[#F27D26] border-[#F27D26] text-white' : i === step ? 'border-[#F27D26]' : 'border-zinc-700'}`}>
-                    {i < step ? <Check className="w-3 h-3" /> : i + 1}
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black border ${i < step ? 'bg-[#F27D26] border-[#F27D26] text-[#3a1606]' : i === step ? 'border-[#F27D26]' : 'border-zinc-700'}`}>
+                    {i < step ? <Check className="w-3 h-3" strokeWidth={3} /> : i + 1}
                   </div>
                   <span className="text-[10px] font-bold uppercase tracking-wider hidden sm:block">{s}</span>
                 </div>
@@ -168,10 +183,14 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
               </div>
             ))}
           </div>
+          {/* Nome step corrente — visibile su mobile (dove le label sono nascoste) */}
+          <p className="sm:hidden text-[11px] font-bold text-[#F27D26] mt-2">
+            Passo {step + 1} di {STEPS.length} · {STEPS[step]}
+          </p>
         </div>
       </div>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-5 py-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-5 pt-8 pb-28">
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -14 }} transition={{ duration: 0.3 }}>
             {step === 0 && <StepGoal profile={profile} setProfile={setProfile} />}
@@ -198,12 +217,12 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
             </button>
             {step === 0 && (
               <button onClick={next} disabled={!canStartDesign}
-                className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold bg-[#F27D26] hover:bg-[#E06C1C] text-white shadow-lg shadow-[#F27D26]/20 disabled:opacity-40 disabled:cursor-not-allowed">
+                className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold bg-[#F27D26] hover:bg-[#E06C1C] text-[#3a1606] shadow-lg shadow-[#F27D26]/20 disabled:opacity-40 disabled:cursor-not-allowed">
                 Progetta la mia cassa <Wand2 className="w-5 h-5" />
               </button>
             )}
             {(step === 2 || step === 3) && (
-              <button onClick={next} className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold bg-[#F27D26] hover:bg-[#E06C1C] text-white shadow-lg shadow-[#F27D26]/20">
+              <button onClick={next} className="flex items-center gap-2 px-8 py-3 rounded-lg font-bold bg-[#F27D26] hover:bg-[#E06C1C] text-[#3a1606] shadow-lg shadow-[#F27D26]/20">
                 {step === 2 ? 'Personalizza' : 'Richiedi preventivo'} <ArrowRight className="w-5 h-5" />
               </button>
             )}
@@ -229,12 +248,14 @@ function StepGoal({ profile, setProfile }: { profile: Profile; setProfile: React
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {Object.entries(USE_CASE_LABELS).map(([key, d]) => {
             const sel = profile.useCase === key;
+            const Icon = USE_CASE_ICONS[key] || Music;
             return (
               <button key={key} onClick={() => setProfile(p => ({ ...p, useCase: key as UseCase }))}
+                aria-pressed={sel}
                 className={`p-4 rounded-2xl border text-left transition-all ${sel ? 'bg-[#F27D26]/10 border-[#F27D26]' : 'bg-zinc-900/50 border-white/5 hover:border-white/20'}`}>
-                <div className="text-3xl mb-2">{d.icon}</div>
+                <Icon className={`w-7 h-7 mb-2 ${sel ? 'text-[#F27D26]' : 'text-zinc-300'}`} strokeWidth={1.5} />
                 <div className="font-bold text-sm">{d.label}</div>
-                <div className="text-[11px] text-zinc-500 leading-snug mt-0.5">{d.description}</div>
+                <div className="text-[11px] text-zinc-400 leading-snug mt-0.5">{d.description}</div>
               </button>
             );
           })}
@@ -250,7 +271,7 @@ function StepGoal({ profile, setProfile }: { profile: Profile; setProfile: React
               <button key={key} onClick={() => setProfile(p => ({ ...p, environment: key as Environment }))}
                 className={`p-4 rounded-2xl border text-left transition-all ${sel ? 'bg-[#F27D26]/10 border-[#F27D26]' : 'bg-zinc-900/50 border-white/5 hover:border-white/20'}`}>
                 <div className="font-bold text-sm">{d.label}</div>
-                <div className="text-[11px] text-zinc-500 leading-snug mt-0.5">{d.description}</div>
+                <div className="text-[11px] text-zinc-400 leading-snug mt-0.5">{d.description}</div>
                 <div className="text-[10px] text-[#F27D26] mt-1 font-bold">{d.sqm}</div>
               </button>
             );
@@ -505,7 +526,7 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
           </div>
           {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
           <button type="submit" disabled={!canSubmit}
-            className="w-full mt-5 py-4 bg-[#F27D26] hover:bg-[#E06C1C] text-white rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+            className="w-full mt-5 py-4 bg-[#F27D26] hover:bg-[#E06C1C] text-[#3a1606] rounded-xl font-bold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
             {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
             {submitting ? 'Invio…' : 'Invia richiesta'}
           </button>
