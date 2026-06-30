@@ -165,7 +165,7 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-lg font-black tracking-tight">Crea la <span className="text-[#F27D26]">tua cassa</span></h1>
             {onNavigate && (
-              <button onClick={() => onNavigate('configuratore-esperto')} className="text-[11px] text-zinc-500 hover:text-[#F27D26] flex items-center gap-1 transition-colors">
+              <button onClick={() => onNavigate('configuratore-esperto')} className="text-[11px] text-zinc-400 hover:text-[#F27D26] flex items-center gap-1 transition-colors">
                 <Settings2 className="w-3.5 h-3.5" /> Modalità esperto
               </button>
             )}
@@ -226,7 +226,7 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
                 {step === 2 ? 'Personalizza' : 'Richiedi preventivo'} <ArrowRight className="w-5 h-5" />
               </button>
             )}
-            {step === 4 && <span className="text-xs text-zinc-500 max-w-[15rem] text-right">Compila il modulo per ricevere il preventivo.</span>}
+            {step === 4 && <span className="text-xs text-zinc-400 max-w-[15rem] text-right">Compila il modulo per ricevere il preventivo.</span>}
           </div>
         </div>
       )}
@@ -244,7 +244,7 @@ function StepGoal({ profile, setProfile }: { profile: Profile; setProfile: React
       </div>
 
       <div>
-        <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3 flex items-center gap-2"><Music className="w-4 h-4 text-[#F27D26]" /> Utilizzo principale</p>
+        <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2"><Music className="w-4 h-4 text-[#F27D26]" /> Utilizzo principale</p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {Object.entries(USE_CASE_LABELS).map(([key, d]) => {
             const sel = profile.useCase === key;
@@ -263,7 +263,7 @@ function StepGoal({ profile, setProfile }: { profile: Profile; setProfile: React
       </div>
 
       <div>
-        <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3 flex items-center gap-2"><BoxIcon className="w-4 h-4 text-[#F27D26]" /> Dove la userai</p>
+        <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2"><BoxIcon className="w-4 h-4 text-[#F27D26]" /> Dove la userai</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Object.entries(ENVIRONMENT_LABELS).map(([key, d]) => {
             const sel = profile.environment === key;
@@ -297,7 +297,7 @@ function Slider({ label, icon, value, onChange, left, right }: { label: string; 
       <p className="text-sm font-bold flex items-center gap-2 mb-4">{icon} {label}</p>
       <input type="range" min={0} max={100} value={value} onChange={e => onChange(Number(e.target.value))}
         className="w-full accent-[#F27D26]" />
-      <div className="flex justify-between text-[11px] text-zinc-500 mt-1"><span>{left}</span><span>{right}</span></div>
+      <div className="flex justify-between text-[11px] text-zinc-400 mt-1"><span>{left}</span><span>{right}</span></div>
     </div>
   );
 }
@@ -367,7 +367,7 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
       {splCurve.length > 0 && (
         <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
           <h3 className="text-lg font-bold mb-1">La tua curva di risposta</h3>
-          <p className="text-xs text-zinc-500 mb-4">Più la linea scende e resta distesa a sinistra, più la cassa va in profondità sui bassi.</p>
+          <p className="text-xs text-zinc-400 mb-4">Più la linea scende e resta distesa a sinistra, più la cassa va in profondità sui bassi.</p>
           <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: splCurve }]} yLabel="Risposta" yUnit="dB" height={200} />
         </div>
       )}
@@ -380,7 +380,7 @@ function HumanStat({ icon, title, value, note, accent }: { icon: React.ReactNode
     <div className={`flex items-center gap-4 p-4 rounded-xl border ${accent ? 'bg-[#F27D26]/5 border-[#F27D26]/30' : 'bg-zinc-900/50 border-white/5'}`}>
       <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${accent ? 'bg-[#F27D26]/15 text-[#F27D26]' : 'bg-zinc-800 text-zinc-300'}`}>{icon}</div>
       <div className="min-w-0">
-        <div className="text-[11px] text-zinc-500 uppercase tracking-wider">{title}</div>
+        <div className="text-[11px] text-zinc-400 uppercase tracking-wider">{title}</div>
         <div className="font-black text-lg leading-tight truncate">{value}</div>
         <div className="text-xs text-zinc-400">{note}</div>
       </div>
@@ -408,7 +408,7 @@ function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, proj
 
         <div className="space-y-6">
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Finitura</p>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3">Finitura</p>
             <div className="grid grid-cols-3 gap-3">
               {FINISHES.map(f => (
                 <button key={f.id} onClick={() => setFinishId(f.id)}
@@ -421,7 +421,7 @@ function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, proj
           </div>
 
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Dettagli</p>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3">Dettagli</p>
             <button onClick={() => setGrille(!grille)}
               className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${grille ? 'bg-[#F27D26]/5 border-[#F27D26]/30' : 'bg-zinc-900/50 border-white/10'}`}>
               <span className="text-sm font-bold">Griglia di protezione</span>
@@ -432,7 +432,7 @@ function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, proj
           </div>
 
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-zinc-500 mb-3">Dai un nome al progetto</p>
+            <p className="text-xs font-black uppercase tracking-widest text-zinc-400 mb-3">Dai un nome al progetto</p>
             <input value={projectName} onChange={e => setProjectName(e.target.value)} maxLength={40}
               placeholder="es. La mia cassa per il club"
               className="w-full bg-zinc-950 border border-white/10 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#F27D26]" />
@@ -513,13 +513,13 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
         {/* form */}
         <form onSubmit={submit} className="bg-zinc-900 border border-[#F27D26]/30 rounded-2xl p-6 shadow-2xl">
           <h3 className="text-lg font-bold mb-1 flex items-center gap-2"><Send className="w-5 h-5 text-[#F27D26]" /> I tuoi contatti</h3>
-          <p className="text-zinc-500 text-sm mb-5">Ti inviamo il preventivo personalizzato.</p>
+          <p className="text-zinc-400 text-sm mb-5">Ti inviamo il preventivo personalizzato.</p>
           <div className="space-y-3">
             <IconInput icon={<User className="w-4 h-4" />} type="text" placeholder="Nome e cognome *" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} />
             <IconInput icon={<Mail className="w-4 h-4" />} type="email" placeholder="Email *" value={form.email} onChange={v => setForm(f => ({ ...f, email: v }))} />
             <IconInput icon={<Phone className="w-4 h-4" />} type="tel" placeholder="Telefono / WhatsApp (opzionale)" value={form.phone} onChange={v => setForm(f => ({ ...f, phone: v }))} />
             <div className="relative">
-              <MessageSquare className="w-4 h-4 text-zinc-500 absolute left-3 top-3" />
+              <MessageSquare className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
               <textarea rows={3} placeholder="Note (opzionale)" value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
                 className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm resize-none focus:outline-none focus:border-[#F27D26]" />
             </div>
@@ -538,7 +538,7 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
 }
 
 function Line({ label, value }: { label: string; value: string }) {
-  return <div className="flex justify-between gap-3 text-sm py-1.5 border-b border-white/5 last:border-0"><span className="text-zinc-500">{label}</span><span className="font-bold text-right">{value}</span></div>;
+  return <div className="flex justify-between gap-3 text-sm py-1.5 border-b border-white/5 last:border-0"><span className="text-zinc-400">{label}</span><span className="font-bold text-right">{value}</span></div>;
 }
 function Trust({ icon, text }: { icon: React.ReactNode; text: string }) {
   return <div className="bg-zinc-900/50 border border-white/5 rounded-xl p-3 text-center"><div className="text-[#F27D26] flex justify-center mb-1">{icon}</div><div className="text-[10px] font-bold text-zinc-300">{text}</div></div>;
@@ -546,7 +546,7 @@ function Trust({ icon, text }: { icon: React.ReactNode; text: string }) {
 function IconInput({ icon, type, placeholder, value, onChange }: { icon: React.ReactNode; type: string; placeholder: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="relative">
-      <span className="text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
+      <span className="text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2">{icon}</span>
       <input type={type} placeholder={placeholder} value={value} onChange={e => onChange(e.target.value)}
         className="w-full bg-zinc-950 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-[#F27D26]" />
     </div>

@@ -52,7 +52,7 @@ export function Home({ onNavigate }: HomeProps) {
       <MouseGlow />
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-32 md:pt-32 md:pb-40 overflow-hidden">
+      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 pb-20 md:pt-24 md:pb-24 overflow-hidden">
         <HeroBackground />
         {/* Parallax wrapper per il contenuto hero */}
         <motion.div className="absolute inset-0 z-[1]" style={{ y: heroY }} />
@@ -83,7 +83,7 @@ export function Home({ onNavigate }: HomeProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-10"
+            className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-6"
           >
             <ShieldCheck className="w-5 h-5 shrink-0" />
             <EditableText 
@@ -98,7 +98,7 @@ export function Home({ onNavigate }: HomeProps) {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-5xl md:text-[7.5rem] font-black tracking-tighter mb-8 md:mb-12 leading-[1.1] font-display uppercase"
+            className="text-5xl md:text-[6.5rem] font-black tracking-tighter mb-5 md:mb-7 leading-[1.05] font-display uppercase"
           >
             <EditableText 
               as="span" 
@@ -118,7 +118,7 @@ export function Home({ onNavigate }: HomeProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
-            className="text-lg md:text-3xl text-zinc-400 max-w-3xl mx-auto mb-16 md:mb-20 leading-relaxed font-medium tracking-tight"
+            className="text-lg md:text-2xl text-zinc-300 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed font-medium tracking-tight"
           >
             <EditableText 
               as="p" 
