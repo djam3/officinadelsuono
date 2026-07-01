@@ -195,42 +195,25 @@ export function calculateExternalDimensions(
   // Volume interno in mm³
   const volumeMm3 = internalVolumeLiters * 1e6;
 
-  // Dimensione minima frontale per ospitare il driver
+  // Larghezza frontale minima per ospitare il driver (Ø driver + margine)
   const minFrontWidth = (driver.overallDiameter || driver.size * 25.4 + 40) + 40; // +40mm margine
-  const minFrontHeight = minFrontWidth + 60; // spazio extra sopra/sotto driver
+  // Baffle VERTICALE realistico: una cassa vera è più alta che larga (spazio per
+  // impilare woofer + tromba/porta). Evita la "cassa larga e bassa".
+  const minFrontHeight = Math.round(minFrontWidth * 1.45);
 
-  // Calcola le dimensioni interne basate su proporzioni auree
-  // Rapporto ideale: 1 : 1.26 : 1.618 (per minimizzare risonanze stazionarie)
-  const ratio1 = 1;
-  const ratio2 = 1.26;
-  const ratio3 = GOLDEN_RATIO;
+  // Punto di partenza da proporzioni auree (buone per le risonanze interne)
+  const x = Math.cbrt(volumeMm3 / (1 * 1.26 * GOLDEN_RATIO));
 
-  // V = W × H × D = x × (x × 1.26) × (x × 1.618)
-  // V = x³ × 1.26 × 1.618
-  // x = ³√(V / (1.26 × 1.618))
-  const x = Math.cbrt(volumeMm3 / (ratio1 * ratio2 * ratio3));
+  // Larghezza: la minore necessaria (driver + margine); Altezza: dominante
+  const internalWidth = Math.max(Math.round(x), minFrontWidth);
+  const internalHeight = Math.max(Math.round(x * 1.26), minFrontHeight);
 
-  let internalWidth = Math.round(x * ratio1);
-  let internalHeight = Math.round(x * ratio2);
-  let internalDepth = Math.round(x * ratio3);
+  // Profondità: ricavata per MANTENERE il volume netto richiesto (nessun cap
+  // superiore, così una cassa profonda resta profonda e il volume è corretto)
+  let internalDepth = Math.max(Math.round(volumeMm3 / (internalWidth * internalHeight)), 180);
 
-  // Assicura che il frontale sia abbastanza grande per il driver
-  if (internalWidth < minFrontWidth) {
-    const scale = minFrontWidth / internalWidth;
-    internalWidth = minFrontWidth;
-    // Ricalcola profondità per mantenere il volume
-    internalDepth = Math.round(volumeMm3 / (internalWidth * internalHeight));
-    if (internalDepth < 150) {
-      internalDepth = 150;
-      internalHeight = Math.round(volumeMm3 / (internalWidth * internalDepth));
-    }
-  }
-
-  // Spazio extra per l'amplificatore (tipicamente dietro in basso)
-  let extraDepth = 0;
-  if (hasAmplifier) {
-    extraDepth = 30; // 30mm extra per i connettori dell'amplificatore
-  }
+  // Spazio extra per l'amplificatore (connettori dietro)
+  const extraDepth = hasAmplifier ? 30 : 0;
 
   return {
     width: internalWidth + 2 * woodThickness,
