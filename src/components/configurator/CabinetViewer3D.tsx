@@ -648,7 +648,7 @@ const isWebGLAvailable = (): boolean => {
 const CabinetFallback2D = ({ cabinet }: { cabinet: CabinetDesign }) => {
   const { width, height, depth } = cabinet.externalDimensions;
   return (
-    <div className="w-full h-full min-h-[400px] flex flex-col items-center justify-center gap-4 p-8">
+    <div className="w-full h-full min-h-[320px] flex flex-col items-center justify-center gap-4 p-8">
       <svg viewBox="0 0 200 200" className="w-48 h-48 drop-shadow-2xl">
         <polygon points="40,60 140,60 140,170 40,170" fill="#191a1d" stroke="#3a3c40" strokeWidth="2" />
         <polygon points="40,60 70,35 170,35 140,60" fill="#222327" stroke="#3a3c40" strokeWidth="2" />
@@ -719,21 +719,22 @@ export const CabinetViewer3D = ({
     cabinet.externalDimensions.height,
     cabinet.externalDimensions.depth
   ) / 1000;
-  const dist = Math.max(maxDim * 2.0, 0.9);
-  // Camera quasi frontale, leggermente di 3/4: il driver resta protagonista
-  const camPos: [number, number, number] = [dist * 0.42, dist * 0.3, dist * 1.15];
+  // Inquadratura hero: la cassa riempie ~65% del frame senza uscire dai bordi
+  const dist = Math.max(maxDim * 1.65, 0.7);
+  // Angolo 3/4 da catalogo, driver in primo piano
+  const camPos: [number, number, number] = [dist * 0.52, dist * 0.34, dist * 1.05];
   const groundY = -(cabinet.externalDimensions.height / 1000) / 2 - 0.014;
 
   if (!isWebGLAvailable()) {
     return (
-      <div className="w-full h-full min-h-[400px] bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
+      <div className="w-full h-full min-h-[320px] bg-zinc-950 rounded-2xl border border-white/5 overflow-hidden relative">
         <CabinetFallback2D cabinet={cabinet} />
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-2xl border border-white/5 overflow-hidden relative">
+    <div className="w-full h-full min-h-[320px] rounded-2xl border border-white/5 overflow-hidden relative">
       {/* Backdrop a gradiente radiale dietro la scena (profondità da showroom) */}
       <div
         className="absolute inset-0 -z-0"
@@ -745,7 +746,7 @@ export const CabinetViewer3D = ({
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: camPos, fov: 40 }}
+        camera={{ position: camPos, fov: 42 }}
         gl={{ preserveDrawingBuffer: true, antialias: true, toneMappingExposure: 1.45 }}
         style={{ background: 'transparent' }}
       >

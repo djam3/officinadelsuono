@@ -347,7 +347,7 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div className="rounded-2xl overflow-hidden min-h-[420px] relative shadow-2xl">
+        <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
           <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} baffleDrivers={[driver]} />
         </div>
 
@@ -402,7 +402,7 @@ function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, proj
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div className="rounded-2xl overflow-hidden min-h-[420px] relative shadow-2xl">
+        <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
           <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} />
         </div>
 
