@@ -378,7 +378,7 @@ const createGrilleAlpha = () => {
 const FrontGrille = ({ w, h, z }: { w: number; h: number; z: number }) => {
   const alpha = useMemo(() => {
     const t = createGrilleAlpha();
-    t.repeat.set(Math.max(6, Math.round(w * 22)), Math.max(6, Math.round(h * 22)));
+    t.repeat.set(Math.max(10, Math.round(w * 34)), Math.max(10, Math.round(h * 34)));
     t.anisotropy = 16;
     return t;
   }, [w, h]);
@@ -806,20 +806,25 @@ export const CabinetViewer3D = ({
           {/* Ombra di contatto morbida sopra il pavimento */}
           <ContactShadows
             position={[0, groundY + 0.001, 0]}
-            opacity={0.65}
-            scale={Math.max(w_scale(cabinet), 1.4)}
-            blur={2.8}
-            far={maxDim * 1.4}
+            opacity={0.5}
+            scale={Math.max(w_scale(cabinet), 1.4) * 1.2}
+            blur={4}
+            far={maxDim * 1.6}
             resolution={1024}
             color="#000000"
           />
 
-          {/* Riflessi da studio (procedurali, senza rete) */}
-          <Environment resolution={512}>
-            <Lightformer intensity={2.6} position={[0, 3, 2]} scale={[5, 5, 1]} />
-            <Lightformer intensity={1.3} position={[-4, 1, 2]} scale={[3, 4, 1]} color="#aac4ff" />
-            <Lightformer intensity={1.6} position={[4, 2, 1]} scale={[2.5, 3, 1]} color="#ffd9b0" />
-            <Lightformer intensity={1.0} position={[0, -2, -3]} scale={[6, 3, 1]} color={ACCENT} />
+          {/* Studio softbox multipli → riflessi morbidi tipo HDRI (senza rete) */}
+          <Environment resolution={768}>
+            {/* grande softbox chiave dall'alto */}
+            <Lightformer form="rect" intensity={3.2} position={[0, 4, 2.5]} scale={[8, 5, 1]} />
+            {/* strisce laterali (sculpting su cono e legno) */}
+            <Lightformer form="rect" intensity={1.8} position={[-5, 1.5, 1.5]} rotation={[0, Math.PI / 2, 0]} scale={[4, 6, 1]} color="#c8d6ff" />
+            <Lightformer form="rect" intensity={2.2} position={[5, 2, 1]} rotation={[0, -Math.PI / 2, 0]} scale={[3.5, 6, 1]} color="#ffe6c4" />
+            {/* riempimenti bassi + rim caldo dietro */}
+            <Lightformer form="rect" intensity={0.8} position={[0, -2, 3]} scale={[8, 3, 1]} />
+            <Lightformer form="ring" intensity={1.4} position={[-2, 1, -4]} scale={[3, 3, 1]} color="#ffb877" />
+            <Lightformer form="rect" intensity={0.6} position={[0, 1, -5]} scale={[10, 6, 1]} color={ACCENT} />
           </Environment>
         </Suspense>
 
