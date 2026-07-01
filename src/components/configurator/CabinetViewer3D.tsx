@@ -68,25 +68,36 @@ const createWoodTexture = () => {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (ctx) {
-    // base tabacco chiaro tipica dell'MDF
-    ctx.fillStyle = '#c2a06e';
+    // base tabacco caldo tipica dell'MDF grezzo
+    ctx.fillStyle = '#bd975f';
     ctx.fillRect(0, 0, w, h);
     // micro-fibra: tantissimi punti fini chiari/scuri (aspetto pressato)
-    for (let i = 0; i < 60000; i++) {
+    for (let i = 0; i < 70000; i++) {
       const x = Math.random() * w, y = Math.random() * h;
-      const d = (Math.random() - 0.5) * 46;
-      const r = 168 + d, g = 134 + d * 0.85, b = 92 + d * 0.7;
+      const d = (Math.random() - 0.5) * 54;
+      const r = 160 + d, g = 126 + d * 0.85, b = 84 + d * 0.7;
       ctx.fillStyle = `rgba(${r|0},${g|0},${b|0},0.5)`;
       ctx.fillRect(x, y, 1, 1);
     }
-    // leggere chiazze morbide di densità (non uniformità del pannello)
-    for (let i = 0; i < 60; i++) {
+    // venatura pressata: sottili striature orizzontali (fibra dell'MDF)
+    for (let i = 0; i < 140; i++) {
+      const y = Math.random() * h;
+      const tone = 70 + Math.random() * 60;
+      ctx.strokeStyle = `rgba(${tone + 30},${tone},${tone - 20},${0.05 + Math.random() * 0.09})`;
+      ctx.lineWidth = 0.5 + Math.random() * 1.4;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      for (let x = 0; x <= w; x += 16) ctx.lineTo(x, y + Math.sin(x / 60 + i) * 1.4);
+      ctx.stroke();
+    }
+    // chiazze morbide di densità (non uniformità del pannello)
+    for (let i = 0; i < 70; i++) {
       const x = Math.random() * w, y = Math.random() * h;
-      const rad = 20 + Math.random() * 70;
+      const rad = 20 + Math.random() * 80;
       const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
-      const a = 0.04 + Math.random() * 0.05;
-      g.addColorStop(0, `rgba(120,92,55,${a})`);
-      g.addColorStop(1, 'rgba(120,92,55,0)');
+      const a = 0.05 + Math.random() * 0.06;
+      g.addColorStop(0, `rgba(108,80,46,${a})`);
+      g.addColorStop(1, 'rgba(108,80,46,0)');
       ctx.fillStyle = g;
       ctx.beginPath();
       ctx.arc(x, y, rad, 0, Math.PI * 2);
@@ -111,7 +122,7 @@ interface FinishStyle {
 }
 const FINISH_STYLES: Record<string, FinishStyle> = {
   // color bianco = lascia trasparire i colori veri della texture MDF (la map moltiplica)
-  natural: { color: '#ffffff', baffleColor: '#b59468', roughness: 0.86, metalness: 0.0, useWood: true },
+  natural: { color: '#efe3cf', baffleColor: '#a9865c', roughness: 0.9, metalness: 0.0, useWood: true },
   black:   { color: '#191a1d', baffleColor: '#0f1012', roughness: 0.82, metalness: 0.14, useWood: false },
   white:   { color: '#e9e9ec', baffleColor: '#cfd0d4', roughness: 0.55, metalness: 0.10, useWood: false },
 };
@@ -175,13 +186,13 @@ const Driver3D = ({
       {/* Cono (tronco di cono che rientra nella cassa) */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.008 - r * 0.34]}>
         <cylinderGeometry args={[r * 0.18, r * 0.74, r * 0.68, 48, 1, true]} />
-        <meshStandardMaterial color="#222327" roughness={0.55} metalness={0.25} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#26272b" roughness={0.42} metalness={0.35} envMapIntensity={1.4} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Dust cap (cupola centrale) */}
+      {/* Dust cap (cupola centrale) — riflette le luci da studio */}
       <mesh position={[0, 0, -0.012]}>
         <sphereGeometry args={[r * 0.26, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#2a2c30" roughness={0.3} metalness={0.7} />
+        <meshStandardMaterial color="#2c2e33" roughness={0.22} metalness={0.8} envMapIntensity={1.8} />
       </mesh>
       {/* Anello accento attorno al dust cap */}
       <mesh position={[0, 0, -0.013]}>
@@ -675,8 +686,8 @@ const RevealGroup = ({ children, sway = true }: { children: React.ReactNode; swa
     const intro = Math.min(1, t.current / 0.9);
     const e = 1 - Math.pow(1 - intro, 3); // ease-out cubic
     ref.current.scale.setScalar(0.82 + 0.18 * e);
-    // oscillazione lieve (~7°) attorno al fronte: vita senza nascondere il driver
-    const swayAngle = sway ? Math.sin(t.current * 0.5) * 0.12 : 0;
+    // oscillazione elegante (~15°) attorno al fronte: mostra il 3/4 senza il retro spoglio
+    const swayAngle = sway ? Math.sin(t.current * 0.42) * 0.26 : 0;
     ref.current.rotation.y = (1 - e) * -0.35 + swayAngle * e;
   });
   return <group ref={ref}>{children}</group>;
