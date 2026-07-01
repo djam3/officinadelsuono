@@ -73,8 +73,19 @@ function pickDriver(drivers: SpeakerDriver[], p: Profile): SpeakerDriver {
   return best;
 }
 
+// Sceglie la via alta (tromba a compressione per PA/DJ, cupola per hi-fi/studio)
+function pickHF(drivers: SpeakerDriver[], useCase: UseCase): SpeakerDriver | null {
+  const wantHorn = ['dj-club', 'dj-festival', 'band-live', 'pa-events', 'karaoke'].includes(useCase);
+  const primary = wantHorn ? 'compression-driver' : 'tweeter';
+  let pool = drivers.filter(d => d.type === primary);
+  if (!pool.length) pool = drivers.filter(d => d.type === 'compression-driver' || d.type === 'tweeter');
+  if (!pool.length) return null;
+  return [...pool].sort((a, b) => (b.sensitivity - a.sensitivity) || (b.powerRMS - a.powerRMS))[0];
+}
+
 interface DesignResult {
   driver: SpeakerDriver;
+  hf: SpeakerDriver | null;   // via alta (tromba/tweeter); null per sub puro
   amp: typeof AMPLIFIERS[number];
   cabinet: CabinetDesign;
   f3: number;
@@ -112,7 +123,10 @@ function buildDesign(drivers: SpeakerDriver[], p: Profile): DesignResult | null 
     }
   } catch { splCurve = []; }
 
-  return { driver, amp, cabinet, f3, splCurve };
+  // Via alta: solo per casse full-range (non per il subwoofer puro)
+  const hf = useCase === 'subwoofer-dedicato' ? null : pickHF(drivers, useCase);
+
+  return { driver, hf, amp, cabinet, f3, splCurve };
 }
 
 const heightObject = (mm: number): string => {
@@ -197,7 +211,8 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
             {step === 1 && <StepMagic profile={profile} drivers={drivers} />}
             {step === 2 && design && cabinetForView && <StepReveal design={design} cabinet={cabinetForView} />}
             {step === 3 && design && cabinetForView && (
-              <StepCustomize cabinet={cabinetForView} finishId={finishId} setFinishId={setFinishId}
+              <StepCustomize cabinet={cabinetForView} baffleDrivers={design.hf ? [design.driver, design.hf] : [design.driver]}
+                finishId={finishId} setFinishId={setFinishId}
                 grille={grille} setGrille={setGrille} projectName={projectName} setProjectName={setProjectName} />
             )}
             {step === 4 && design && (
@@ -336,19 +351,25 @@ function StepMagic({ profile, drivers }: { profile: Profile; drivers: SpeakerDri
 
 // ─── STEP 2: La tua cassa ─────────────────────────────────────────────────────
 function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: CabinetDesign }) {
-  const { driver, amp, f3, splCurve } = design;
+  const { driver, hf, amp, f3, splCurve } = design;
   const dims = cabinet.externalDimensions;
+  const baffle = hf ? [driver, hf] : [driver];
+  const hornWord = hf?.type === 'compression-driver' ? 'tromba a compressione' : 'tweeter';
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto">
         <p className="text-[#F27D26] font-bold text-sm uppercase tracking-widest mb-2 flex items-center justify-center gap-2"><Sparkles className="w-4 h-4" /> Ecco la tua cassa</p>
         <h2 className="text-3xl md:text-4xl font-black mb-2">Progettata su misura per te</h2>
-        <p className="text-zinc-400">Un {driver.size}" {driver.brand} in una cassa {cabinet.type === 'sealed' ? 'chiusa' : 'bass-reflex'} ottimizzata, già abbinata all'amplificazione.</p>
+        <p className="text-zinc-400">
+          {hf
+            ? `Una 2 vie: woofer ${driver.size}" ${driver.brand} + ${hornWord}, in una cassa ${cabinet.type === 'sealed' ? 'chiusa' : 'bass-reflex'} ottimizzata e già abbinata all'amplificazione.`
+            : `Un ${driver.size}" ${driver.brand} in una cassa ${cabinet.type === 'sealed' ? 'chiusa' : 'bass-reflex'} ottimizzata, già abbinata all'amplificazione.`}
+        </p>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
-          <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} baffleDrivers={[driver]} />
+          <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} baffleDrivers={baffle} />
         </div>
 
         <div className="space-y-3">
@@ -389,8 +410,8 @@ function HumanStat({ icon, title, value, note, accent }: { icon: React.ReactNode
 }
 
 // ─── STEP 3: Personalizza ─────────────────────────────────────────────────────
-function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, projectName, setProjectName }: {
-  cabinet: CabinetDesign; finishId: string; setFinishId: (v: string) => void;
+function StepCustomize({ cabinet, baffleDrivers, finishId, setFinishId, grille, setGrille, projectName, setProjectName }: {
+  cabinet: CabinetDesign; baffleDrivers?: SpeakerDriver[]; finishId: string; setFinishId: (v: string) => void;
   grille: boolean; setGrille: (v: boolean) => void; projectName: string; setProjectName: (v: string) => void;
 }) {
   return (
@@ -403,7 +424,7 @@ function StepCustomize({ cabinet, finishId, setFinishId, grille, setGrille, proj
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
-          <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} />
+          <CabinetViewer3D cabinet={cabinet} baffleDrivers={baffleDrivers} showDimensions={false} exploded={false} />
         </div>
 
         <div className="space-y-6">
@@ -465,6 +486,8 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
         code, status: 'nuovo',
         contact: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), message: form.message.trim() },
         driverId: design.driver.id, driverLabel: `${design.driver.brand} ${design.driver.model}`,
+        hfId: design.hf?.id ?? null, hfLabel: design.hf ? `${design.hf.brand} ${design.hf.model}` : null,
+        system: design.hf ? '2 vie' : 'sub/1 via',
         ampId: design.amp.id, ampLabel: `${design.amp.brand} ${design.amp.model}`,
         useCase: profile.useCase || '', quantity: 1, cabinetName: projectName.trim() || design.cabinet.name,
         environment: profile.environment || '', powerLevel: profile.power, bassLevel: profile.bassDepth,
