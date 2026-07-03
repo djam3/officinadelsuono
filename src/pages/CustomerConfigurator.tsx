@@ -164,7 +164,7 @@ export default function CustomerConfigurator({ onNavigate }: { onNavigate?: (pag
   // momento "magia": entrando nello step 1, attende e avanza
   useEffect(() => {
     if (step === 1) {
-      const t = setTimeout(() => setStep(2), 2600);
+      const t = setTimeout(() => setStep(2), 3900); // la barra completa a 3400ms + pausa sul 100%
       return () => clearTimeout(t);
     }
   }, [step]);
@@ -319,31 +319,110 @@ function Slider({ label, icon, value, onChange, left, right }: { label: string; 
 
 // ─── STEP 1: Magia ────────────────────────────────────────────────────────────
 function StepMagic({ profile, drivers }: { profile: Profile; drivers: SpeakerDriver[] }) {
-  const phases = [
-    'Analizzo come la userai…',
-    'Scelgo l\'altoparlante giusto…',
-    'Calcolo il volume e l\'accordo della cassa…',
-    'Abbino l\'amplificazione perfetta…',
+  // Dati REALI del progetto, calcolati subito e rivelati man mano che la
+  // barra avanza: la progettazione mostrata è quella vera, non un finto loader.
+  const facts = useMemo(() => {
+    try {
+      const useCase = (profile.useCase || 'dj-club') as UseCase;
+      const env = (profile.environment || 'indoor-medium') as Environment;
+      const d = pickDriver(drivers, profile);
+      const amp = [...AMPLIFIERS]
+        .map(a => ({ a, s: scoreAmplifierMatch(d, a, useCase).score }))
+        .sort((x, y) => y.s - x.s)[0].a;
+      const type = recommendCabinetType(d, useCase, env);
+      return {
+        analisi: `${USE_CASE_LABELS[useCase]?.label ?? ''} · ${ENVIRONMENT_LABELS[env]?.label ?? ''}`,
+        driver: `${d.size}" ${d.brand} ${d.model}`,
+        box: type === 'sealed' ? 'cassa chiusa ottimizzata' : 'bass-reflex accordato',
+        amp: `${amp.brand} ${amp.model}${amp.hasDSP ? ' · DSP' : ''}`,
+      };
+    } catch { return null; }
+  }, [profile, drivers]);
+
+  const LOAD_STEPS = [
+    { label: 'Analisi del profilo d\'uso', detail: facts?.analisi },
+    { label: 'Selezione altoparlante dal catalogo', detail: facts?.driver },
+    { label: 'Progetto acustico del box (Thiele-Small)', detail: facts?.box },
+    { label: 'Abbinamento amplificazione', detail: facts?.amp },
+    { label: 'Taratura limiter di protezione', detail: 'soglia RMS nel DSP' },
   ];
-  const [phase, setPhase] = useState(0);
+
+  // Avanzamento con easing da installer pro: rapido all'inizio, rallenta sul finale
+  const DURATION = 3400;
+  const [progress, setProgress] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setPhase(p => Math.min(phases.length - 1, p + 1)), 620);
-    return () => clearInterval(id);
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - t0) / DURATION);
+      setProgress(Math.round((1 - Math.pow(1 - p, 2)) * 100));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, []);
-  void drivers; void profile;
+  const doneCount = Math.min(LOAD_STEPS.length, Math.floor((progress / 100) * LOAD_STEPS.length + 1e-4));
+
   return (
-    <div className="flex flex-col items-center justify-center text-center py-20 min-h-[50vh]">
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 3, ease: 'linear' }}
-        className="w-20 h-20 rounded-full border-2 border-[#F27D26]/30 border-t-[#F27D26] flex items-center justify-center mb-8">
-        <Wand2 className="w-8 h-8 text-[#F27D26]" />
-      </motion.div>
-      <h2 className="text-2xl md:text-3xl font-black mb-3">Sto progettando la tua cassa</h2>
-      <AnimatePresence mode="wait">
-        <motion.p key={phase} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-          className="text-zinc-400">{phases[phase]}</motion.p>
-      </AnimatePresence>
-      <div className="flex gap-1.5 mt-6">
-        {phases.map((_, i) => <div key={i} className={`w-2 h-2 rounded-full ${i <= phase ? 'bg-[#F27D26]' : 'bg-zinc-700'}`} />)}
+    <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
+      <div className="w-full max-w-xl">
+        <div className="text-center mb-8">
+          <p className="text-[#F27D26] font-bold text-xs uppercase tracking-[0.25em] mb-2 flex items-center justify-center gap-2">
+            <Wand2 className="w-4 h-4" /> Progettazione in corso
+          </p>
+          <h2 className="text-2xl md:text-3xl font-black">Sto progettando la tua cassa</h2>
+        </div>
+
+        {/* Barra di avanzamento con percentuale */}
+        <div className="flex items-center gap-4 mb-2">
+          <div className="flex-1 h-2.5 rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-[#F27D26] to-orange-400 shadow-[0_0_12px_rgba(242,125,38,0.6)] transition-[width] duration-100"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="w-14 text-right font-mono font-bold text-lg text-[#F27D26] tabular-nums">{progress}%</span>
+        </div>
+        <p className="text-[11px] text-zinc-500 font-mono mb-8">
+          motore acustico · Thiele-Small · {LOAD_STEPS[Math.min(doneCount, LOAD_STEPS.length - 1)].label.toLowerCase()}
+        </p>
+
+        {/* Checklist delle fasi con esito reale */}
+        <div className="space-y-2.5">
+          {LOAD_STEPS.map((s, i) => {
+            const done = i < doneCount;
+            const active = i === doneCount;
+            return (
+              <motion.div
+                key={s.label}
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: done || active ? 1 : 0.4, x: 0 }}
+                className={`flex items-center gap-3 p-3 rounded-xl border ${
+                  done ? 'bg-[#F27D26]/5 border-[#F27D26]/25'
+                  : active ? 'bg-zinc-900/70 border-white/15'
+                  : 'bg-zinc-900/40 border-white/5'
+                }`}
+              >
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 border ${
+                  done ? 'bg-[#F27D26] border-[#F27D26]'
+                  : active ? 'border-[#F27D26]/60'
+                  : 'border-zinc-700'
+                }`}>
+                  {done ? <Check className="w-3.5 h-3.5 text-[#3a1606]" strokeWidth={3} />
+                    : active ? <Loader2 className="w-3.5 h-3.5 text-[#F27D26] animate-spin" />
+                    : <span className="w-1.5 h-1.5 rounded-full bg-zinc-700" />}
+                </span>
+                <span className={`text-sm font-bold flex-1 ${done || active ? 'text-zinc-100' : 'text-zinc-500'}`}>{s.label}</span>
+                {done && s.detail && (
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="text-[11px] font-mono text-[#F27D26] truncate max-w-[45%] text-right">
+                    {s.detail}
+                  </motion.span>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
