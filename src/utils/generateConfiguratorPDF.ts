@@ -123,11 +123,30 @@ export function generateConfiguratorPDF(data: ConfiguratorPDFData): jsPDF {
     if (list.length) row('Accessori', list.join(', '));
   }
   if (cabinet.port) {
-    const n = cabinet.port.count ?? 1;
-    row('Accordo bass-reflex', `${cabinet.port.tuningFrequency} Hz`);
-    row('Porte', `${n}× Ø${cabinet.port.diameter}mm, lunghe ${cabinet.port.length}mm${cabinet.port.airVelocity != null ? ` • aria ${cabinet.port.airVelocity} m/s` : ''}`);
+    const p = cabinet.port;
+    const n = p.count ?? 1;
+    row('Accordo bass-reflex', `${p.tuningFrequency} Hz`);
+    if (p.shape === 'slot' && p.slotWidth && p.slotHeight) {
+      row('Porta a slot', `${p.slotWidth}×${p.slotHeight}mm — condotto ${p.length}mm (ripiegato a L se oltre la profondità)${p.airVelocity != null ? ` • aria ${p.airVelocity} m/s` : ''}`);
+    } else {
+      row('Porte', `${n}× Ø${p.diameter}mm, lunghe ${p.length}mm${p.airVelocity != null ? ` • aria ${p.airVelocity} m/s` : ''}`);
+    }
   }
   row('Peso stimato (vuota)', `${cabinet.estimatedWeight} kg`);
+
+  // ── Griglia frontale con logo (specifica di stampa) ────────────────────────
+  {
+    const { width: W, height: H, depth: D } = cabinet.externalDimensions;
+    const bevelMm = Math.min(W, H, D) * 0.025;
+    const gW = Math.round(W - bevelMm * 1.4);
+    const gH = Math.round(H - bevelMm * 1.4);
+    const logoW = Math.round(Math.min(gW * 0.5, 240));
+    section('Griglia frontale — logo ODS');
+    row('Dimensioni griglia (L×A)', `${gW} × ${gH} mm`);
+    row('Lamiera', 'acciaio 1.5mm, foratura Ø5mm passo 8mm sfalsata 60°, nero opaco');
+    row('Fissaggio', 'cornice perimetrale + clip a pressione (rimovibile)');
+    row('Logo da stampare', `"ODS" + "OFFICINA DEL SUONO" — serigrafia centrata in basso, larghezza ${logoW}mm, colore avorio (RAL 1013)`);
+  }
 
   section('Predisposizioni cassa attiva (retro)');
   if (cabinet.ampCutout) {

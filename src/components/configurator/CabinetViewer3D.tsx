@@ -2,7 +2,7 @@ import React, { useMemo, Suspense, useState, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, RoundedBox, ContactShadows, Environment, Lightformer, MeshReflectorMaterial, Float } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, SMAA } from '@react-three/postprocessing';
-import { Layers, Box as BoxIcon } from 'lucide-react';
+import { Layers, Box as BoxIcon, Grid3x3 } from 'lucide-react';
 import * as THREE from 'three';
 import { CabinetDesign, SpeakerDriver } from '../../types/speaker';
 
@@ -15,6 +15,10 @@ interface CabinetViewer3DProps {
   baffleDrivers?: SpeakerDriver[];
   /** Mostra il pulsante toggle "vista esplosa" nell'overlay */
   allowExplode?: boolean;
+  /** Griglia frontale montata (true) o rimossa per vedere i componenti (false) */
+  showGrille?: boolean;
+  /** Mostra il pulsante toggle griglia nell'overlay (default true) */
+  allowGrilleToggle?: boolean;
   /** Ref popolato col renderer WebGL per catturare screenshot (PDF/PNG) */
   glRef?: React.MutableRefObject<THREE.WebGLRenderer | null>;
 }
@@ -374,6 +378,30 @@ const createGrilleAlpha = () => {
   return t;
 };
 
+// ─── Logo serigrafato sulla griglia: "ODS" + "OFFICINA DEL SUONO" ────────────
+const createLogoTexture = () => {
+  const w = 1024, h = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.textAlign = 'center';
+    // Monogramma ODS (leggibile a distanza, stile targhetta pro)
+    ctx.fillStyle = '#f2e7d3';
+    ctx.font = '900 128px Arial, sans-serif';
+    ctx.fillText('O D S', w / 2, 128);
+    // Nome completo, piccolo e spaziato
+    ctx.font = '700 40px Arial, sans-serif';
+    ctx.fillStyle = '#d8c9ac';
+    const full = 'O F F I C I N A   D E L   S U O N O';
+    ctx.fillText(full, w / 2, 200);
+  }
+  const t = new THREE.CanvasTexture(canvas);
+  t.anisotropy = 8;
+  return t;
+};
+
 // ─── Griglia metallica forata professionale (stile FBT/RCF) ──────────────────
 const FrontGrille = ({ w, h, z }: { w: number; h: number; z: number }) => {
   const alpha = useMemo(() => {
@@ -382,17 +410,24 @@ const FrontGrille = ({ w, h, z }: { w: number; h: number; z: number }) => {
     t.anisotropy = 16;
     return t;
   }, [w, h]);
+  const logoTex = useMemo(() => createLogoTexture(), []);
   const fr = 0.014; // spessore cornice
   const frameMat = <meshStandardMaterial color="#0b0b0c" roughness={0.5} metalness={0.6} />;
+  const logoW = Math.min(w * 0.5, 0.24);
   return (
     <group position={[0, 0, z]}>
-      {/* tela forata (driver visibile in trasparenza attraverso i fori) */}
+      {/* tela forata (driver appena visibile in trasparenza attraverso i fori) */}
       <mesh>
         <planeGeometry args={[w, h]} />
         <meshStandardMaterial
-          color="#15161a" metalness={0.9} roughness={0.42}
+          color="#101114" metalness={0.9} roughness={0.42}
           alphaMap={alpha} transparent alphaTest={0.5} side={THREE.DoubleSide}
         />
+      </mesh>
+      {/* logo serigrafato in basso al centro (come da stampa reale) */}
+      <mesh position={[0, -h / 2 + Math.max(h * 0.12, logoW * 0.16), 0.004]}>
+        <planeGeometry args={[logoW, logoW * 0.25]} />
+        <meshStandardMaterial map={logoTex} transparent emissive="#f2e7d3" emissiveMap={logoTex} emissiveIntensity={0.25} />
       </mesh>
       {/* cornice perimetrale (4 barre) */}
       <mesh position={[0, h / 2 - fr / 2, 0.002]}><boxGeometry args={[w, fr, 0.01]} />{frameMat}</mesh>
@@ -446,7 +481,7 @@ const PoleCup = ({ y, up }: { y: number; up: boolean }) => (
 );
 
 // ─── Modello completo della cassa ─────────────────────────────────────────────
-const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: CabinetDesign; exploded?: boolean; baffleDrivers?: SpeakerDriver[] }) => {
+const CabinetModel = ({ cabinet, exploded = false, baffleDrivers, showGrille = true }: { cabinet: CabinetDesign; exploded?: boolean; baffleDrivers?: SpeakerDriver[]; showGrille?: boolean }) => {
   const bumpTex = useMemo(() => createTexturedBump(), []);
   const woodTex = useMemo(() => createWoodTexture(), []);
   const finish = resolveFinish(cabinet.finish);
@@ -623,7 +658,7 @@ const CabinetModel = ({ cabinet, exploded = false, baffleDrivers }: { cabinet: C
       {!exploded && (
         <>
           {/* Griglia metallica forata sul fronte (driver visibile attraverso i fori) */}
-          <FrontGrille w={w - bevel * 1.4} h={h - bevel * 1.4} z={d / 2 + 0.02} />
+          {showGrille && <FrontGrille w={w - bevel * 1.4} h={h - bevel * 1.4} z={d / 2 + 0.02} />}
 
           {/* Maniglie laterali incassate */}
           <SideHandle x={w / 2 + 0.001} y={h * 0.18} depth={d} />
@@ -719,11 +754,16 @@ export const CabinetViewer3D = ({
   cabinet,
   exploded = false,
   allowExplode = false,
+  showGrille = true,
+  allowGrilleToggle = true,
   baffleDrivers,
   glRef,
 }: CabinetViewer3DProps) => {
   const [explodedState, setExplodedState] = useState(exploded);
   const isExploded = allowExplode ? explodedState : exploded;
+  // Griglia: stato locale sincronizzato con la prop (es. toggle esterno step Personalizza)
+  const [grilleOn, setGrilleOn] = useState(showGrille);
+  React.useEffect(() => { setGrilleOn(showGrille); }, [showGrille]);
 
   const maxDim = Math.max(
     cabinet.externalDimensions.width,
@@ -780,7 +820,7 @@ export const CabinetViewer3D = ({
           <RevealGroup sway={!isExploded}>
             <Float speed={1.1} rotationIntensity={0} floatIntensity={isExploded ? 0 : 0.35} floatingRange={[-0.008, 0.018]}>
               <group position={[0, groundY * -0.15, 0]}>
-                <CabinetModel cabinet={cabinet} exploded={isExploded} baffleDrivers={baffleDrivers} />
+                <CabinetModel cabinet={cabinet} exploded={isExploded} baffleDrivers={baffleDrivers} showGrille={grilleOn} />
               </group>
             </Float>
           </RevealGroup>
@@ -861,22 +901,35 @@ export const CabinetViewer3D = ({
         </div>
       </div>
 
-      {/* Toggle vista esplosa */}
-      {allowExplode && (
-        <div className="absolute top-4 right-4 flex gap-2">
+      {/* Toggle griglia + vista esplosa */}
+      <div className="absolute top-4 right-4 flex gap-2">
+        {allowGrilleToggle && !isExploded && (
+          <button
+            onClick={() => setGrilleOn(v => !v)}
+            className={`backdrop-blur-xl border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg ${
+              grilleOn
+                ? 'bg-black/40 text-white/80 border-white/10 hover:border-white/30 hover:text-white'
+                : 'bg-brand-orange text-[#3a1606] border-brand-orange shadow-[0_0_20px_rgba(242,125,38,0.45)]'
+            }`}
+          >
+            <Grid3x3 className="w-3.5 h-3.5" />
+            {grilleOn ? 'Togli griglia' : 'Metti griglia'}
+          </button>
+        )}
+        {allowExplode && (
           <button
             onClick={() => setExplodedState(v => !v)}
             className={`backdrop-blur-xl border px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-lg ${
               isExploded
-                ? 'bg-brand-orange text-white border-brand-orange shadow-[0_0_20px_rgba(242,125,38,0.45)]'
+                ? 'bg-brand-orange text-[#3a1606] border-brand-orange shadow-[0_0_20px_rgba(242,125,38,0.45)]'
                 : 'bg-black/40 text-white/80 border-white/10 hover:border-white/30 hover:text-white'
             }`}
           >
             {isExploded ? <BoxIcon className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
             {isExploded ? 'Vista assemblata' : 'Vista esplosa'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="pointer-events-none absolute bottom-4 right-4 flex gap-2">
         <div className="bg-black/40 backdrop-blur-xl border border-white/10 px-3 py-1.5 rounded-xl text-[11px] text-white/60 font-medium flex items-center gap-2">

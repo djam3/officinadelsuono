@@ -424,7 +424,7 @@ function StepCustomize({ cabinet, baffleDrivers, finishId, setFinishId, grille, 
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
         <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
-          <CabinetViewer3D cabinet={cabinet} baffleDrivers={baffleDrivers} showDimensions={false} exploded={false} />
+          <CabinetViewer3D cabinet={cabinet} baffleDrivers={baffleDrivers} showDimensions={false} exploded={false} showGrille={grille} allowGrilleToggle={false} />
         </div>
 
         <div className="space-y-6">

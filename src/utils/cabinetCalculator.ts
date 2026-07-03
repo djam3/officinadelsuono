@@ -523,23 +523,33 @@ export function calculateFullCabinet(
     internalVolume, woodThickness, driver, hasAmplifier
   );
 
-  // Per i subwoofer grandi (≥15"), converti la porta tonda in porta a SLOT
-  // (rettangolare), come fanno i costruttori pro: stessa area/accordo, ma una
-  // fessura larga e bassa sul frontale. Più elegante e meno profonda di un tubo.
-  if (port && port.shape === 'circular' && port.diameter && driver.size >= 15) {
-    const internalW = dimensions.width - 2 * woodThickness;
-    const areaTot = Math.PI * Math.pow(port.diameter / 2, 2) * (port.count || 1); // mm²
-    const slotWidth = Math.round(internalW * 0.75);
-    const slotHeight = Math.max(20, Math.round(areaTot / slotWidth));
-    port = {
-      shape: 'slot',
-      slotWidth,
-      slotHeight,
-      length: port.length,
-      count: 1,
-      tuningFrequency: port.tuningFrequency,
-      airVelocity: port.airVelocity,
-    };
+  // ── Verifica COSTRUTTIVA della porta ─────────────────────────────────────
+  // Un tubo dritto deve entrare nella profondità interna con aria dietro
+  // (≥ diametro porta). Se non entra, o per i driver grandi (≥15", estetica
+  // pro), si passa alla porta a SLOT: stessa area totale → stesso accordo,
+  // ma condotto rettangolare che può RIPIEGARSI a L lungo il fondo (shelf
+  // port), come fanno i costruttori reali. Così il progetto è sempre
+  // fisicamente costruibile.
+  if (port && port.shape === 'circular' && port.diameter) {
+    const internalDepthAvail = dimensions.depth - 2 * woodThickness - (hasAmplifier ? 30 : 0);
+    const clearance = Math.max(80, port.diameter); // aria dietro il tubo
+    const fitsStraight = port.length + clearance <= internalDepthAvail;
+
+    if (!fitsStraight || driver.size >= 15) {
+      const internalW = dimensions.width - 2 * woodThickness;
+      const areaTot = Math.PI * Math.pow(port.diameter / 2, 2) * (port.count || 1); // mm²
+      const slotWidth = Math.round(internalW * 0.75);
+      const slotHeight = Math.max(20, Math.round(areaTot / slotWidth));
+      port = {
+        shape: 'slot',
+        slotWidth,
+        slotHeight,
+        length: port.length, // stessa area → stessa lunghezza di accordo
+        count: 1,
+        tuningFrequency: port.tuningFrequency,
+        airVelocity: port.airVelocity,
+      };
+    }
   }
 
   // Genera pannelli
@@ -726,12 +736,19 @@ export function scoreAmplifierMatch(
   const warnings: string[] = [];
 
   // ─── Compatibilità impedenza ─────────────────────────────────────────────
-  if (!amp.impedanceRange.includes(driver.impedance)) {
-    score -= 50;
-    warnings.push(`Impedenza driver ${driver.impedance}Ω non supportata dall'amplificatore`);
-  } else {
+  // Un'impedenza PIÙ ALTA del range dell'ampli è sempre elettricamente sicura
+  // (l'ampli eroga meno potenza, non di più). Pericolosa è solo quella più
+  // bassa del minimo supportato.
+  const minAmpZ = Math.min(...amp.impedanceRange);
+  if (amp.impedanceRange.includes(driver.impedance)) {
     score += 10;
     reasons.push(`Impedenza ${driver.impedance}Ω compatibile`);
+  } else if (driver.impedance > Math.max(...amp.impedanceRange)) {
+    score += 5;
+    reasons.push(`Impedenza ${driver.impedance}Ω sicura (superiore al range: meno potenza erogata)`);
+  } else {
+    score -= 50;
+    warnings.push(`Impedenza driver ${driver.impedance}Ω sotto il minimo supportato (${minAmpZ}Ω) — NON collegare`);
   }
 
   // ─── Potenza adeguata ────────────────────────────────────────────────────
@@ -739,7 +756,14 @@ export function scoreAmplifierMatch(
   // del driver, CON limiter tarato a proteggere il driver.
   // Un ampli 1:1 va in clipping ai picchi e il clipping distrugge i driver.
   // Sottodimensionato è il caso più pericoloso (clipping costante).
-  const ampPower = amp.powerPerChannel[String(driver.impedance)] || 0;
+  // Se l'impedenza del driver non è listata, stima da quella più vicina:
+  // ampli ≈ sorgente di tensione → P(Zd) ≈ P(Zr) · Zr/Zd.
+  let ampPower = amp.powerPerChannel[String(driver.impedance)] || 0;
+  if (!ampPower) {
+    const rated = Object.keys(amp.powerPerChannel).map(Number).filter(z => z > 0).sort((a, b) => b - a);
+    const zr = rated.find(z => z <= driver.impedance) ?? rated[0];
+    if (zr) ampPower = Math.round((amp.powerPerChannel[String(zr)] || 0) * (zr / driver.impedance));
+  }
   const powerRatio = ampPower / driver.powerRMS;
 
   if (powerRatio >= 1.5 && powerRatio <= 2.2) {
