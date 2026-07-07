@@ -53,19 +53,19 @@ function Dim({ x1, y1, x2, y2, label, delay = 0, side = 'below' }: {
 function DriverSymbol({ cx, cy, r, delay, boltCount = 8 }: { cx: number; cy: number; r: number; delay: number; boltCount?: number }) {
   const bolts = Array.from({ length: boltCount }, (_, i) => {
     const a = (i / boltCount) * Math.PI * 2 - Math.PI / 2;
-    return { x: cx + Math.cos(a) * r * 1.08, y: cy + Math.sin(a) * r * 1.08 };
+    return { x: cx + Math.cos(a) * r * 1.05, y: cy + Math.sin(a) * r * 1.05 };
   });
   return (
     <g>
-      <motion.circle cx={cx} cy={cy} r={r * 1.08} fill="none" stroke={ORANGE} strokeWidth={1.3}
+      <motion.circle cx={cx} cy={cy} r={r * 1.05} fill="none" stroke={ORANGE} strokeWidth={1.3}
         strokeDasharray="4 3" initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 0.65 }} transition={{ delay, duration: 0.9 }} />
       <motion.circle cx={cx} cy={cy} r={r} fill="rgba(242,125,38,0.06)" stroke={ORANGE} strokeWidth={2}
         initial={{ pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }} transition={{ delay, duration: 1 }} />
       <motion.circle cx={cx} cy={cy} r={r * 0.32} fill="none" stroke={ORANGE} strokeWidth={1.3}
         initial={{ opacity: 0 }} animate={{ opacity: 0.9 }} transition={{ delay: delay + 0.4 }} />
       {/* assi centrali dash-dot */}
-      <line x1={cx - r * 1.3} y1={cy} x2={cx + r * 1.3} y2={cy} stroke={ORANGE} strokeWidth={0.7} strokeOpacity={0.55} strokeDasharray="12 3 2.5 3" />
-      <line x1={cx} y1={cy - r * 1.3} x2={cx} y2={cy + r * 1.3} stroke={ORANGE} strokeWidth={0.7} strokeOpacity={0.55} strokeDasharray="12 3 2.5 3" />
+      <line x1={cx - r * 1.18} y1={cy} x2={cx + r * 1.18} y2={cy} stroke={ORANGE} strokeWidth={0.7} strokeOpacity={0.55} strokeDasharray="12 3 2.5 3" />
+      <line x1={cx} y1={cy - r * 1.18} x2={cx} y2={cy + r * 1.18} stroke={ORANGE} strokeWidth={0.7} strokeOpacity={0.55} strokeDasharray="12 3 2.5 3" />
       {bolts.map((b, i) => <circle key={i} cx={b.x} cy={b.y} r={2} fill="none" stroke={ORANGE} strokeWidth={1.1} opacity={0.7} />)}
     </g>
   );
@@ -113,12 +113,10 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
   const mdia = (d?: SpeakerDriver) => d ? (d.mountingDiameter || d.overallDiameter || d.size * 25.4) : 0;
 
   const wR = (mdia(woofer) * scale) / 2;
-  const wooferCy = hf ? FY + fh * 0.64 : FY + fh * 0.52;
   const isTweeter = hf?.type === 'tweeter';
   const hfR = hf ? (mdia(hf) * scale) / 2 * 0.8 : 0;   // raggio tweeter a cupola
   const hornW = hf ? Math.min(fw * 0.5, (mdia(hf) * scale) * 2.2) : 0;
   const hornH = hf ? hornW * 0.62 : 0;
-  const hornCy = FY + fh * 0.24;
   const hfHalfW = isTweeter ? hfR : hornW / 2;          // semilarghezza in prospetto
 
   // ── Porta ──────────────────────────────────────────────────────────────────
@@ -129,6 +127,37 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
   const portCircR = port && !isSlot && port.diameter ? (port.diameter * scale) / 2 : 0;
   const ductLen = port ? Math.min(port.length * scale, innerW - 10) : 0;
   const ductFolded = port ? port.length * scale > innerW - 10 : false;
+  const tb = Math.max(3, t * 0.6);                                    // setto del condotto slot
+  const shelfY = isSlot ? FY + fh - t - slotH - tb : Infinity;        // quota setto in sezione
+  const tubeTop = portCircR > 0 ? FY + fh - t - portCircR * 2 - 4 : Infinity; // tubo in sezione
+
+  // ── Layout verticale anti-collisione ──────────────────────────────────────
+  // Niente frazioni fisse: woofer e tromba si posizionano rispettando porta,
+  // condotto in sezione e bordi del box (come nel cabinet reale).
+  const wooferOuter = wR * 1.05 + 2;                                  // cerchio viti compreso
+  const hornH2 = hf ? (isTweeter ? hfR * 1.05 + 3 : hornH / 2) : 0;
+  const slotTopFront = isSlot ? FY + fh - slotH - 8 : Infinity;
+  const contentBottom = Math.min(FY + fh - 12, slotTopFront - 4, shelfY - 6);
+  let wooferCy = contentBottom - wooferOuter;
+  const portCx = portCircR > 0 ? FX + fw - portCircR - 16 : 0;
+  const portCyC = portCircR > 0 ? FY + fh - portCircR - 16 : 0;
+  if (portCircR > 0 && woofer) {
+    // il cono in sezione non deve toccare il tubo del condotto
+    wooferCy = Math.min(wooferCy, tubeTop - 4 - wR);
+    // la porta circolare nell'angolo non deve toccare il cerchio viti nel prospetto
+    const dx = portCx - cxF;
+    const minDist = wooferOuter + portCircR + 2;
+    if (Math.hypot(dx, portCyC - wooferCy) < minDist) {
+      const dy = Math.sqrt(Math.max(0, minDist * minDist - dx * dx));
+      wooferCy = Math.min(wooferCy, portCyC - dy);
+    }
+  }
+  if (!hf) wooferCy = clamp((FY + 10 + contentBottom) / 2, FY + 10 + wooferOuter, contentBottom - wooferOuter);
+  const hornMax = wooferCy - wooferOuter - 4 - hornH2;
+  const hornMin = FY + 8 + hornH2;
+  const hornCy = hf
+    ? (hornMax >= hornMin ? Math.min(hornMin + (hornMax - hornMin) * 0.35, hornMax) : Math.max(FY + 6 + hornH2, hornMax))
+    : 0;
 
   // ── Richiami numerati (palloncini + legenda) ───────────────────────────────
   const hfLabel = hf
@@ -154,8 +183,8 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
     });
   }
   if (port) {
-    const pAy = isSlot ? FY + fh - slotH / 2 - 12 : FY + fh - portCircR - 16;
-    const pAx = isSlot ? cxF - slotW / 2 + 8 : FX + fw - portCircR - 16;
+    const pAy = isSlot ? FY + fh - slotH / 2 - 8 : portCyC;
+    const pAx = isSlot ? cxF - slotW / 2 + 8 : portCx;
     callouts.push({
       n: nn++,
       label: isSlot
@@ -184,7 +213,11 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
   const colW = (VBW - 2 * M2) / cols, rowH = (VBH - 2 * M2) / rows;
 
   const wooferAxisMm = D2((FY + fh - wooferCy) / scale);
-  const braceY = FY + fh * 0.46;
+  // rinforzo interno: solo se tra tromba e woofer c'è davvero spazio
+  const braceGapTop = hf ? hornCy + (isTweeter ? hfR : hornH / 2) : FY + t + 8;
+  const braceGapBot = wooferCy - wR;
+  const braceOk = braceGapBot - braceGapTop > 18;
+  const braceY = (braceGapTop + braceGapBot) / 2;
 
   return (
     <div className="w-full h-full rounded-2xl overflow-hidden relative" style={{ background: 'radial-gradient(120% 100% at 30% 0%, #0f1830 0%, #0a0f1c 55%, #070912 100%)' }}>
@@ -273,12 +306,12 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
 
         {/* porta in prospetto */}
         {isSlot && (
-          <motion.rect x={cxF - slotW / 2} y={FY + fh - slotH - 12} width={slotW} height={slotH} rx={3}
+          <motion.rect x={cxF - slotW / 2} y={FY + fh - slotH - 8} width={slotW} height={slotH} rx={3}
             fill="rgba(138,160,184,0.05)" stroke={STEEL} strokeWidth={1.6}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0, duration: 0.6 }} />
         )}
         {portCircR > 0 && (
-          <motion.circle cx={FX + fw - portCircR - 16} cy={FY + fh - portCircR - 16} r={portCircR}
+          <motion.circle cx={portCx} cy={portCyC} r={portCircR}
             fill="rgba(0,0,0,0.4)" stroke={STEEL} strokeWidth={1.6}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.0 }} />
         )}
@@ -326,28 +359,32 @@ export function CabinetBlueprint({ cabinet, baffleDrivers, projectCode, projectN
               </g>
             );
           })()}
-          {/* rinforzo interno (solo 2 vie: nel sub lo spazio è del condotto) */}
-          {hf && (
+          {/* rinforzo interno: solo se c'è spazio libero tra i componenti */}
+          {braceOk && (
             <rect x={SX + t + innerW * 0.32} y={braceY} width={innerW * 0.36} height={Math.max(3, t * 0.8)}
               fill="none" stroke={HATCH} strokeWidth={1} strokeDasharray="4 3" />
           )}
-          {/* condotto reflex a slot: setto + freccia flusso */}
+          {/* condotto reflex a slot: setto + lunghezza + freccia flusso */}
           {isSlot && (() => {
-            const tb = Math.max(3, t * 0.75);
-            const shelfY = FY + fh - t - slotH - tb;
             const chY = FY + fh - t - slotH / 2;
             return (
               <g>
                 <rect x={SX + t} y={shelfY} width={ductLen} height={tb} fill="url(#bphatch)" stroke={STEEL} strokeWidth={1} />
                 <line x1={SX + t + ductLen * 0.75} y1={chY} x2={SX - 12} y2={chY} stroke={ORANGE} strokeWidth={1.1} strokeOpacity={0.8} />
                 <path d={`M${SX - 14},${chY} l8,-3.5 l0,7 z`} fill={ORANGE} opacity={0.8} />
+                <text x={SX + t + ductLen / 2} y={chY - 6} textAnchor="middle" fontSize={8.5}
+                  fontFamily="ui-monospace, monospace" fill="#94a3b8">L={D2(port!.length)}{ductFolded ? '*' : ''}</text>
               </g>
             );
           })()}
-          {/* condotto reflex circolare: tubo tratteggiato */}
+          {/* condotto reflex circolare: tubo tratteggiato + lunghezza */}
           {portCircR > 0 && (
-            <rect x={SX + t} y={FY + fh - t - portCircR * 2 - 10} width={ductLen} height={portCircR * 2}
-              fill="none" stroke={STEEL} strokeWidth={1.2} strokeDasharray="5 3" />
+            <g>
+              <rect x={SX + t} y={tubeTop} width={ductLen} height={portCircR * 2}
+                fill="none" stroke={STEEL} strokeWidth={1.2} strokeDasharray="5 3" />
+              <text x={SX + t + ductLen + 6} y={tubeTop + portCircR + 3} fontSize={8.5}
+                fontFamily="ui-monospace, monospace" fill="#94a3b8">L={D2(port!.length)}</text>
+            </g>
           )}
           {/* sede modulo ampli sul retro */}
           {cabinet.ampCutout && (
