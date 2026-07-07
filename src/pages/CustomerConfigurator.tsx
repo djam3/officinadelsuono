@@ -20,6 +20,7 @@ import { subscribeDrivers } from '../services/driverLibrary';
 import { calculateFullCabinet, recommendCabinetType, scoreAmplifierMatch } from '../utils/cabinetCalculator';
 import { CabinetViewer3D } from '../components/configurator/CabinetViewer3D';
 import { CabinetBlueprint } from '../components/configurator/CabinetBlueprint';
+import { computeDSPPreset, type DSPPreset } from '../utils/dspPreset';
 import { Plot, PLOT_COLORS } from '../components/configurator/calculators/ui';
 import * as Audio from '../utils/audio';
 import { db } from '../firebase';
@@ -346,7 +347,7 @@ function StepMagic({ profile, drivers }: { profile: Profile; drivers: SpeakerDri
     { label: 'Selezione altoparlante dal catalogo', detail: facts?.driver },
     { label: 'Progetto acustico del box (Thiele-Small)', detail: facts?.box },
     { label: 'Abbinamento amplificazione', detail: facts?.amp },
-    { label: 'Taratura limiter di protezione', detail: 'soglia RMS nel DSP' },
+    { label: 'Tagli DSP e limiter di protezione', detail: 'crossover, delay e soglia RMS' },
   ];
 
   // Avanzamento con easing da installer pro: rapido all'inizio, rallenta sul finale
@@ -437,6 +438,7 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
   const baffle = hf ? [driver, hf] : [driver];
   const hornWord = hf?.type === 'compression-driver' ? 'tromba a compressione' : 'tweeter';
   const [view, setView] = useState<'blueprint' | '3d'>('blueprint');
+  const dsp = useMemo(() => computeDSPPreset(driver, hf, cabinet), [driver, hf, cabinet]);
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto">
@@ -489,6 +491,60 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
           <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: splCurve }]} yLabel="Risposta" yUnit="dB" height={200} />
         </div>
       )}
+
+      {/* preset DSP: tagli, protezioni, allineamento e limiter */}
+      <DSPPresetCard preset={dsp} />
+    </div>
+  );
+}
+
+function DSPPresetCard({ preset }: { preset: DSPPreset }) {
+  return (
+    <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
+      <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+        <SlidersHorizontal className="w-5 h-5 text-[#F27D26]" /> Preset DSP — tagli e protezioni
+      </h3>
+      <p className="text-xs text-zinc-400 mb-4">
+        La taratura che carichiamo nel processore del modulo: crossover, protezioni, allineamento e limiter per ogni via.
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs font-mono whitespace-nowrap">
+          <thead>
+            <tr className="text-zinc-500 uppercase tracking-wider text-[10px]">
+              <th className="text-left py-2 pr-4">Banda</th>
+              <th className="text-left py-2 pr-4">HPF</th>
+              <th className="text-left py-2 pr-4">LPF</th>
+              <th className="text-right py-2 pr-4">Gain</th>
+              <th className="text-right py-2 pr-4">Delay</th>
+              <th className="text-right py-2">Limiter RMS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {preset.bands.map(b => (
+              <tr key={b.name} className="border-t border-white/5">
+                <td className="py-2.5 pr-4">
+                  <span className="text-[#F27D26] font-bold">{b.name}</span>
+                  <span className="block text-[10px] text-zinc-500 whitespace-normal">{b.driverLabel}</span>
+                </td>
+                <td className="py-2.5 pr-4">{b.hpf ? `${b.hpf.f} Hz · ${b.hpf.slope}` : '—'}</td>
+                <td className="py-2.5 pr-4">{b.lpf ? `${b.lpf.f} Hz · ${b.lpf.slope}` : '—'}</td>
+                <td className="py-2.5 pr-4 text-right">{b.gainDb} dB</td>
+                <td className="py-2.5 pr-4 text-right">{b.delayMs > 0 ? `${b.delayMs} ms` : '—'}</td>
+                <td className="py-2.5 text-right">{b.limiterVrms} V · {b.limiterDbu} dBu</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-3 px-3 py-2.5 rounded-lg bg-[#F27D26]/5 border border-[#F27D26]/20 text-xs">
+        <span className="font-bold text-[#F27D26]">{preset.system === 'sub' ? 'Abbinamento con i satelliti:' : 'Abbinamento con un subwoofer:'}</span>{' '}
+        <span className="font-mono text-zinc-300">taglio {preset.subPairFc} Hz · {preset.subPairSlope}</span>
+      </div>
+      <ul className="mt-3 space-y-1">
+        {preset.notes.map((n, i) => (
+          <li key={i} className="text-[11px] text-zinc-500 leading-snug flex gap-1.5"><span className="text-[#F27D26] shrink-0">·</span><span>{n}</span></li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -579,6 +635,7 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
     setError(null); setSubmitting(true);
     try {
       const code = `CFG-${Date.now().toString(36).toUpperCase()}`;
+      const dsp = computeDSPPreset(design.driver, design.hf, design.cabinet);
       await addDoc(collection(db, 'configurator_requests'), {
         code, status: 'nuovo',
         contact: { name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), message: form.message.trim() },
@@ -589,6 +646,15 @@ function StepQuote({ design, profile, finish, grille, projectName }: {
         useCase: profile.useCase || '', quantity: 1, cabinetName: projectName.trim() || design.cabinet.name,
         environment: profile.environment || '', powerLevel: profile.power, bassLevel: profile.bassDepth,
         finish, grille, createdAt: new Date().toISOString(),
+        dsp: {
+          system: dsp.system, xoverFc: dsp.xoverFc, subPairFc: dsp.subPairFc,
+          bands: dsp.bands.map(b => ({
+            name: b.name,
+            hpf: b.hpf ? `${b.hpf.f} Hz ${b.hpf.slope}` : null,
+            lpf: b.lpf ? `${b.lpf.f} Hz ${b.lpf.slope}` : null,
+            gainDb: b.gainDb, delayMs: b.delayMs, limiterVrms: b.limiterVrms, limiterDbu: b.limiterDbu,
+          })),
+        },
       });
       setSubmitted(true);
     } catch (err) { console.error(err); setError('Errore durante l\'invio. Riprova tra poco.'); }
