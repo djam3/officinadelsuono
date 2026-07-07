@@ -11,6 +11,7 @@ import {
   Sparkles, Volume2, Waves, Settings2, Mail, User, Phone, MessageSquare,
   CheckCircle, Palette, Ruler, Zap, Weight, Wand2, ShieldCheck, Hammer,
   Headphones, Tent, Guitar, Megaphone, SlidersHorizontal, Sofa, Mic, Clapperboard, Speaker,
+  PenTool, Rotate3d,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
@@ -18,6 +19,7 @@ import { USE_CASE_LABELS, ENVIRONMENT_LABELS, AMPLIFIERS, DRIVERS } from '../dat
 import { subscribeDrivers } from '../services/driverLibrary';
 import { calculateFullCabinet, recommendCabinetType, scoreAmplifierMatch } from '../utils/cabinetCalculator';
 import { CabinetViewer3D } from '../components/configurator/CabinetViewer3D';
+import { CabinetBlueprint } from '../components/configurator/CabinetBlueprint';
 import { Plot, PLOT_COLORS } from '../components/configurator/calculators/ui';
 import * as Audio from '../utils/audio';
 import { db } from '../firebase';
@@ -434,6 +436,7 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
   const dims = cabinet.externalDimensions;
   const baffle = hf ? [driver, hf] : [driver];
   const hornWord = hf?.type === 'compression-driver' ? 'tromba a compressione' : 'tweeter';
+  const [view, setView] = useState<'blueprint' | '3d'>('blueprint');
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto">
@@ -447,8 +450,23 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8 items-start">
-        <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl">
-          <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} baffleDrivers={baffle} />
+        <div>
+          {/* selettore vista */}
+          <div className="inline-flex p-1 mb-3 rounded-xl bg-zinc-900 border border-white/10 text-sm font-semibold">
+            <button onClick={() => setView('blueprint')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-colors ${view === 'blueprint' ? 'bg-[#F27D26] text-zinc-950' : 'text-zinc-400 hover:text-white'}`}>
+              <PenTool className="w-4 h-4" /> Disegno tecnico
+            </button>
+            <button onClick={() => setView('3d')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg transition-colors ${view === '3d' ? 'bg-[#F27D26] text-zinc-950' : 'text-zinc-400 hover:text-white'}`}>
+              <Rotate3d className="w-4 h-4" /> Vista 3D
+            </button>
+          </div>
+          <div className="rounded-2xl overflow-hidden h-[380px] sm:h-[520px] relative shadow-2xl border border-white/10">
+            {view === 'blueprint'
+              ? <CabinetBlueprint cabinet={cabinet} baffleDrivers={baffle} projectName={cabinet.name} />
+              : <CabinetViewer3D cabinet={cabinet} showDimensions={false} exploded={false} baffleDrivers={baffle} />}
+          </div>
         </div>
 
         <div className="space-y-3">
