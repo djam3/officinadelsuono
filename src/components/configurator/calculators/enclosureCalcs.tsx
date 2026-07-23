@@ -268,38 +268,83 @@ export function PassiveRadiatorCalc() {
   );
 }
 
-// ─── #5 Bandpass ──────────────────────────────────────────────────────────────
+// ─── #5 Bandpass (4° e 6° ordine) ─────────────────────────────────────────────
 export function BandpassCalc() {
   const { tx } = useCalcLang();
   const { ts, set } = useTS();
+  const [order, setOrder] = useState<'4' | '6'>('4');
   const [S, setS] = useState<number | ''>(0.7);
   const [alpha, setAlpha] = useState<number | ''>(0.7);
+  const [ratio, setRatio] = useState<number | ''>(1.6);
   const [dv, setDv] = useState<number | ''>(80);
-  const r = useMemo(() => A.bandpass4thOrder(ts, { S: S === '' ? 0.7 : S, alpha: alpha === '' ? 0.7 : alpha, dvMm: dv === '' ? 80 : dv }), [ts, S, alpha, dv]);
+  const dvv = dv === '' ? 80 : dv;
+
+  const r4 = useMemo(() => A.bandpass4thOrder(ts, { S: S === '' ? 0.7 : S, alpha: alpha === '' ? 0.7 : alpha, dvMm: dvv }), [ts, S, alpha, dvv]);
+  const r6 = useMemo(() => A.bandpass6thOrder(ts, { S: S === '' ? 0.6 : S, ratio: ratio === '' ? 1.6 : ratio, dvMm: dvv }), [ts, S, ratio, dvv]);
+  const curve = useMemo(() => order === '4'
+    ? A.bandpass4Response(r4.fb, r4.fL, r4.fH)
+    : A.bandpass6Response(r6.fbRear, r6.fbFront), [order, r4, r6]);
+  const pv4 = useMemo(() => A.portVelocity(ts, r4.fb, dvv), [ts, r4, dvv]);
+  const pv6 = useMemo(() => A.portVelocity(ts, r6.fbFront, dvv), [ts, r6, dvv]);
+  const vel = order === '4' ? pv4.velocity : pv6.velocity;
+
   return (
     <CalcShell
-      title={tx('Bandpass 4° ordine', '4th-order Bandpass')}
-      subtitle={tx('Camera sigillata + camera ported. S=Vf/Vr (~0.7 piatto).', 'Sealed + ported chamber. S=Vf/Vr (~0.7 flat).')}
+      title={tx('Bandpass 4° / 6° ordine', '4th / 6th-order Bandpass')}
+      subtitle={tx('4°: camera sigillata + ported (prevedibile). 6°: entrambe accordate — più SPL in banda, progetto di partenza da rifinire con misura.',
+                   '4th: sealed + ported chamber (predictable). 6th: both tuned — more in-band SPL, starting design to refine by measurement.')}
       inputs={
         <>
           <TSInputs ts={ts} set={set} />
+          <SelectField label={tx('Ordine', 'Order')} value={order} onChange={v => setOrder(v as '4' | '6')}
+            options={[{ value: '4', label: tx('4° ordine (singolo reflex)', '4th order (single reflex)') }, { value: '6', label: tx('6° ordine serie (doppio reflex)', '6th order series (dual reflex)') }]} />
           <div className="grid grid-cols-3 gap-3">
             <NumField label="S = Vf/Vr" value={S} onChange={setS} />
-            <NumField label="α = Vas/Vr" value={alpha} onChange={setAlpha} />
+            {order === '4'
+              ? <NumField label="α = Vas/Vr" value={alpha} onChange={setAlpha} />
+              : <NumField label={tx('Rapporto accordi', 'Tuning ratio')} value={ratio} onChange={setRatio} hint="FbFront/FbRear" />}
             <NumField label={tx('Ø porta', 'Port Ø')} unit="mm" value={dv} onChange={setDv} />
           </div>
         </>
       }
       results={
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <Stat label="Vr (sigillata)" value={A.round(r.vrL, 1)} unit={tx('litri', 'L')} />
-            <Stat label="Vf (ported)" value={A.round(r.vfL, 1)} unit={tx('litri', 'L')} />
-            <Stat label="Fb" value={A.round(r.fb, 1)} unit="Hz" accent />
-            <Stat label={tx('Lunghezza porta', 'Port length')} value={A.round(r.portLengthMm, 0)} unit="mm" />
-            <Stat label="fL" value={A.round(r.fL, 1)} unit="Hz" />
-            <Stat label="fH" value={A.round(r.fH, 1)} unit="Hz" />
+          {order === '4' ? (
+            <div className="grid grid-cols-2 gap-3">
+              <Stat label={tx('Vr (sigillata)', 'Vr (sealed)')} value={A.round(r4.vrL, 1)} unit={tx('litri', 'L')} />
+              <Stat label="Vf (ported)" value={A.round(r4.vfL, 1)} unit={tx('litri', 'L')} />
+              <Stat label="Fb" value={A.round(r4.fb, 1)} unit="Hz" accent />
+              <Stat label={tx('Lunghezza porta', 'Port length')} value={A.round(r4.portLengthMm, 0)} unit="mm" />
+              <Stat label={tx('Banda −3dB', '−3dB band')} value={`${A.round(r4.fL, 0)}–${A.round(r4.fH, 0)}`} unit="Hz" accent />
+              <Stat label={tx('Vel. aria porta', 'Port air velocity')} value={A.round(vel, 1)} unit="m/s" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              <Stat label={tx('Vr posteriore', 'Rear Vr')} value={A.round(r6.vrL, 1)} unit={tx('litri', 'L')} />
+              <Stat label={tx('Accordo post.', 'Rear tuning')} value={A.round(r6.fbRear, 1)} unit="Hz" accent />
+              <Stat label={tx('Porta post.', 'Rear port')} value={A.round(r6.portRearLenMm, 0)} unit="mm" />
+              <Stat label={tx('Vf anteriore', 'Front Vf')} value={A.round(r6.vfL, 1)} unit={tx('litri', 'L')} />
+              <Stat label={tx('Accordo ant.', 'Front tuning')} value={A.round(r6.fbFront, 1)} unit="Hz" accent />
+              <Stat label={tx('Porta ant.', 'Front port')} value={A.round(r6.portFrontLenMm, 0)} unit="mm" />
+              <Stat label={tx('Banda −3dB (stima)', '−3dB band (est.)')} value={`${A.round(r6.fL, 0)}–${A.round(r6.fH, 0)}`} unit="Hz" accent />
+              <Stat label={tx('Vel. aria porta ant.', 'Front port velocity')} value={A.round(vel, 1)} unit="m/s" />
+            </div>
+          )}
+          {vel > 17 && (
+            <div className="text-xs text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-lg p-2">
+              {tx('Velocità > 17 m/s: rischio soffio. Aumenta Ø porta.', 'Velocity > 17 m/s: chuffing risk. Increase port Ø.')}
+            </div>
+          )}
+          <div className="bg-zinc-950/60 border border-white/5 rounded-xl p-3">
+            <div className="text-[10px] text-zinc-500 mb-1">{tx('Risposta stimata (dB, picco 0)', 'Estimated response (dB, peak 0)')}</div>
+            <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: curve }]} yLabel="dB" yUnit="dB" yMin={-30} yMax={3} />
           </div>
+          {order === '6' && (
+            <p className="text-[10px] text-zinc-600">
+              {tx('Il 6° ordine è sensibile alle tolleranze: usa questi valori come punto di partenza e verifica con misura (o BassBox) prima del taglio.',
+                  '6th order is tolerance-sensitive: use these values as a starting point and verify by measurement (or BassBox) before cutting.')}
+            </p>
+          )}
           <Disclaimer />
         </>
       }

@@ -1,12 +1,47 @@
 import { useState, useEffect } from 'react';
 import {
-  Plus, Save, X, Trash2, Loader2, Speaker, FileText, Upload, Download, Pencil,
+  Plus, Save, X, Trash2, Loader2, Speaker, FileText, Upload, Download, Pencil, ClipboardPaste,
 } from 'lucide-react';
 import { subscribeDrivers, saveDriver, deleteDriver, emptyDriver } from '../../services/driverLibrary';
 import { DRIVERS } from '../../data/speakerDatabase';
 import type { SpeakerDriver, DriverType } from '../../types/speaker';
 
 const TYPES: DriverType[] = ['subwoofer', 'woofer', 'mid-bass', 'midrange', 'full-range', 'coaxial', 'tweeter'];
+
+// ─── Riconoscimento parametri da testo libero (BassBox / datasheet) ──────────
+const TS_PATTERNS: { key: string; path: string; aliases: string[] }[] = [
+  { key: 'Fs', path: 'ts.fs', aliases: ['fs'] },
+  { key: 'Qts', path: 'ts.qts', aliases: ['qts'] },
+  { key: 'Qes', path: 'ts.qes', aliases: ['qes'] },
+  { key: 'Qms', path: 'ts.qms', aliases: ['qms'] },
+  { key: 'Vas', path: 'ts.vas', aliases: ['vas'] },
+  { key: 'Xmax', path: 'ts.xmax', aliases: ['xmax', 'x-max', 'x max'] },
+  { key: 'Sd', path: 'ts.sd', aliases: ['sd'] },
+  { key: 'Re', path: 'ts.re', aliases: ['revc', 'dcr', 're'] },
+  { key: 'Le', path: 'ts.le', aliases: ['le'] },
+  { key: 'Bl', path: 'ts.bl', aliases: ['bl'] },
+  { key: 'Mms', path: 'ts.mms', aliases: ['mms'] },
+  { key: 'Sensibilità', path: 'sensitivity', aliases: ['sensitivity', 'sensibilita', 'sensibilità', 'spl'] },
+  { key: 'Impedenza', path: 'impedance', aliases: ['impedenza nominale', 'nominal impedance', 'impedenza', 'impedance', 'znom'] },
+  { key: 'Potenza', path: 'powerRMS', aliases: ['power handling', 'potenza rms', 'rms power', 'nominal power', 'aes'] },
+];
+
+function parseTSText(text: string): { path: string; key: string; value: number }[] {
+  const out: { path: string; key: string; value: number }[] = [];
+  for (const p of TS_PATTERNS) {
+    for (const alias of p.aliases) {
+      const esc = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+      const re = new RegExp(`(?:^|[^a-z])${esc}\\b[^0-9\\-]{0,14}(-?\\d+(?:[.,]\\d+)?)\\s*(m²|m2|cm²|cm2)?`, 'i');
+      const m = text.match(re);
+      if (m) {
+        let v = parseFloat(m[1].replace(',', '.'));
+        if (p.path === 'ts.sd' && (m[2] === 'm²' || m[2] === 'm2')) v *= 1e4; // m² → cm²
+        if (Number.isFinite(v)) { out.push({ path: p.path, key: p.key, value: v }); break; }
+      }
+    }
+  }
+  return out;
+}
 
 export function AdminComponentsPanel() {
   const [drivers, setDrivers] = useState<SpeakerDriver[]>([]);
@@ -15,6 +50,8 @@ export function AdminComponentsPanel() {
   const [editing, setEditing] = useState<SpeakerDriver | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [paste, setPaste] = useState('');
+  const [showPaste, setShowPaste] = useState(false);
 
   useEffect(() => subscribeDrivers((list, db) => { setDrivers(list); setFromDb(db); setLoading(false); }), []);
 
@@ -30,6 +67,26 @@ export function AdminComponentsPanel() {
       else next[path] = value;
       return next;
     });
+  };
+
+  const applyPaste = () => {
+    const found = parseTSText(paste);
+    if (!found.length) { alert('Nessun parametro riconosciuto nel testo incollato.'); return; }
+    setEditing(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, thielSmall: { ...prev.thielSmall } } as any;
+      for (const f of found) {
+        if (f.path.startsWith('ts.')) next.thielSmall[f.path.slice(3)] = f.value;
+        else next[f.path] = f.value;
+      }
+      // Qts derivato se mancante ma Qes+Qms presenti
+      const t = next.thielSmall;
+      if ((!t.qts || t.qts === 0) && t.qes > 0 && t.qms > 0) {
+        t.qts = Math.round(((t.qms * t.qes) / (t.qms + t.qes)) * 1000) / 1000;
+      }
+      return next;
+    });
+    alert('Parametri riconosciuti: ' + found.map(f => f.key).join(', ') + '. Controlla i campi prima di salvare.');
   };
 
   const handleSave = async () => {
@@ -129,6 +186,24 @@ export function AdminComponentsPanel() {
               <Field label="Potenza RMS (W)" value={editing.powerRMS} onChange={v => setField('powerRMS', v)} />
               <Field label="Potenza picco (W)" value={editing.powerPeak} onChange={v => setField('powerPeak', v)} />
               <Field label="Prezzo acquisto (€)" value={editing.price} onChange={v => setField('price', v)} />
+            </div>
+
+            <div className="mt-5">
+              <button onClick={() => setShowPaste(s => !s)}
+                className="flex items-center gap-2 text-xs font-bold text-zinc-300 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-white/10 rounded-lg px-3 py-2">
+                <ClipboardPaste className="w-4 h-4 text-brand-orange" /> Incolla parametri da BassBox / datasheet
+              </button>
+              {showPaste && (
+                <div className="mt-2 space-y-2">
+                  <textarea rows={4} value={paste} onChange={e => setPaste(e.target.value)}
+                    placeholder={'Incolla qui il testo con i parametri, es.:\nFs 35 Hz · Qts 0.24 · Qes 0.26 · Qms 5 · Vas 112 l · Xmax 12 mm · Sd 855 cm² · Re 5.1 Ω · Le 1.5 mH · Bl 33 · Mms 254 g · SPL 97 dB'}
+                    className="w-full bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-brand-orange resize-y" />
+                  <button onClick={applyPaste}
+                    className="text-xs font-bold bg-brand-orange hover:bg-orange-600 text-white rounded-lg px-3 py-2">
+                    Riconosci e compila i campi
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-[10px] font-black uppercase tracking-widest text-brand-orange mt-5 mb-2">Parametri Thiele-Small (dalla scheda)</div>

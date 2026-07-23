@@ -439,6 +439,43 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
   const hornWord = hf?.type === 'compression-driver' ? 'tromba a compressione' : 'tweeter';
   const [view, setView] = useState<'blueprint' | '3d'>('blueprint');
   const dsp = useMemo(() => computeDSPPreset(driver, hf, cabinet), [driver, hf, cabinet]);
+
+  // Protezione meccanica: escursione cono e velocità aria in porta alla
+  // potenza operativa reale (il minore tra driver RMS e ampli sull'impedenza)
+  const protection = useMemo(() => {
+    try {
+      const ts = Audio.tsFromDriver(driver);
+      const ampW = amp.powerPerChannel?.[String(driver.impedance)] ?? driver.powerRMS;
+      const watts = Math.round(Math.max(50, Math.min(driver.powerRMS, ampW)));
+      const fMin = 16, fMax = 300;
+      let curves: Audio.ResponseCurves;
+      if (cabinet.type === 'sealed') {
+        const sb = Audio.sealedFromVb(ts, cabinet.internalVolume);
+        curves = Audio.computeResponse({ ts, type: 'sealed', fc: sb.fc, qtc: sb.qtc, powerW: watts, fMin, fMax });
+      } else {
+        const fb = cabinet.port?.tuningFrequency || ts.fs * 0.5;
+        curves = Audio.computeResponse({ ts, type: 'vented', fb, alpha: ts.vas / cabinet.internalVolume, ql: 7, powerW: watts, fMin, fMax });
+      }
+      const xmax = ts.xmax ?? 6;
+      const hpfF = dsp.bands[0]?.hpf?.f ?? 0;
+      // HPF Butterworth 4° ordine del DSP applicato alla curva "protetta"
+      const hpfMag = (f: number) => (hpfF > 0 ? 1 / Math.sqrt(1 + Math.pow(hpfF / f, 8)) : 1);
+      const raw = curves.excursion;
+      const protectedCurve = raw.map(p => ({ f: p.f, v: p.v * hpfMag(p.f) }));
+      const xmaxLine = raw.map(p => ({ f: p.f, v: xmax }));
+      let portCurve: { f: number; v: number }[] | null = null;
+      let portLimit: { f: number; v: number }[] | null = null;
+      if (cabinet.type !== 'sealed' && cabinet.port?.tuningFrequency) {
+        const p = cabinet.port;
+        const dv = p.shape === 'slot' && p.slotWidth && p.slotHeight
+          ? 2 * Math.sqrt((p.slotWidth * p.slotHeight) / Math.PI)   // Ø equivalente dello slot
+          : (p.diameter ?? 100);
+        portCurve = Audio.portVelocityCurve(ts, p.tuningFrequency, dv, p.count ?? 1, 7, fMin, fMax);
+        portLimit = portCurve.map(q => ({ f: q.f, v: 17 }));
+      }
+      return { watts, raw, protectedCurve, xmaxLine, xmax, hpfF, portCurve, portLimit };
+    } catch { return null; }
+  }, [driver, amp, cabinet, dsp]);
   return (
     <div className="space-y-8">
       <div className="text-center max-w-2xl mx-auto">
@@ -494,6 +531,38 @@ function StepReveal({ design, cabinet }: { design: DesignResult; cabinet: Cabine
 
       {/* preset DSP: tagli, protezioni, allineamento e limiter */}
       <DSPPresetCard preset={dsp} />
+
+      {/* protezione meccanica: escursione + porta */}
+      {protection && (
+        <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-6">
+          <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-[#F27D26]" /> Protezione meccanica
+          </h3>
+          <p className="text-xs text-zinc-400 mb-4">
+            Escursione del cono a {protection.watts} W e aria nella porta: finché le curve restano sotto le linee rosse, tutto lavora in sicurezza.
+            {protection.hpfF > 0 && ` La curva arancione mostra l'effetto dell'HPF del DSP a ${protection.hpfF} Hz: taglia la zona pericolosa sotto l'accordo.`}
+          </p>
+          <div className={`grid gap-6 ${protection.portCurve ? 'md:grid-cols-2' : ''}`}>
+            <div>
+              <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Escursione cono — Xmax {protection.xmax} mm</p>
+              <Plot series={[
+                { name: 'Senza protezione', color: '#71717a', points: protection.raw },
+                { name: 'Con HPF DSP', color: PLOT_COLORS[0], points: protection.protectedCurve },
+                { name: 'Xmax', color: '#ef4444', points: protection.xmaxLine },
+              ]} yLabel="mm" yUnit="mm" height={190} yMin={0} yMax={protection.xmax * 2.2} />
+            </div>
+            {protection.portCurve && (
+              <div>
+                <p className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider mb-2">Velocità aria in porta — limite 17 m/s</p>
+                <Plot series={[
+                  { name: 'Velocità', color: PLOT_COLORS[1], points: protection.portCurve },
+                  { name: 'Limite', color: '#ef4444', points: protection.portLimit! },
+                ]} yLabel="m/s" yUnit="m/s" height={190} yMin={0} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

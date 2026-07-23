@@ -4,8 +4,8 @@
  * Dickason "Loudspeaker Design Cookbook").
  */
 
-import { airDensity, speedOfSound, TWO_PI } from './constants';
-import type { TSParams, SealedResult, VentedResult, AlignmentType } from './types';
+import { airDensity, speedOfSound, TWO_PI, logFreqGrid } from './constants';
+import type { TSParams, SealedResult, VentedResult, AlignmentType, CurvePoint } from './types';
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  THIELE-SMALL
@@ -154,6 +154,23 @@ export function portVelocity(ts: TSParams, fb: number, dvMm: number, np = 1): { 
   return { velocity, minVentAreaCm2: minVentArea * 1e4, portAreaCm2: portArea * 1e4 };
 }
 
+/**
+ * Curva velocità aria in porta (m/s) vs frequenza.
+ * Il condotto è la massa di un risonatore di Helmholtz: la velocità dell'aria
+ * ha un picco a Fb (valore dalla formula di Small, caso peggiore a Xmax) e
+ * scende con la risposta del risonatore (Q ≈ QL della cassa).
+ */
+export function portVelocityCurve(
+  ts: TSParams, fb: number, dvMm: number, np = 1, ql = 7,
+  fMin = 15, fMax = 250, points = 140,
+): CurvePoint[] {
+  const peak = portVelocity(ts, fb, dvMm, np).velocity;
+  return logFreqGrid(fMin, fMax, points).map(f => ({
+    f,
+    v: peak / Math.sqrt(1 + ql * ql * Math.pow(f / fb - fb / f, 2)),
+  }));
+}
+
 /** Progetto vented completo da allineamento + diametro porta scelto */
 export function ventedDesign(
   ts: TSParams,
@@ -241,4 +258,72 @@ export function bandpass4thOrder(ts: TSParams, params: {
   const fL = fb / Math.sqrt(bw);
   const fH = fb * Math.sqrt(bw);
   return { vrL: vr, vfL: vf, fb, portLengthMm: lv, fL, fH };
+}
+
+/**
+ * Risposta bandpass 4° ordine (dB, picco 0): fianchi 12 dB/oct simmetrici,
+ * Q di banda = Fb/(fH−fL).
+ */
+export function bandpass4Response(fb: number, fL: number, fH: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
+  const qbp = fb / Math.max(1, fH - fL);
+  return logFreqGrid(fMin, fMax, points).map(f => {
+    const x = qbp * (f / fb - fb / f);
+    return { f, v: 20 * Math.log10(1 / (1 + x * x)) };
+  });
+}
+
+export interface Bandpass6Result {
+  vrL: number;          // camera posteriore (litri)
+  fbRear: number;       // accordo camera posteriore (Hz)
+  portRearLenMm: number;
+  vfL: number;          // camera anteriore (litri)
+  fbFront: number;      // accordo camera anteriore (Hz)
+  portFrontLenMm: number;
+  fL: number;           // stima -3 dB
+  fH: number;
+}
+
+/**
+ * Bandpass 6° ordine serie (entrambe le camere accordate) — PROGETTO DI
+ * PARTENZA: camera posteriore da allineamento QB3, camera anteriore Vf = S·Vr
+ * accordata più in alto (ratio·FbRear). Il modello è una cascata di due
+ * risonatori: buono per dimensionare, da rifinire con misura (o BassBox).
+ */
+export function bandpass6thOrder(ts: TSParams, params: {
+  S?: number;        // Vf/Vr (default 0.6)
+  ratio?: number;    // FbFront/FbRear (default 1.6)
+  dvMm: number;
+  np?: number;
+}): Bandpass6Result {
+  const { S = 0.6, ratio = 1.6, dvMm, np = 1 } = params;
+  const r = alignmentRatios(ts, 'QB3');
+  const vr = ts.vas / r.alpha;
+  const fbRear = r.h * ts.fs;
+  const vf = S * vr;
+  const fbFront = fbRear * ratio;
+  const portRearLenMm = portLength(dvMm, fbRear, vr, np);
+  const portFrontLenMm = portLength(dvMm, fbFront, vf, np);
+  // bordi banda dalla curva stimata (-3 dB dal picco)
+  const curve = bandpass6Response(fbRear, fbFront);
+  const peak = Math.max(...curve.map(p => p.v));
+  const above = curve.filter(p => p.v >= peak - 3);
+  const fL = above.length ? above[0].f : fbRear * 0.8;
+  const fH = above.length ? above[above.length - 1].f : fbFront * 1.2;
+  return { vrL: vr, fbRear, portRearLenMm, vfL: vf, fbFront, portFrontLenMm, fL, fH };
+}
+
+/**
+ * Risposta bandpass 6° ordine stimata (dB, picco 0): prodotto di due
+ * risonatori del 2° ordine centrati sui due accordi (fianchi ±12 dB/oct,
+ * banda più larga del 4°). Stima di progetto, non simulazione completa.
+ */
+export function bandpass6Response(fbRear: number, fbFront: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
+  const q = 1.2;
+  const bp2 = (f: number, f0: number) => {
+    const x = q * (f / f0 - f0 / f);
+    return 1 / Math.sqrt(1 + x * x);
+  };
+  const raw = logFreqGrid(fMin, fMax, points).map(f => ({ f, v: bp2(f, fbRear) * bp2(f, fbFront) }));
+  const peak = Math.max(...raw.map(p => p.v), 1e-9);
+  return raw.map(p => ({ f: p.f, v: 20 * Math.log10(Math.max(p.v / peak, 1e-6)) }));
 }

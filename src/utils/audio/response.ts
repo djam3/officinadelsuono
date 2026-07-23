@@ -95,25 +95,54 @@ export function computeResponse(input: ResponseInput): ResponseCurves {
     return { f, v: Math.max(0, tau * 1000) };
   });
 
-  // Escursione relativa (mm one-way) — modello: displacement ∝ pressione/ω²
+  // ── Escursione (mm picco) — modello fisico dalle funzioni di spostamento ──
+  // Sealed: X(s) è un low-pass 2° ordine (limite di compliance sotto fc).
+  // Vented: X(s) ha il notch a Fb (profondità 1/QL) e sotto Fb RISALE al limite
+  //         di compliance del solo driver (il reflex non carica più il cono):
+  //         è il motivo per cui serve l'HPF sotto l'accordo.
   const power = input.powerW ?? 100;
   const xmax = ts.xmax ?? 6;
-  const excursion: CurvePoint[] = grid.map(f => {
-    const mag = cabs(Gat(f));
-    // displacement low-pass: pressione ∝ ω²·X → X ∝ mag/(f/ref)²
-    let x = mag / Math.pow(f / 100, 2);
-    if (type === 'vented') {
-      // notch a Fb: il cono scarica
-      const fb = input.fb!;
-      const notch = Math.abs(f * f - fb * fb) / (f * f + fb * fb);
-      x *= 0.35 + 0.65 * notch;
+  const znom = ts.impedance ?? 8;
+  const vrms = Math.sqrt(power * znom);
+  const bl = ts.bl ?? 0;
+  const mmsKg = (ts.mms ?? 0) / 1000;
+  const reOhm = ts.re ?? 0;
+  const physical = bl > 0 && mmsKg > 0 && reOhm > 0;
+
+  const dispMag = (f: number): number => {
+    if (type === 'sealed') {
+      // |X/X_dc| con X_dc a compliance totale (driver+box): LP2 su fc
+      const O = f / input.fc!;
+      return 1 / Math.hypot(1 - O * O, O / input.qtc!);
     }
-    return { f, v: x };
-  });
-  // normalizza l'escursione così che il picco corrisponda a Xmax a potenza nominale
-  const peakX = Math.max(...excursion.map(p => p.v), 1e-9);
-  const scale = (xmax * Math.sqrt(power / 100)) / peakX;
-  excursion.forEach(p => { p.v = p.v * scale; });
+    // vented (Leach): X ∝ (1 − (Ω²/h) + jΩ/(√h·QL)) / D(Ω), normalizzato a f0=√(fb·fs)
+    const fb = input.fb!;
+    const f0 = Math.sqrt(fb * ts.fs);
+    const h = fb / ts.fs;
+    const O = f / f0;
+    const a1 = 1 / (ql * Math.sqrt(h)) + Math.sqrt(h) / ts.qts;
+    const a2 = (input.alpha! + 1) / h + h + 1 / (ql * ts.qts);
+    const a3 = 1 / (ts.qts * Math.sqrt(h)) + Math.sqrt(h) / ql;
+    const numMag = Math.hypot(1 - (O * O) / h, O / (Math.sqrt(h) * ql));
+    const denMag = Math.hypot(Math.pow(O, 4) - a2 * O * O + 1, -a1 * Math.pow(O, 3) + a3 * O);
+    return numMag / denMag;
+  };
+
+  let excursion: CurvePoint[];
+  if (physical) {
+    // X_dc = V·Bl/(Re·k) con k = (2π·f_rif)²·Mms; f_rif = fc (sealed, molla
+    // driver+box) o fs (vented: a bassa frequenza resta solo la molla del driver)
+    const fRef = type === 'sealed' ? input.fc! : ts.fs;
+    const k = Math.pow(TWO_PI * fRef, 2) * mmsKg;
+    const xDcMm = (vrms * bl) / (reOhm * k) * 1000;
+    excursion = grid.map(f => ({ f, v: xDcMm * dispMag(f) * Math.SQRT2 }));
+  } else {
+    // fallback relativo (dati TS incompleti): forma corretta, picco ≈ Xmax
+    excursion = grid.map(f => ({ f, v: dispMag(f) }));
+    const peakX = Math.max(...excursion.map(p => p.v), 1e-9);
+    const scale = (xmax * Math.sqrt(power / 100)) / peakX;
+    excursion.forEach(p => { p.v = p.v * scale; });
+  }
 
   // Impedenza modellata
   const impedance = computeImpedance(input, grid);
