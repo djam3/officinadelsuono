@@ -16,7 +16,8 @@ import type {
 // Motore di calcolo acustico CONDIVISO con l'Admin (Strumenti Tecnici).
 // Il configuratore DEVE usare queste funzioni per non divergere dai calcoli admin.
 import {
-  tsFromDriver, sealedFromQtc, ventedDesign, type AlignmentType,
+  tsFromDriver, sealedFromQtc, sealedFromVb, ventedDesign, portLength,
+  computeResponse, type AlignmentType, type TSParams,
 } from './audio';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -123,25 +124,45 @@ interface BassReflexResult {
  *  - Fb = 0.42·Fs·Qts^(-0.9) (accordo corretto, NON il vecchio 0.42·Fs fisso)
  *  - diametro porta scelto per tenere la velocità aria ≤ 17 m/s (no chuffing)
  */
-export function calculateBassReflex(driver: SpeakerDriver): BassReflexResult {
+/** F3 numerico dalla risposta vented reale (primo passaggio a −3 dB salendo) */
+export function ventedF3(ts: TSParams, fb: number, vbL: number): number {
+  const alpha = ts.vas / Math.max(vbL, 1);
+  const spl = computeResponse({ ts, type: 'vented', fb, alpha, ql: 7, fMin: 15, fMax: 500 }).spl;
+  const hit = spl.find(p => p.v >= -3);
+  return Math.round(hit ? hit.f : fb);
+}
+
+export function calculateBassReflex(driver: SpeakerDriver, isSub = false): BassReflexResult {
   const ts = tsFromDriver(driver);
 
   // Allineamento in base al Qts (identico ad autoEnclosure)
   const alignment: AlignmentType = ts.qts < 0.3 ? 'QB3' : ts.qts > 0.45 ? 'C4' : 'B4';
 
+  // SUBWOOFER: i driver PA a Qts basso col QB3 danno box minuscoli e F3 alto
+  // (un 21" in 70 litri non esiste). Pratica costruttiva reale (stile schede
+  // B&C/Eighteen Sound): Vb ≈ 0.6·Vas, accordo Fb ≈ 0.85·Fs → box grande,
+  // bassi estesi, massimo output. Il QB3/B4 resta per le casse full-range.
+  const subCustom = isSub
+    ? { vbL: Math.max(ts.vas * 0.6, 20), fb: Math.max(28, Math.round(ts.fs * 0.9)) }
+    : undefined;
+
   const MAX_VELOCITY = 17; // m/s — oltre si ha "chuffing" (rumore d'aria)
   const diameters = [50, 65, 80, 100, 120, 150, 180];
   const maxPorts = 4; // fino a 4 porte identiche per driver ad alta escursione
+
+  const design = (dv: number, np: number) => subCustom
+    ? ventedDesign(ts, 'CUSTOM', dv, np, 0.732, subCustom)
+    : ventedDesign(ts, alignment, dv, np);
 
   // Cerca la combinazione (n. porte, diametro) col MINOR numero di porte e poi
   // minor diametro che mantiene la velocità ≤ 17 m/s. Più porte = più area
   // totale = velocità più bassa (la lunghezza di ciascuna porta cresce per
   // mantenere lo stesso accordo Fb).
-  let chosen = ventedDesign(ts, alignment, diameters[diameters.length - 1], maxPorts);
+  let chosen = design(diameters[diameters.length - 1], maxPorts);
   let found = false;
   for (let np = 1; np <= maxPorts && !found; np++) {
     for (const dv of diameters) {
-      const test = ventedDesign(ts, alignment, dv, np);
+      const test = design(dv, np);
       if (test.portVelocity <= MAX_VELOCITY) {
         chosen = test;
         found = true;
@@ -163,7 +184,7 @@ export function calculateBassReflex(driver: SpeakerDriver): BassReflexResult {
   return {
     volume: Math.max(v.vb, 3),
     port,
-    f3: Math.round(v.f3),
+    f3: subCustom ? ventedF3(ts, v.fb, v.vb) : Math.round(v.f3),
     fb: Math.round(v.fb),
   };
 }
@@ -186,34 +207,61 @@ interface DimensionsResult {
  * Calcola le dimensioni esterne della cassa dal volume interno
  * Usa proporzioni auree per ottimizzare le risonanze interne
  */
+/** Profondità del driver (magnete compreso), stimata dal diametro se manca */
+export function driverDepthMm(driver: SpeakerDriver): number {
+  return driver.depth || Math.round(driver.size * 25.4 * 0.45);
+}
+
 export function calculateExternalDimensions(
   internalVolumeLiters: number,
   woodThickness: number,
   driver: SpeakerDriver,
-  hasAmplifier: boolean
+  hasAmplifier: boolean,
+  isSub = false,
 ): DimensionsResult {
   // Volume interno in mm³
   const volumeMm3 = internalVolumeLiters * 1e6;
 
   // Larghezza frontale minima per ospitare il driver (Ø driver + margine)
   const minFrontWidth = (driver.overallDiameter || driver.size * 25.4 + 40) + 40; // +40mm margine
-  // Baffle VERTICALE realistico: una cassa vera è più alta che larga (spazio per
-  // impilare woofer + tromba/porta). Evita la "cassa larga e bassa".
-  const minFrontHeight = Math.round(minFrontWidth * 1.45);
 
-  // Punto di partenza da proporzioni auree (buone per le risonanze interne)
-  const x = Math.cbrt(volumeMm3 / (1 * 1.26 * GOLDEN_RATIO));
-
-  // Larghezza: la minore necessaria (driver + margine); Altezza: dominante
-  const internalWidth = Math.max(Math.round(x), minFrontWidth);
-  const internalHeight = Math.max(Math.round(x * 1.26), minFrontHeight);
-
-  // Profondità: ricavata per MANTENERE il volume netto richiesto (nessun cap
-  // superiore, così una cassa profonda resta profonda e il volume è corretto)
-  let internalDepth = Math.max(Math.round(volumeMm3 / (internalWidth * internalHeight)), 180);
+  // Profondità interna MINIMA meccanica: il driver entra col magnete + 60mm di
+  // aria dietro, e il modulo ampli incassato ha il suo ingombro.
+  const minInternalDepth = Math.max(
+    driverDepthMm(driver) + 60,
+    hasAmplifier ? 150 : 0,
+    200,
+  );
 
   // Spazio extra per l'amplificatore (connettori dietro)
   const extraDepth = hasAmplifier ? 30 : 0;
+
+  let internalWidth: number;
+  let internalHeight: number;
+  let internalDepth: number;
+
+  if (isSub) {
+    // SUBWOOFER: fronte compatto (woofer + slot in basso), corpo PROFONDO.
+    // È la forma dei sub veri: quasi un cubo, mai una torre né una cassa piatta.
+    internalWidth = Math.round(minFrontWidth);
+    // zona porta slot sotto il woofer, proporzionata al driver (cap 110mm)
+    internalHeight = Math.round(minFrontWidth + Math.min(110, minFrontWidth * 0.35));
+    internalDepth = Math.max(Math.round(volumeMm3 / (internalWidth * internalHeight)), minInternalDepth);
+    // se il volume chiede troppa profondità, cresce l'altezza (mai un "tunnel")
+    const maxDepth = Math.round(internalHeight * 1.35);
+    if (internalDepth > maxDepth) {
+      internalDepth = maxDepth;
+      internalHeight = Math.max(internalHeight, Math.round(volumeMm3 / (internalWidth * internalDepth)));
+    }
+  } else {
+    // FULL-RANGE: baffle verticale (woofer + tromba impilati, mai larga e
+    // bassa), con profondità mai sotto il minimo meccanico.
+    const minFrontHeight = Math.round(minFrontWidth * 1.45);
+    const x = Math.cbrt(volumeMm3 / (1 * 1.26 * GOLDEN_RATIO));
+    internalWidth = Math.max(Math.round(x), minFrontWidth);
+    internalHeight = Math.max(Math.round(x * 1.26), minFrontHeight);
+    internalDepth = Math.max(Math.round(volumeMm3 / (internalWidth * internalHeight)), minInternalDepth);
+  }
 
   return {
     width: internalWidth + 2 * woodThickness,
@@ -502,6 +550,9 @@ export function calculateFullCabinet(
   let qtc: number | undefined;
   let peakingDb: number | undefined;
 
+  // Subwoofer dedicato: forma e allineamento da sub vero (box grande e profondo)
+  const isSub = useCase === 'subwoofer-dedicato';
+
   // Calcola volume e parametri acustici
   if (cabinetType === 'sealed') {
     const result = calculateSealed(driver);
@@ -511,7 +562,7 @@ export function calculateFullCabinet(
     peakingDb = result.peakingDb;
   } else {
     // bass-reflex (default)
-    const result = calculateBassReflex(driver);
+    const result = calculateBassReflex(driver, isSub);
     internalVolume = result.volume;
     port = result.port;
     f3 = result.f3;
@@ -520,8 +571,40 @@ export function calculateFullCabinet(
 
   // Calcola dimensioni esterne
   const dimensions = calculateExternalDimensions(
-    internalVolume, woodThickness, driver, hasAmplifier
+    internalVolume, woodThickness, driver, hasAmplifier, isSub
   );
+
+  // ── Riconciliazione volume ↔ geometria ───────────────────────────────────
+  // I vincoli meccanici (profondità del magnete, fronte minimo) possono rendere
+  // il box più grande del volume acustico target: si accetta il box REALE e si
+  // riaccorda la porta sul volume netto effettivo (stesso Fb), come farebbe un
+  // progettista. Netto = interno − ingombro driver − condotto − rinforzi (3%).
+  {
+    const intW = dimensions.width - 2 * woodThickness;
+    const intH = dimensions.height - 2 * woodThickness;
+    const intD = dimensions.depth - 2 * woodThickness - (hasAmplifier ? 30 : 0);
+    const grossInternalL = (intW * intH * intD) / 1e6;
+    const mountDia = driver.mountingDiameter || driver.size * 25.4 - 10;
+    const driverDisplL = (Math.PI * Math.pow(mountDia / 2, 2) * driverDepthMm(driver) * 0.3) / 1e6;
+    const ductVolL = (p?: PortDesign) => p && p.shape === 'circular' && p.diameter
+      ? (Math.PI * Math.pow(p.diameter / 2, 2) * p.length * (p.count || 1)) / 1e6
+      : 0;
+    const netActualL = Math.max(3, grossInternalL * 0.97 - driverDisplL - ductVolL(port));
+    if (Math.abs(netActualL - internalVolume) / internalVolume > 0.05) {
+      const ts = tsFromDriver(driver);
+      if (cabinetType === 'sealed') {
+        const s = sealedFromVb(ts, netActualL);
+        qtc = Math.round(s.qtc * 100) / 100;
+        f3 = Math.round(s.f3);
+        peakingDb = Math.round(s.peakingDb * 10) / 10;
+      } else if (port && fb && port.diameter) {
+        // stesso accordo Fb, volume vero → nuova lunghezza condotto
+        port = { ...port, length: Math.max(50, Math.round(portLength(port.diameter, fb, netActualL, port.count || 1))) };
+        f3 = ventedF3(ts, fb, netActualL);
+      }
+      internalVolume = Math.round(netActualL * 10) / 10;
+    }
+  }
 
   // ── Verifica COSTRUTTIVA della porta ─────────────────────────────────────
   // Un tubo dritto deve entrare nella profondità interna con aria dietro

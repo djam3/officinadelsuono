@@ -59,7 +59,14 @@ const USE_CASE_ICONS: Record<string, LucideIcon> = {
 function pickDriver(drivers: SpeakerDriver[], p: Profile): SpeakerDriver {
   const envSize: Record<string, number> = { 'indoor-small': 8, 'indoor-medium': 12, 'indoor-large': 15, 'outdoor': 18 };
   const targetSize = envSize[p.environment] ?? 12;
-  const pool = drivers.filter(d => ['subwoofer', 'woofer', 'mid-bass', 'coaxial', 'full-range'].includes(d.type));
+  // Un driver da SUBWOOFER va bene solo in un subwoofer: nelle casse full-range
+  // il suo Vas basso e Qts basso producono box e risposte sbagliate.
+  const wantSub = p.useCase === 'subwoofer-dedicato';
+  const goodTypes = wantSub
+    ? ['subwoofer', 'woofer']
+    : ['woofer', 'mid-bass', 'coaxial', 'full-range'];
+  let pool = drivers.filter(d => goodTypes.includes(d.type));
+  if (!pool.length) pool = drivers.filter(d => ['subwoofer', 'woofer', 'mid-bass', 'coaxial', 'full-range'].includes(d.type));
   const list = pool.length ? pool : drivers;
   let best = list[0]; let bestScore = -Infinity;
   for (const d of list) {
@@ -70,6 +77,7 @@ function pickDriver(drivers: SpeakerDriver[], p: Profile): SpeakerDriver {
     const fsScore = Math.max(0, 1 - (d.thielSmall.fs - 25) / 60); // fs 25→1, 85→0
     s += bassN * fsScore * 45;
     s -= Math.abs(d.size - targetSize) * 1.6;
+    if (wantSub && d.type === 'subwoofer') s += 20;
     if (p.useCase && d.recommendedFor?.includes(p.useCase as UseCase)) s += 28;
     if (s > bestScore) { bestScore = s; best = d; }
   }
