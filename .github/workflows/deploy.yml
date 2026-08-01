@@ -33,11 +33,13 @@ jobs:
       - name: Build project
         run: npm run build
 
-      - name: Deploy to Firebase (Hosting + Functions)
+      # Il SITO viene pubblicato per primo e da solo: l'hosting funziona anche
+      # sul piano gratuito, quindi non deve mai dipendere dalle Functions.
+      - name: Deploy sito (Hosting)
         if: github.ref == 'refs/heads/main'
         run: |
           set +e
-          OUT=$(npx firebase-tools deploy --only hosting,functions --project officinadelsuono-87986 --token "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" 2>&1)
+          OUT=$(npx firebase-tools deploy --only hosting --project officinadelsuono-87986 --token "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" 2>&1)
           CODE=$?
           echo "$OUT"
           if [ $CODE -ne 0 ]; then
@@ -48,3 +50,23 @@ jobs:
             fi
             exit $CODE
           fi
+
+      # Le Functions richiedono il piano Blaze (Secret Manager è a pagamento).
+      # Se il fatturamento è disattivato questo passo avvisa ma NON blocca il
+      # sito: le funzioni già online restano attive alla versione precedente.
+      - name: Deploy funzioni (richiede piano Blaze)
+        if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          set +e
+          OUT=$(npx firebase-tools deploy --only functions --project officinadelsuono-87986 --token "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" 2>&1)
+          CODE=$?
+          echo "$OUT"
+          if [ $CODE -ne 0 ]; then
+            if echo "$OUT" | grep -qi "requires billing to be enabled"; then
+              echo "::warning::Funzioni NON aggiornate: il fatturamento Firebase (piano Blaze) è disattivato. Il sito è comunque online."
+              exit 0
+            fi
+            echo "::warning::Deploy funzioni fallito (il sito è comunque online)."
+          fi
+          exit 0
