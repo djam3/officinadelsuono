@@ -14,6 +14,7 @@ import {
   RENTAL_ITEMS, RENTAL_PACKAGES, RENTAL_OCCASIONS,
   PRICE_INCLUDES, PRICE_EXCLUDES, PRICE_DISCLAIMER, EXTRA_SERVICES_NOTE,
   RENTAL_REQUIREMENTS, PAYMENT_RULES, DEPOSIT_RETURN_RULES,
+  DEPOSIT_CLAIM, DEPOSIT_CLAIM_FULL, DEPOSIT_HOW_IT_WORKS, DEPOSIT_CONDITIONS,
   type RentalItem, type RentalPackage,
 } from '../data/rentalCatalog';
 
@@ -96,8 +97,17 @@ export function Noleggio({ onNavigate }: { onNavigate?: (page: string) => void }
             </a>
           </motion.div>
 
+          {/* cauzione: blocco su carta */}
+          <motion.p
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}
+            className="mt-7 text-sm text-zinc-400 flex items-center justify-center gap-2 flex-wrap"
+          >
+            <CreditCard className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span><strong className="text-zinc-200">{DEPOSIT_CLAIM}</strong> — l'importo viene solo bloccato sulla carta e non addebitato</span>
+          </motion.p>
+
           {/* occasioni */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-10">
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
             {RENTAL_OCCASIONS.map(o => (
               <span key={o} className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 bg-zinc-900/60 border border-white/5 rounded-full px-3 py-1.5">
                 {o}
@@ -179,6 +189,48 @@ export function Noleggio({ onNavigate }: { onNavigate?: (page: string) => void }
           <div className="mt-5 bg-brand-orange/5 border border-brand-orange/25 rounded-2xl p-5 flex items-start gap-3">
             <Clock className="w-5 h-5 text-brand-orange shrink-0 mt-0.5" />
             <p className="text-sm text-zinc-300 leading-relaxed">{PRICE_DISCLAIMER}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAUZIONE: BLOCCO SU CARTA ───────────────────────────────────── */}
+      <section className="py-16 md:py-24 border-t border-white/5">
+        <div className="max-w-5xl mx-auto px-5">
+          <div className="text-center mb-10">
+            <p className="text-[#F27D26] font-black text-xs uppercase tracking-[0.22em] mb-3 flex items-center justify-center gap-2">
+              <CreditCard className="w-4 h-4" /> Cauzione
+            </p>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3">{DEPOSIT_CLAIM}</h2>
+            <p className="text-zinc-400 max-w-2xl mx-auto leading-relaxed">{DEPOSIT_CLAIM_FULL}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-5">
+            <div className="bg-emerald-500/5 border border-emerald-500/25 rounded-2xl p-6">
+              <h3 className="font-black text-emerald-400 uppercase text-sm tracking-wider mb-4 flex items-center gap-2">
+                <Check className="w-5 h-5" /> Come funziona
+              </h3>
+              <ol className="space-y-3">
+                {DEPOSIT_HOW_IT_WORKS.map((x, i) => (
+                  <li key={x} className="flex items-start gap-3 text-sm text-zinc-300 leading-snug">
+                    <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                    {x}
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl p-6">
+              <h3 className="font-black text-zinc-400 uppercase text-sm tracking-wider mb-4 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5" /> Cosa sapere
+              </h3>
+              <ul className="space-y-3">
+                {DEPOSIT_CONDITIONS.map(x => (
+                  <li key={x} className="flex items-start gap-2.5 text-sm text-zinc-300 leading-snug">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#F27D26] shrink-0 mt-2" /> {x}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
@@ -278,7 +330,10 @@ function PackageCard({ pkg, index }: { pkg: RentalPackage; index: number }) {
       {pkg.note && <p className="text-[11px] text-amber-400/90 mb-3 font-medium">{pkg.note}</p>}
 
       <div className="mt-auto pt-4 border-t border-white/5">
-        <p className="text-[11px] text-zinc-500 mb-3">Cauzione indicativa: <strong className="text-zinc-300">{euro(pkg.deposit)}</strong></p>
+        <p className="text-[11px] text-zinc-500 mb-3 leading-snug">
+          <CreditCard className="w-3.5 h-3.5 inline-block mr-1 -mt-0.5 text-zinc-400" />
+          Blocco su carta <strong className="text-zinc-300">{euro(pkg.deposit)}</strong> — non addebitato
+        </p>
         <a
           href={waLink(`Ciao! Sono interessato al ${pkg.name} (da ${pkg.priceFrom} €). Data evento: ___`)}
           target="_blank" rel="noopener noreferrer"
@@ -316,7 +371,7 @@ function ItemCard({ item, index }: { item: RentalItem; index: number }) {
         )}
         {item.note && <p className="text-[11px] text-amber-400/80 leading-snug mb-1.5">{item.note}</p>}
         <p className="text-[11px] text-zinc-600">
-          {item.deposit ? `Cauzione indicativa ${euro(item.deposit)}` : 'Nessuna cauzione'} · 24h
+          {item.deposit ? `Blocco su carta ${euro(item.deposit)}, non addebitato` : 'Nessun blocco cauzionale'} · 24h
         </p>
       </div>
     </motion.div>

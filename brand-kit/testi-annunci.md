@@ -14,6 +14,9 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 > 2 casse professionali FBT, stativi, modulo Bluetooth per la musica dal telefono
 > e tutti i cavi. Attacchi e parti.
 >
+> 💳 Nessuna cauzione in contanti: l'importo viene solo bloccato sulla carta di
+> credito, non viene addebitato e si sblocca alla riconsegna.
+>
 > 📍 Avellino e provincia
 > 📲 Prenota su WhatsApp: 347 739 7016
 >
@@ -33,6 +36,9 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 > Bluetooth. Tutto quello che serve per far cantare tutti fino a tardi.
 >
 > Perfetto per feste, animazione, cantanti e piccoli spettacoli.
+>
+> 💳 Nessuna cauzione in contanti: l'importo viene solo bloccato sulla carta di
+> credito, non viene addebitato e si sblocca alla riconsegna.
 >
 > 📍 Avellino e provincia
 > 📲 Prenota su WhatsApp: 347 739 7016
@@ -54,6 +60,9 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 >
 > ⚠️ Il servizio DJ non è incluso: noleggiamo l'attrezzatura, la musica la metti tu.
 >
+> 💳 Nessuna cauzione in contanti: l'importo viene solo bloccato sulla carta di
+> credito, non viene addebitato e si sblocca alla riconsegna.
+>
 > 📍 Avellino e provincia
 > 📲 Prenota su WhatsApp: 347 739 7016
 >
@@ -71,6 +80,9 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 **Testo:**
 > Videoproiettore, telo con supporti e impianto audio FBT. Per proiezioni,
 > presentazioni, eventi aziendali e feste con video.
+>
+> 💳 Nessuna cauzione in contanti: l'importo viene solo bloccato sulla carta di
+> credito, non viene addebitato e si sblocca alla riconsegna.
 >
 > 📍 Avellino e provincia
 > 📲 Prenota su WhatsApp: 347 739 7016
@@ -92,6 +104,9 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 >
 > Il prezzo finale dipende dall'attrezzatura che scegli: scrivici e ti facciamo
 > il preventivo esatto.
+>
+> 💳 Nessuna cauzione in contanti: l'importo viene solo bloccato sulla carta di
+> credito, non viene addebitato e si sblocca alla riconsegna.
 >
 > 📍 Avellino e provincia
 > 📲 Prenota su WhatsApp: 347 739 7016
@@ -131,6 +146,42 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 - Casse FBT professionali. Non casse da supermercato.
 - Karaoke, DJ, proiezioni: un'unica officina.
 - Avellino e provincia — consegna su preventivo.
+- Nessuna cauzione in contanti: blocchiamo l'importo sulla carta, non lo addebitiamo.
+
+---
+
+## ⚠️ Come parlare della cauzione (importante)
+
+Abbiamo sostituito la cauzione in contanti con la **preautorizzazione su carta**:
+l'importo viene bloccato ma **mai addebitato**, e si sblocca alla riconsegna.
+
+È un vantaggio commerciale forte, ma va comunicato per intero.
+
+### ✅ Si può scrivere
+- «Nessuna cauzione in contanti»
+- «Non paghi la cauzione: la blocchiamo sulla carta e non viene addebitata»
+- «Cauzione senza esborso — solo blocco temporaneo su carta»
+- «Zero contanti da anticipare»
+
+### ❌ Non si può scrivere
+- «Senza cauzione»
+- «Nessuna garanzia richiesta»
+- «Cauzione zero»
+
+**Perché:** il blocco sulla carta resta a tutti gli effetti una garanzia. Scrivere
+solo «senza cauzione» e poi bloccare 700 € al cliente è considerata pratica
+commerciale ingannevole (Codice del Consumo, artt. 21-22) e l'AGCM sanziona
+a partire da 5.000 €.
+
+La frase completa da affiancare sempre all'importo:
+
+> Nessuna cauzione in contanti: l'importo viene solo bloccato sulla tua carta di
+> credito e non viene addebitato. Si sblocca alla riconsegna, dopo il controllo
+> dell'attrezzatura.
+
+Ricorda anche di precisare, quando c'è spazio, che **serve una carta di credito**
+(sulle carte di debito e prepagate il blocco spesso si comporta come un addebito
+reale) e che per chi non ce l'ha resta possibile la cauzione in contanti.
 
 ---
 
@@ -158,7 +209,12 @@ Copia e incolla. La dicitura obbligatoria sui prezzi è già inclusa dove serve.
 > • indirizzo e numero di telefono
 > • firma del contratto
 > • acconto del 30% alla prenotazione
-> • cauzione (separata dal prezzo del noleggio)
+> • carta di credito per il blocco cauzionale
 >
-> Il saldo si paga prima del ritiro. La cauzione ti viene restituita dopo la
-> riconsegna puntuale e il controllo dell'attrezzatura.
+> Il saldo si paga prima del ritiro.
+>
+> 💳 Sulla cauzione: non ti chiediamo contanti. Al ritiro blocchiamo l'importo
+> sulla tua carta di credito — non viene addebitato — e lo sblocchiamo alla
+> riconsegna dopo il controllo dell'attrezzatura. La banca può impiegare da 1 a
+> 7 giorni per liberare il plafond. Se non hai una carta di credito possiamo
+> comunque procedere con cauzione in contanti o bonifico.

@@ -100,8 +100,9 @@ almeno alla metà dell'altezza del simbolo. Non appiccicarlo ai bordi.
 
 ---
 
-## 5. Regola obbligatoria per gli annunci
+## 5. Regole obbligatorie per gli annunci
 
+### Dicitura sui prezzi
 In **ogni** annuncio che mostra un prezzo deve comparire questa frase:
 
 > Prezzi riferiti al solo noleggio con ritiro e montaggio a cura del cliente.
@@ -110,7 +111,20 @@ In **ogni** annuncio che mostra un prezzo deve comparire questa frase:
 
 E deve sempre essere chiaro che **il servizio DJ non è incluso** nei pacchetti.
 
-Nel file `testi-annunci.md` trovi i post già scritti con la dicitura al posto giusto.
+### Come parlare della cauzione
+La cauzione non si paga in contanti: l'importo viene **bloccato sulla carta di
+credito e mai addebitato**, poi sbloccato alla riconsegna.
+
+- ✅ Si scrive: «Nessuna cauzione in contanti», «Non paghi la cauzione: la
+  blocchiamo sulla carta e non viene addebitata»
+- ❌ Non si scrive: «Senza cauzione», «Cauzione zero», «Nessuna garanzia richiesta»
+
+Il blocco resta una garanzia a tutti gli effetti: scrivere solo «senza cauzione»
+è pratica commerciale ingannevole (Codice del Consumo, artt. 21-22), sanzionabile
+dall'AGCM a partire da 5.000 €.
+
+Nel file `testi-annunci.md` trovi i post già scritti con entrambe le diciture al
+posto giusto, più l'elenco completo di cosa si può e non si può scrivere.
 
 ---
 

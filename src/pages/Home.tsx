@@ -1,4 +1,4 @@
-import { ArrowRight, MessageCircle, ShieldCheck, Settings, SlidersHorizontal, Speaker, Mic2, Cable, Sparkles, Award, Package, Users, Headphones, Monitor, Radio, Star, CheckCircle, Check } from 'lucide-react';
+import { ArrowRight, MessageCircle, ShieldCheck, Settings, SlidersHorizontal, Speaker, Mic2, Cable, Sparkles, Award, Package, Users, Headphones, Monitor, Radio, Star, CheckCircle, Check, CreditCard } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
@@ -333,6 +333,13 @@ export function Home({ onNavigate }: HomeProps) {
                   body: "Il montaggio è a carico tuo, ma non ti lasciamo solo: ti mostriamo i collegamenti al ritiro e restiamo raggiungibili su WhatsApp durante l'evento.",
                   highlight: "Assistenza su WhatsApp",
                   delay: 0.3
+                },
+                {
+                  icon: CreditCard,
+                  title: "Nessuna cauzione in contanti",
+                  body: "Non ti chiediamo contanti da anticipare: l'importo cauzionale viene solo bloccato sulla tua carta di credito, non viene addebitato e si sblocca alla riconsegna.",
+                  highlight: "Blocco su carta, mai addebitato",
+                  delay: 0.45
                 }
               ]).map((item, i) => (
                 <motion.div

@@ -11,7 +11,7 @@ export interface RentalItem {
   name: string;
   category: 'audio' | 'dj' | 'microfoni' | 'video' | 'accessori' | 'informatica';
   price: number;          // € / 24h
-  deposit?: number;       // cauzione indicativa €
+  deposit?: number;       // importo bloccato su carta (preautorizzazione) €
   includes?: string[];
   note?: string;
   image?: string;         // immagine opzionale (da aggiungere in seguito)
@@ -22,7 +22,7 @@ export interface RentalPackage {
   name: string;
   priceFrom: number;      // € / 24h "da"
   priceTo?: number;       // per i pacchetti a forbice
-  deposit: number;        // cauzione indicativa €
+  deposit: number;        // importo bloccato su carta (preautorizzazione) €
   includes: string[];
   goodFor: string[];
   note?: string;
@@ -208,7 +208,7 @@ export const RENTAL_REQUIREMENTS = [
   'Codice fiscale',
   'Indirizzo e numero di telefono',
   'Firma del contratto',
-  'Cauzione o preautorizzazione',
+  'Carta di credito per il blocco cauzionale',
   'Verbale di consegna e restituzione',
   'Controllo dell\'attrezzatura con fotografie prima e dopo',
 ];
@@ -216,7 +216,7 @@ export const RENTAL_REQUIREMENTS = [
 export const PAYMENT_RULES = [
   '30% alla prenotazione per bloccare la data',
   'Saldo prima del ritiro o della consegna',
-  'Cauzione separata dal prezzo del noleggio',
+  'Blocco cauzionale su carta, separato dal prezzo del noleggio',
   'Nessuna consegna senza saldo e documenti completati',
 ];
 
@@ -225,4 +225,30 @@ export const DEPOSIT_RETURN_RULES = [
   'Controllo dell\'attrezzatura',
   'Verifica dell\'assenza di danni',
   'Restituzione di tutti gli accessori e i cavi',
+];
+
+// ─── Cauzione: preautorizzazione su carta ────────────────────────────────────
+// Claim commerciale onesto: NON si può scrivere "senza cauzione" da solo — il
+// blocco su carta resta a tutti gli effetti una garanzia, e ometterlo sarebbe
+// una pratica ingannevole (Codice del Consumo, artt. 21-22). Si comunica il
+// beneficio reale: nessun contante anticipato, importo bloccato e mai addebitato.
+
+/** Titolo breve per schede e annunci */
+export const DEPOSIT_CLAIM = 'Nessuna cauzione in contanti';
+
+/** Spiegazione completa da affiancare SEMPRE al claim */
+export const DEPOSIT_CLAIM_FULL =
+  'Nessuna cauzione in contanti: l\'importo viene solo bloccato sulla tua carta di credito e non viene addebitato. Si sblocca alla riconsegna, dopo il controllo dell\'attrezzatura.';
+
+export const DEPOSIT_HOW_IT_WORKS = [
+  'Al ritiro blocchiamo l\'importo sulla tua carta di credito: è una preautorizzazione, non un pagamento.',
+  'I soldi restano tuoi: non vengono incassati e non compaiono come spesa.',
+  'Alla riconsegna, verificata l\'attrezzatura, il blocco viene rilasciato.',
+  'La banca può impiegare da 1 a 7 giorni per rendere di nuovo disponibile il plafond.',
+];
+
+export const DEPOSIT_CONDITIONS = [
+  'Serve una carta di credito intestata a chi firma il contratto: sulle carte di debito e prepagate il blocco spesso si comporta come un addebito reale.',
+  'Se non hai una carta di credito, resta possibile la cauzione in contanti o con bonifico.',
+  'L\'importo bloccato viene trattenuto solo in caso di danni, smarrimenti o ritardi, documentati dal verbale e dalle fotografie di consegna e riconsegna.',
 ];
