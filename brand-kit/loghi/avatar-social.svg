@@ -1,0 +1,43 @@
+<svg viewBox="0 0 512 512" width="1024" height="1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Officina del Suono — avatar social (WhatsApp Business, Instagram, Facebook)</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181B"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#A1A1AA" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="bar" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#F27D26"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#F27D26" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#F27D26" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- icona centrata, scalata al 68% della tela per aria attorno -->
+  <g transform="translate(85, 85) scale(3.42)">
+    <circle cx="50" cy="50" r="44" fill="url(#glow)"/>
+    <circle cx="50" cy="50" r="44" stroke="url(#ring)" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="260 16" transform="rotate(-90 50 50)"/>
+    <g fill="url(#bar)">
+      <rect x="29.5" y="36" width="5" height="28" rx="2.5"/>
+      <rect x="38.5" y="41" width="5" height="18" rx="2.5"/>
+      <rect x="47.5" y="32" width="5" height="36" rx="2.5"/>
+      <rect x="56.5" y="43" width="5" height="14" rx="2.5"/>
+      <rect x="65.5" y="38" width="5" height="24" rx="2.5"/>
+    </g>
+    <g stroke="#F27D26" stroke-width="2" stroke-linecap="round">
+      <line x1="50" y1="6" x2="50" y2="11"/>
+      <line x1="94" y1="50" x2="89" y2="50"/>
+      <line x1="50" y1="94" x2="50" y2="89"/>
+      <line x1="6" y1="50" x2="11" y2="50"/>
+    </g>
+  </g>
+</svg>

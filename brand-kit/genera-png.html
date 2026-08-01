@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Officina del Suono — Kit aziendale</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --orange:#F27D26; --orange-light:#FB923C; --black:#000;
+    --bg:#09090B; --panel:#18181B; --line:#27272A; --muted:#A1A1AA;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:#fff;
+    font-family:Inter,system-ui,sans-serif; line-height:1.6;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:clamp(28px,5vw,44px);
+     letter-spacing:-1.5px;margin:0 0 8px;text-transform:uppercase}
+  h1 span{color:var(--orange)}
+  h2{font-family:"Space Grotesk",sans-serif;font-weight:700;font-size:22px;letter-spacing:-.5px;
+     margin:56px 0 6px;text-transform:uppercase}
+  .sub{color:var(--muted);margin:0 0 32px;max-width:62ch}
+  .hint{color:var(--muted);font-size:14px;margin:0 0 20px;max-width:70ch}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;
+        display:flex;flex-direction:column;gap:14px}
+  .card h3{font-family:"Space Grotesk",sans-serif;font-size:14px;font-weight:700;margin:0;
+           text-transform:uppercase;letter-spacing:.5px}
+  .card p{margin:0;font-size:12.5px;color:var(--muted)}
+  .stage{border-radius:12px;min-height:130px;display:flex;align-items:center;justify-content:center;
+         padding:16px;overflow:hidden}
+  .stage.dark{background:#0b0b0e;border:1px solid var(--line)}
+  .stage.light{background:#fff}
+  .stage.photo{background:linear-gradient(135deg,#3f2a16,#7a4a1e 45%,#241505)}
+  .stage img{max-width:100%;max-height:110px;display:block}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto}
+  button{
+    font-family:Inter,sans-serif;font-weight:700;font-size:12px;cursor:pointer;
+    background:#27272A;color:#fff;border:1px solid #3F3F46;border-radius:9px;padding:8px 12px;
+    transition:.15s;
+  }
+  button:hover{background:var(--orange);border-color:var(--orange);color:#3A1606}
+  button.primary{background:var(--orange);border-color:var(--orange);color:#3A1606}
+  button.primary:hover{background:var(--orange-light)}
+  .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+  .sw{border-radius:12px;border:1px solid var(--line);overflow:hidden;cursor:pointer;transition:.15s}
+  .sw:hover{transform:translateY(-2px);border-color:var(--orange)}
+  .sw .chip{height:74px}
+  .sw .meta{padding:10px 12px;background:var(--panel)}
+  .sw .hex{font-family:"Space Grotesk",monospace;font-weight:700;font-size:14px}
+  .sw .name{font-size:11px;color:var(--muted)}
+  .fonts{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .fontcard{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+  .fontcard .big{font-size:36px;margin:6px 0 2px;letter-spacing:-1px}
+  .note{background:rgba(242,125,38,.07);border:1px solid rgba(242,125,38,.3);
+        border-radius:14px;padding:16px 18px;margin:24px 0;font-size:14px}
+  .note b{color:var(--orange)}
+  ol{padding-left:20px} ol li{margin:6px 0}
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;
+    background:var(--orange);color:#3A1606;font-weight:700;font-size:13px;padding:11px 20px;
+    border-radius:999px;pointer-events:none;transition:.25s;z-index:10}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
+  canvas{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Kit aziendale <span>Officina del Suono</span></h1>
+  <p class="sub">
+    Scarica i loghi in PNG con sfondo trasparente, copia i colori e imposta i font.
+    Tutto pronto da caricare su Canva.
+  </p>
+
+  <div class="note">
+    <b>Come si usa:</b> clicca <b>PNG 1024</b> sotto ogni logo per scaricarlo (2048 se ti serve
+    per la stampa). Poi su Canva vai in <b>Brand → Logo → Carica</b> e trascina i file scaricati.
+  </div>
+
+  <h2>Loghi</h2>
+  <p class="hint">
+    Ogni logo è disponibile a colori, tutto bianco (per le foto) e tutto nero (per la stampa
+    su carta chiara). Lo sfondo del PNG è sempre trasparente, tranne l'avatar social.
+  </p>
+  <div class="grid" id="logos"></div>
+
+  <h2>Colori</h2>
+  <p class="hint">Clicca su un colore per copiare il codice. Su Canva: <b>Brand → Colori → Aggiungi</b>.</p>
+  <div class="swatches" id="swatches"></div>
+
+  <h2>Font</h2>
+  <p class="hint">Cercali su Canva in <b>Brand → Font</b>. Sono entrambi gratuiti.</p>
+  <div class="fonts">
+    <div class="fontcard">
+      <div style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:2px">TITOLI</div>
+      <div class="big" style="font-family:'Space Grotesk';font-weight:700">Space Grotesk</div>
+      <div style="color:var(--muted);font-size:13px">Bold 700 · tutto maiuscolo · spaziatura stretta</div>
+      <div style="font-family:'Space Grotesk';font-weight:700;font-size:26px;margin-top:14px;text-transform:uppercase;letter-spacing:-1px">
+        Il suono giusto
+      </div>
+    </div>
+    <div class="fontcard">
+      <div style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:2px">TESTO</div>
+      <div class="big" style="font-family:'Inter';font-weight:700">Inter</div>
+      <div style="color:var(--muted);font-size:13px">Regular 400 e Bold 700</div>
+      <div style="font-family:'Inter';font-size:15px;margin-top:14px;color:#d4d4d8">
+        Noleggio di attrezzature audio, video, karaoke e console DJ per feste
+        ed eventi ad Avellino e provincia.
+      </div>
+    </div>
+  </div>
+
+  <h2>Regola obbligatoria negli annunci</h2>
+  <div class="note">
+    Ogni annuncio con un prezzo deve riportare:<br><br>
+    <i>«Prezzi riferiti al solo noleggio con ritiro e montaggio a cura del cliente.
+    DJ, consegna, installazione e servizi extra non inclusi. Consegna e installazione
+    disponibili su preventivo.»</i><br><br>
+    Deve inoltre essere sempre chiaro che <b>il servizio DJ non è incluso</b>.
+    <div class="btns" style="margin-top:14px">
+      <button onclick="copyText(document.getElementById('disc').textContent)">Copia la dicitura</button>
+    </div>
+    <span id="disc" hidden>Prezzi riferiti al solo noleggio con ritiro e montaggio a cura del cliente. DJ, consegna, installazione e servizi extra non inclusi. Consegna e installazione disponibili su preventivo.</span>
+  </div>
+
+</div>
+
+<canvas id="cv"></canvas>
+<div id="toast"></div>
+
+<script>
+const ORANGE='#F27D26', ORANGE_L='#FB923C', WHITE='#FFFFFF', BLACK='#000000';
+
+/* ─── Icona come SVG (senza testo: il testo lo disegna il canvas coi font veri) ─── */
+function iconSVG(mode){
+  const colored = mode==='colore';
+  const solid = mode==='bianco' ? WHITE : BLACK;
+  const ring = colored ? 'url(#ring)' : solid;
+  const bars = colored ? 'url(#bar)' : solid;
+  const tick = colored ? ORANGE : solid;
+  const defs = colored ? `
+    <defs>
+      <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#A1A1AA" stop-opacity="0.7"/>
+      </linearGradient>
+      <linearGradient id="bar" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="${ORANGE_L}"/>
+        <stop offset="100%" stop-color="${ORANGE}"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${ORANGE}" stop-opacity="0.25"/>
+        <stop offset="100%" stop-color="${ORANGE}" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="40" fill="url(#glow)"/>` : '';
+  const guide = colored
+    ? `<circle cx="50" cy="50" r="36" stroke="#FFFFFF" stroke-width="0.5" stroke-opacity="0.15" stroke-dasharray="2 3"/>`
+    : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1000" height="1000" fill="none">
+    ${defs}
+    <circle cx="50" cy="50" r="44" stroke="${ring}" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="260 16" transform="rotate(-90 50 50)"/>
+    ${guide}
+    <g fill="${bars}">
+      <rect x="29.5" y="36" width="5" height="28" rx="2.5"/>
+      <rect x="38.5" y="41" width="5" height="18" rx="2.5"/>
+      <rect x="47.5" y="32" width="5" height="36" rx="2.5"/>
+      <rect x="56.5" y="43" width="5" height="14" rx="2.5"/>
+      <rect x="65.5" y="38" width="5" height="24" rx="2.5"/>
+    </g>
+    <g stroke="${tick}" stroke-width="2" stroke-linecap="round">
+      <line x1="50" y1="6" x2="50" y2="11"/><line x1="94" y1="50" x2="89" y2="50"/>
+      <line x1="50" y1="94" x2="50" y2="89"/><line x1="6" y1="50" x2="11" y2="50"/>
+    </g>
+  </svg>`;
+}
+
+const svgUrl = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
+function loadImg(src){
+  return new Promise((ok,no)=>{ const i=new Image(); i.onload=()=>ok(i); i.onerror=no; i.src=src; });
+}
+
+/* ─── Composizione su canvas (stesse proporzioni degli SVG) ─── */
+async function compose(kind, mode, W){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  await document.fonts.ready;
+  const icon = await loadImg(svgUrl(iconSVG(kind==='avatar' ? 'colore' : mode)));
+  const txt = mode==='nero' ? BLACK : WHITE;
+  const accent = mode==='colore' ? ORANGE : txt;
+
+  if(kind==='icona' || kind==='avatar'){
+    cv.width=cv.height=W;
+    ctx.clearRect(0,0,W,W);
+    if(kind==='avatar'){
+      const g=ctx.createLinearGradient(0,0,W,W);
+      g.addColorStop(0,'#18181B'); g.addColorStop(1,'#000000');
+      ctx.fillStyle=g; ctx.fillRect(0,0,W,W);
+      const s=W*0.668, o=(W-s)/2;
+      ctx.drawImage(icon,o,o,s,s);
+    } else {
+      ctx.drawImage(icon,0,0,W,W);
+    }
+    return cv;
+  }
+
+  if(kind==='orizzontale'){
+    const S=W/620, H=Math.round(130*S);
+    cv.width=W; cv.height=H; ctx.clearRect(0,0,W,H);
+    ctx.drawImage(icon,15*S,15*S,100*S,100*S);
+    ctx.textBaseline='alphabetic';
+    if('letterSpacing' in ctx) ctx.letterSpacing = (-1.5*S)+'px';
+    ctx.font=`700 ${42*S}px "Space Grotesk", Inter, sans-serif`;
+    ctx.fillStyle=txt;    ctx.fillText('OFFICINA',132*S,60*S);
+    ctx.fillStyle=accent; ctx.fillText('DEL SUONO',132*S,102*S);
+    if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+    return cv;
+  }
+
+  /* verticale */
+  const S=W/420, H=Math.round(260*S);
+  cv.width=W; cv.height=H; ctx.clearRect(0,0,W,H);
+  ctx.drawImage(icon,160*S,10*S,100*S,100*S);
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  if('letterSpacing' in ctx) ctx.letterSpacing=(-1.2*S)+'px';
+  ctx.font=`700 ${38*S}px "Space Grotesk", Inter, sans-serif`;
+  ctx.fillStyle=txt;    ctx.fillText('OFFICINA',210*S,160*S);
+  ctx.fillStyle=accent; ctx.fillText('DEL SUONO',210*S,200*S);
+  if('letterSpacing' in ctx) ctx.letterSpacing=(4*S)+'px';
+  ctx.font=`500 ${13*S}px Inter, sans-serif`;
+  ctx.fillStyle = mode==='nero' ? '#52525B' : '#A1A1AA';
+  ctx.fillText('IL SUONO GIUSTO PER OGNI EVENTO',210*S,232*S);
+  if('letterSpacing' in ctx) ctx.letterSpacing='0px';
+  ctx.textAlign='left';
+  return cv;
+}
+
+async function download(kind,mode,W,name){
+  const cv=await compose(kind,mode,W);
+  cv.toBlob(b=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(b);
+    a.download=`${name}-${W}.png`;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    toast('Scaricato '+a.download);
+  },'image/png');
+}
+
+/* ─── Catalogo loghi ─── */
+const LOGOS=[
+  {kind:'orizzontale',mode:'colore', name:'logo-orizzontale',        title:'Orizzontale a colori', stage:'dark',  desc:'Uso principale: sito, post su sfondo scuro, firma email.'},
+  {kind:'orizzontale',mode:'bianco', name:'logo-orizzontale-bianco', title:'Orizzontale bianco',   stage:'photo', desc:'Sopra le foto e gli sfondi colorati.'},
+  {kind:'orizzontale',mode:'nero',   name:'logo-orizzontale-nero',   title:'Orizzontale nero',     stage:'light', desc:'Stampa su carta bianca, volantini, fatture.'},
+  {kind:'verticale',  mode:'colore', name:'logo-verticale',          title:'Verticale con slogan', stage:'dark',  desc:'Locandine, adesivi, magliette, roll-up.'},
+  {kind:'icona',      mode:'colore', name:'logo-icona',              title:'Solo simbolo',         stage:'dark',  desc:'Spazi piccoli, watermark sulle foto, favicon.'},
+  {kind:'icona',      mode:'bianco', name:'logo-icona-bianco',       title:'Simbolo bianco',       stage:'photo', desc:'Watermark sopra le foto degli eventi.'},
+  {kind:'icona',      mode:'nero',   name:'logo-icona-nero',         title:'Simbolo nero',         stage:'light', desc:'Stampa a un colore, timbri, incisioni.'},
+  {kind:'avatar',     mode:'colore', name:'avatar-social',           title:'Avatar social',        stage:'dark',  desc:'Foto profilo WhatsApp Business, Instagram, Facebook.'},
+];
+
+async function buildCards(){
+  const box=document.getElementById('logos');
+  for(const L of LOGOS){
+    const cv=await compose(L.kind,L.mode,L.kind==='avatar'?512:(L.kind==='icona'?400:1240));
+    const url=cv.toDataURL('image/png');
+    const el=document.createElement('div');
+    el.className='card';
+    el.innerHTML=`
+      <div class="stage ${L.stage}"><img src="${url}" alt="${L.title}"></div>
+      <div>
+        <h3>${L.title}</h3>
+        <p>${L.desc}</p>
+      </div>
+      <div class="btns">
+        <button class="primary" data-w="1024">PNG 1024</button>
+        <button data-w="512">512</button>
+        <button data-w="2048">2048</button>
+      </div>`;
+    el.querySelectorAll('button').forEach(b=>{
+      b.onclick=()=>download(L.kind,L.mode,+b.dataset.w,L.name);
+    });
+    box.appendChild(el);
+  }
+}
+
+/* ─── Colori ─── */
+const COLORS=[
+  ['#F27D26','Arancione brand'],['#000000','Nero'],['#FFFFFF','Bianco'],
+  ['#FB923C','Arancione chiaro'],['#09090B','Sfondo scuro'],['#18181B','Grigio scuro'],
+  ['#A1A1AA','Testo secondario'],['#3A1606','Testo su arancione'],
+];
+function buildSwatches(){
+  const box=document.getElementById('swatches');
+  COLORS.forEach(([hex,name])=>{
+    const d=document.createElement('div');
+    d.className='sw';
+    d.innerHTML=`<div class="chip" style="background:${hex}"></div>
+      <div class="meta"><div class="hex">${hex}</div><div class="name">${name}</div></div>`;
+    d.onclick=()=>copyText(hex);
+    box.appendChild(d);
+  });
+}
+
+function copyText(t){
+  navigator.clipboard.writeText(t).then(()=>toast('Copiato: '+(t.length>40?t.slice(0,40)+'…':t)));
+}
+let tt;
+function toast(m){
+  const el=document.getElementById('toast');
+  el.textContent=m; el.classList.add('on');
+  clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),1900);
+}
+
+document.fonts.ready.then(()=>{ buildCards(); buildSwatches(); });
+</script>
+</body>
+</html>
