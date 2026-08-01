@@ -1,4 +1,4 @@
-import { ArrowRight, MessageCircle, ShieldCheck, Settings, SlidersHorizontal, Speaker, Mic2, Cable, Sparkles, Award, Package, Users, Headphones, Monitor, Radio, Star, CheckCircle } from 'lucide-react';
+import { ArrowRight, MessageCircle, ShieldCheck, Settings, SlidersHorizontal, Speaker, Mic2, Cable, Sparkles, Award, Package, Users, Headphones, Monitor, Radio, Star, CheckCircle, Check } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useState, useEffect, useRef } from 'react';
@@ -11,6 +11,8 @@ import { EditableMedia } from '../components/builder/EditableMedia';
 import { HeroBackground } from '../components/HeroBackground';
 import { TiltCard } from '../components/TiltCard';
 import { MouseGlow } from '../components/MouseGlow';
+import { SHOP_ENABLED, BUSINESS, waLink } from '../config/site';
+import { RENTAL_PACKAGES, PRICE_DISCLAIMER } from '../data/rentalCatalog';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
@@ -18,8 +20,12 @@ interface HomeProps {
 
 export function Home({ onNavigate }: HomeProps) {
   useSEO({
-    title: 'Officina del Suono — Attrezzatura DJ & Audio Pro | Setup Ingegnerizzati',
-    description: 'Negozio specializzato in attrezzatura DJ e audio professionale. Setup ingegnerizzati su misura, consulenza gratuita su WhatsApp e prodotti selezionati da un esperto certificato MAT Academy.',
+    title: SHOP_ENABLED
+      ? 'Officina del Suono — Attrezzatura DJ & Audio Pro | Setup Ingegnerizzati'
+      : 'Officina del Suono — Noleggio audio, video e DJ ad Avellino',
+    description: SHOP_ENABLED
+      ? 'Negozio specializzato in attrezzatura DJ e audio professionale. Setup ingegnerizzati su misura, consulenza gratuita su WhatsApp e prodotti selezionati da un esperto certificato MAT Academy.'
+      : BUSINESS.description,
     url: '/',
   });
 
@@ -100,16 +106,16 @@ export function Home({ onNavigate }: HomeProps) {
             transition={{ duration: 1.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
             className="text-5xl md:text-[6.5rem] font-black tracking-tighter mb-5 md:mb-7 leading-[1.05] font-display uppercase"
           >
-            <EditableText 
-              as="span" 
-              contentKey="hero_title" 
-              fallback="Il Suono Perfetto." 
+            <EditableText
+              as="span"
+              contentKey="hero_title"
+              fallback={SHOP_ENABLED ? 'Il Suono Perfetto.' : 'Il suono giusto'}
             /><br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500 drop-shadow-[0_0_20px_rgba(255,100,0,0.3)] text-shimmer">
-              <EditableText 
-                as="span" 
-                contentKey="hero_subtitle" 
-                fallback="Zero Soldi Buttati." 
+              <EditableText
+                as="span"
+                contentKey="hero_subtitle"
+                fallback={SHOP_ENABLED ? 'Zero Soldi Buttati.' : 'per ogni evento.'}
               />
             </span>
           </motion.h1>
@@ -120,10 +126,12 @@ export function Home({ onNavigate }: HomeProps) {
             transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
             className="text-lg md:text-2xl text-zinc-300 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed font-medium tracking-tight"
           >
-            <EditableText 
-              as="p" 
-              contentKey="hero_body" 
-              fallback="Smettila di indovinare quale attrezzatura comprare. Ti ingegnerizziamo il setup definitivo per il tuo budget, testato sul campo da un Sound Engineer certificato. Nessuna scatola a sorpresa, solo performance reale." 
+            <EditableText
+              as="p"
+              contentKey="hero_body"
+              fallback={SHOP_ENABLED
+                ? 'Smettila di indovinare quale attrezzatura comprare. Ti ingegnerizziamo il setup definitivo per il tuo budget, testato sul campo da un Sound Engineer certificato. Nessuna scatola a sorpresa, solo performance reale.'
+                : 'Noleggio di attrezzature audio, video, karaoke e console DJ per feste, cerimonie ed eventi ad Avellino e provincia. Attrezzatura professionale, prezzi chiari, montaggio semplice.'}
               multiline
             />
           </motion.div>
@@ -135,21 +143,23 @@ export function Home({ onNavigate }: HomeProps) {
             className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4"
           >
             <button
-              onClick={() => onNavigate('shop')}
+              onClick={() => onNavigate(SHOP_ENABLED ? 'shop' : 'noleggio')}
               className="btn-premium w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95 glow-pulse"
             >
-              Scopri i Setup Garantiti
+              {SHOP_ENABLED ? 'Scopri i Setup Garantiti' : 'Vedi i pacchetti a noleggio'}
               <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform shrink-0" />
             </button>
 
             <a
-              href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Vorrei%20una%20consulenza%20tecnica%20per%20progettare%20il%20mio%20setup%20audio."
+              href={SHOP_ENABLED
+                ? 'https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Vorrei%20una%20consulenza%20tecnica%20per%20progettare%20il%20mio%20setup%20audio.'
+                : waLink('Ciao! Vorrei informazioni sul noleggio attrezzatura per il mio evento.')}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full sm:w-auto px-12 py-5 bg-zinc-900/50 hover:bg-zinc-800 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 border border-white/10 backdrop-blur-md"
             >
               <MessageCircle className="w-6 h-6 text-green-500 shrink-0" />
-              Evita Errori: Parla con Amerigo (Gratis)
+              {SHOP_ENABLED ? 'Evita Errori: Parla con Amerigo (Gratis)' : 'Chiedi disponibilità su WhatsApp'}
             </a>
           </motion.div>
         </div>
@@ -159,12 +169,17 @@ export function Home({ onNavigate }: HomeProps) {
       <section className="py-10 bg-zinc-950 border-t border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
-            {[
+            {(SHOP_ENABLED ? [
               { value: '50+', label: 'Setup consegnati' },
               { value: '100%', label: 'Clienti soddisfatti' },
               { value: '15 min', label: 'Consulenza gratuita' },
               { value: 'MAT', label: 'Certificazione Academy' },
-            ].map((stat, i) => (
+            ] : [
+              { value: '24h', label: 'Durata standard noleggio' },
+              { value: 'da 110 €', label: 'Impianto audio completo' },
+              { value: 'Avellino', label: 'E provincia' },
+              { value: 'MAT', label: 'Certificazione Academy' },
+            ]).map((stat, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -197,10 +212,18 @@ export function Home({ onNavigate }: HomeProps) {
               <span className="text-xs font-black uppercase tracking-[0.2em]">Cosa Ci Rende Diversi</span>
             </div>
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 uppercase">
-              Siamo l'Antidoto ai <span className="text-brand-orange">Megastore Online</span>.
+              {SHOP_ENABLED ? (
+                <>Siamo l'Antidoto ai <span className="text-brand-orange">Megastore Online</span>.</>
+              ) : (
+                <>Non è la solita <span className="text-brand-orange">attrezzatura a noleggio</span>.</>
+              )}
             </h2>
             <p className="text-zinc-500 text-lg md:text-xl max-w-3xl mx-auto font-medium">
-              Non troverai un catalogo infinito di prodotti scadenti. Testiamo ogni singola attrezzatura sul campo. <strong className="text-white">Se non suona come diciamo noi, non te la vendiamo.</strong> Trasparenza brutale.
+              {SHOP_ENABLED ? (
+                <>Non troverai un catalogo infinito di prodotti scadenti. Testiamo ogni singola attrezzatura sul campo. <strong className="text-white">Se non suona come diciamo noi, non te la vendiamo.</strong> Trasparenza brutale.</>
+              ) : (
+                <>Casse FBT, console Numark, mixer Soundcraft: roba professionale, controllata prima e dopo ogni noleggio. <strong className="text-white">Ti spieghiamo come collegarla</strong>, così la tua festa parte senza intoppi.</>
+              )}
             </p>
           </motion.div>
 
@@ -267,7 +290,7 @@ export function Home({ onNavigate }: HomeProps) {
 
             {/* Competitive Advantages */}
             <div className="space-y-6">
-              {[
+              {(SHOP_ENABLED ? [
                 {
                   icon: Award,
                   title: "Ingegneria, non Chiacchiere",
@@ -289,7 +312,29 @@ export function Home({ onNavigate }: HomeProps) {
                   highlight: "15 min gratis su WhatsApp",
                   delay: 0.3
                 }
-              ].map((item, i) => (
+              ] : [
+                {
+                  icon: Award,
+                  title: "Attrezzatura da professionisti",
+                  body: "Casse FBT JMaxX, console Numark Mixstream Pro, mixer Soundcraft, microfoni wireless Proel: la stessa roba che si usa nei service, non prodotti da supermercato.",
+                  highlight: "Marchi professionali",
+                  delay: 0
+                },
+                {
+                  icon: Package,
+                  title: "Controllata prima e dopo",
+                  body: "Ogni pezzo viene provato prima della consegna e ricontrollato al rientro, con verbale e fotografie. Tu ricevi attrezzatura che funziona, punto.",
+                  highlight: "Verbale e foto sempre",
+                  delay: 0.15
+                },
+                {
+                  icon: MessageCircle,
+                  title: "Ti spieghiamo come si collega",
+                  body: "Il montaggio è a carico tuo, ma non ti lasciamo solo: ti mostriamo i collegamenti al ritiro e restiamo raggiungibili su WhatsApp durante l'evento.",
+                  highlight: "Assistenza su WhatsApp",
+                  delay: 0.3
+                }
+              ]).map((item, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: 30 }}
@@ -317,7 +362,8 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* AI Quiz Banner */}
+      {/* AI Quiz Banner — consiglia prodotti da acquistare (solo shop) */}
+      {SHOP_ENABLED && (
       <section className="py-24 bg-black relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <TiltCard intensity={10}>
@@ -352,8 +398,10 @@ export function Home({ onNavigate }: HomeProps) {
           </TiltCard>
         </div>
       </section>
+      )}
 
       {/* Speaker Configurator Banner */}
+      {SHOP_ENABLED && (
       <section className="py-12 bg-black relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <TiltCard intensity={10}>
@@ -385,8 +433,75 @@ export function Home({ onNavigate }: HomeProps) {
           </TiltCard>
         </div>
       </section>
+      )}
+
+      {/* Noleggio — pacchetti in evidenza (attività principale) */}
+      {!SHOP_ENABLED && (
+        <section className="py-24 md:py-32 bg-black border-t border-white/5 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(242,125,38,0.08),transparent_60%)]" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center mb-14">
+              <p className="text-brand-orange font-black text-xs uppercase tracking-[0.22em] mb-3">Pacchetti a noleggio</p>
+              <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-5 text-white uppercase">
+                Il suono giusto<br />per ogni evento
+              </h2>
+              <p className="text-zinc-400 text-lg max-w-2xl mx-auto">
+                Attrezzatura professionale a noleggio per 24 ore, ad Avellino e provincia.
+                Prezzi chiari, nessuna sorpresa.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+              {RENTAL_PACKAGES.slice(0, 3).map((pkg, idx) => (
+                <motion.button
+                  key={pkg.id}
+                  onClick={() => onNavigate('noleggio')}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  className={`text-left rounded-2xl p-7 border transition-all hover:scale-[1.02] ${
+                    pkg.featured
+                      ? 'bg-brand-orange/[0.08] border-brand-orange/40'
+                      : 'bg-zinc-900/60 border-white/10 hover:border-white/25'
+                  }`}
+                >
+                  <h3 className="text-xl font-black tracking-tight mb-2 text-white">{pkg.name}</h3>
+                  <div className="flex items-baseline gap-1.5 mb-4">
+                    <span className="text-xs text-zinc-500 font-bold uppercase">da</span>
+                    <span className="text-4xl font-black text-brand-orange tracking-tighter">{pkg.priceFrom} €</span>
+                    <span className="text-xs text-zinc-500 font-bold">/ 24h</span>
+                  </div>
+                  <ul className="space-y-1.5 mb-5">
+                    {pkg.includes.slice(0, 4).map(x => (
+                      <li key={x} className="text-sm text-zinc-400 flex items-start gap-2">
+                        <Check className="w-4 h-4 text-brand-orange shrink-0 mt-0.5" /> {x}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="text-brand-orange font-bold text-sm flex items-center gap-2">
+                    Vedi dettagli <ArrowRight className="w-4 h-4" />
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => onNavigate('noleggio')}
+                className="btn-premium px-10 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-2xl font-black text-lg transition-all inline-flex items-center gap-3 shadow-[0_20px_50px_rgba(242,125,38,0.28)] hover:scale-105 active:scale-95"
+              >
+                Tutti i pacchetti e il listino
+                <ArrowRight className="w-5 h-5" />
+              </button>
+              <p className="text-xs text-zinc-600 mt-5 max-w-2xl mx-auto leading-relaxed">{PRICE_DISCLAIMER}</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Categories */}
+      {SHOP_ENABLED && (
       <section className="py-32 bg-black">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-20 text-center md:text-left">
@@ -453,8 +568,10 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+      )}
 
       {/* Setup Curati — Bundle Teaser */}
+      {SHOP_ENABLED && (
       <section className="py-24 md:py-32 bg-black relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(255,95,0,0.06),transparent_60%)]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -531,6 +648,7 @@ export function Home({ onNavigate }: HomeProps) {
           </div>
         </div>
       </section>
+      )}
 
       {/* Consulenza Gratuita CTA */}
       <section className="py-20 md:py-28 bg-zinc-950 border-t border-white/5 relative overflow-hidden">

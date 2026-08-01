@@ -22,6 +22,7 @@ import { trackPageView } from './utils/analytics';
 import { captureUTMs } from './utils/utm';
 import { ExitIntentPopup } from './components/ExitIntentPopup';
 import { useTranslation } from 'react-i18next';
+import { SHOP_ENABLED } from './config/site';
 
 // ─── URL ↔ page mapping ───────────────────────────────────────────────────────
 const PAGE_TO_PATH: Record<string, string> = {
@@ -38,16 +39,26 @@ const PAGE_TO_PATH: Record<string, string> = {
   profile: '/profilo',
   admin: '/admin',
   usato: '/usato',
+  noleggio: '/noleggio',
   configuratore: '/configuratore',
   'configuratore-esperto': '/configuratore-esperto',
 };
 
+/** Pagine e-commerce: nascoste finché SHOP_ENABLED resta false */
+const SHOP_PAGES = ['shop', 'product', 'compare', 'usato', 'quiz'];
+
+/** Reindirizza al noleggio le pagine disattivate (niente schermate bianche) */
+function resolvePage(page: string): string {
+  if (!SHOP_ENABLED && SHOP_PAGES.includes(page)) return 'noleggio';
+  return page;
+}
+
 function pathToPage(pathname: string): { page: string; id?: string } {
   if (pathname === '/' || pathname === '') return { page: 'home' };
-  if (pathname.startsWith('/prodotto/')) return { page: 'product', id: pathname.replace('/prodotto/', '') };
+  if (pathname.startsWith('/prodotto/')) return { page: resolvePage('product'), id: pathname.replace('/prodotto/', '') };
   if (pathname.startsWith('/blog/')) return { page: 'blog-post', id: pathname.replace('/blog/', '') };
   const found = Object.entries(PAGE_TO_PATH).find(([, p]) => p === pathname);
-  return found ? { page: found[0] } : { page: 'home' };
+  return found ? { page: resolvePage(found[0]) } : { page: 'home' };
 }
 
 // Install global error logger once at module load
@@ -80,6 +91,7 @@ const Quiz = lazy(() => import('./pages/Quiz').then(m => ({ default: m.Quiz })))
 const UsedMarket = lazy(() => import('./pages/UsedMarket').then(m => ({ default: m.UsedMarket })));
 const SpeakerConfigurator = lazy(() => import('./pages/SpeakerConfigurator'));
 const CustomerConfigurator = lazy(() => import('./pages/CustomerConfigurator'));
+const Noleggio = lazy(() => import('./pages/Noleggio').then(m => ({ default: m.Noleggio })));
 
 const PageLoader = () => {
   const { t } = useTranslation();
@@ -182,7 +194,8 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const handleNavigate = (page: string, productId?: string) => {
+  const handleNavigate = (requestedPage: string, productId?: string) => {
+    const page = resolvePage(requestedPage);
     setCurrentPage(page);
     setSelectedProductId(productId || null);
     // Update browser URL
@@ -317,20 +330,21 @@ export default function App() {
               className="w-full h-full"
             >
               {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
-              {currentPage === 'shop' && <Shop onNavigate={handleNavigate} compareList={compareList} toggleCompare={toggleCompare} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
-              {currentPage === 'product' && <Product productId={selectedProductId} onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
+              {currentPage === 'noleggio' && <Noleggio onNavigate={handleNavigate} />}
+              {SHOP_ENABLED && currentPage === 'shop' && <Shop onNavigate={handleNavigate} compareList={compareList} toggleCompare={toggleCompare} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
+              {SHOP_ENABLED && currentPage === 'product' && <Product productId={selectedProductId} onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'admin' && <Admin onNavigate={handleNavigate} />}
-              {currentPage === 'compare' && <Compare onNavigate={handleNavigate} initialProducts={compareList} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
+              {SHOP_ENABLED && currentPage === 'compare' && <Compare onNavigate={handleNavigate} initialProducts={compareList} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'blog' && <Blog onNavigate={handleNavigate} showToast={showToast} />}
               {currentPage === 'blog-post' && <BlogPost postId={selectedProductId} onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
-              {currentPage === 'quiz' && <Quiz onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
+              {SHOP_ENABLED && currentPage === 'quiz' && <Quiz onNavigate={handleNavigate} showToast={showToast} triggerFlyToCart={triggerFlyToCart} />}
               {currentPage === 'profile' && <Profile onNavigate={handleNavigate} />}
               {currentPage === 'about' && <AboutUs />}
               {currentPage === 'contact' && <Contact />}
               {currentPage === 'terms' && <Terms />}
               {currentPage === 'privacy' && <Privacy />}
               {currentPage === 'cookie-policy' && <CookiePolicy />}
-              {currentPage === 'usato' && <UsedMarket onNavigate={handleNavigate} showToast={showToast} />}
+              {SHOP_ENABLED && currentPage === 'usato' && <UsedMarket onNavigate={handleNavigate} showToast={showToast} />}
               {currentPage === 'configuratore' && <CustomerConfigurator onNavigate={handleNavigate} />}
               {currentPage === 'configuratore-esperto' && <SpeakerConfigurator />}
             </motion.div>

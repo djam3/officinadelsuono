@@ -1,4 +1,5 @@
-import { Truck, ShieldCheck, MessageCircle, Award, Send, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Truck, ShieldCheck, MessageCircle, Award, Send, CheckCircle2, AlertCircle, MapPin } from 'lucide-react';
+import { SHOP_ENABLED } from '../config/site';
 import { PaymentLogos } from './PaymentLogos';
 import { Logo } from './Logo';
 import { useState } from 'react';
@@ -39,12 +40,17 @@ export function Footer({ onNavigate }: FooterProps) {
       <div className="border-b border-white/5 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
+            {(SHOP_ENABLED ? [
               { icon: Truck, title: "Spedizione Gratuita", desc: "Ordini sopra 99\u20AC" },
               { icon: ShieldCheck, title: "Garanzia 2 Anni", desc: "Su tutti i prodotti" },
               { icon: Award, title: "Esperto Certificato", desc: "MAT Academy" },
               { icon: MessageCircle, title: "Supporto WhatsApp", desc: "Rispondiamo in 15 min" },
-            ].map((item, i) => (
+            ] : [
+              { icon: MapPin, title: "Avellino e provincia", desc: "Consegna su preventivo" },
+              { icon: ShieldCheck, title: "Attrezzatura professionale", desc: "FBT, Numark, Soundcraft" },
+              { icon: Award, title: "Esperto Certificato", desc: "MAT Academy" },
+              { icon: MessageCircle, title: "Prenota su WhatsApp", desc: "Rispondiamo in 15 min" },
+            ]).map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-brand-orange/10 flex items-center justify-center shrink-0">
                   <item.icon className="w-5 h-5 text-brand-orange" />
@@ -116,14 +122,27 @@ export function Footer({ onNavigate }: FooterProps) {
           </div>
           
           <div>
-            <h3 className="text-lg font-bold mb-4 uppercase tracking-wider">Shop</h3>
+            <h3 className="text-lg font-bold mb-4 uppercase tracking-wider">{SHOP_ENABLED ? 'Shop' : 'Noleggio'}</h3>
             <ul className="space-y-2 text-zinc-400">
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Tutti i Prodotti</button></li>
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors font-bold text-brand-orange/80">Setup Curati by Amerigo</button></li>
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Controller DJ</button></li>
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Mixer & Effetti</button></li>
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Casse Attive (PA)</button></li>
-              <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Cuffie Pro</button></li>
+              {SHOP_ENABLED ? (
+                <>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Tutti i Prodotti</button></li>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors font-bold text-brand-orange/80">Setup Curati by Amerigo</button></li>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Controller DJ</button></li>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Mixer & Effetti</button></li>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Casse Attive (PA)</button></li>
+                  <li><button onClick={() => onNavigate?.('shop')} className="hover:text-brand-orange transition-colors">Cuffie Pro</button></li>
+                </>
+              ) : (
+                <>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors font-bold text-brand-orange/80">Tutti i pacchetti</button></li>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors">Impianto audio FBT</button></li>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors">Karaoke e microfoni</button></li>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors">Console DJ</button></li>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors">Videoproiettore e telo</button></li>
+                  <li><button onClick={() => onNavigate?.('noleggio')} className="hover:text-brand-orange transition-colors">Condizioni di noleggio</button></li>
+                </>
+              )}
             </ul>
           </div>
 
@@ -139,8 +158,14 @@ export function Footer({ onNavigate }: FooterProps) {
             <h3 className="text-lg font-bold mb-4 uppercase tracking-wider">Supporto</h3>
             <ul className="space-y-2 text-zinc-400">
               <li><button onClick={() => onNavigate?.('contact')} className="hover:text-brand-orange transition-colors">Contatti</button></li>
-              <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Spedizioni e Resi</button></li>
-              <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Garanzia</button></li>
+              {SHOP_ENABLED ? (
+                <>
+                  <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Spedizioni e Resi</button></li>
+                  <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Garanzia</button></li>
+                </>
+              ) : (
+                <li><button onClick={() => onNavigate?.('terms')} className="hover:text-brand-orange transition-colors">Termini e condizioni</button></li>
+              )}
               <li className="pt-2">
                 <a href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Ti%20scrivo%20dal%20sito%20Officinadelsuono." target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:text-white transition-colors block">WA: +39 347 739 7016</a>
                 <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:text-white transition-colors block mt-1">info@officina-del-suono.it</a>

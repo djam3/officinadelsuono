@@ -8,6 +8,7 @@ import { onAuthStateChanged, signOut, User as FirebaseUser } from 'firebase/auth
 import { AuthModal } from './AuthModal';
 import { Logo } from './Logo';
 import { CATEGORIES_DATA } from '../constants';
+import { SHOP_ENABLED } from '../config/site';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
 interface NavbarProps {
@@ -54,48 +55,55 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
           </div>
           
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
-            <div className="relative group">
-              <button 
-                onClick={() => onNavigate('shop')} 
-                className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all"
-              >
-                Prodotti <ChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:rotate-180 transition-all duration-300" />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden transform origin-top-left scale-95 group-hover:scale-100">
-                <div className="p-3 flex flex-col gap-1">
-                  <button
-                    onClick={() => onNavigate('shop')}
-                    className="flex items-center gap-3 text-left px-4 py-3 text-sm font-bold text-brand-orange hover:text-white hover:bg-brand-orange/10 rounded-xl transition-all group/item border border-brand-orange/20 bg-brand-orange/5 mb-1"
-                  >
-                    <div className="p-2 bg-brand-orange/20 rounded-lg">
-                      <Package size={20} strokeWidth={1.5} className="text-brand-orange" />
-                    </div>
-                    Setup Curati by Amerigo
-                  </button>
-                  {CATEGORIES_DATA.map((cat) => (
+            {SHOP_ENABLED && (
+              <div className="relative group">
+                <button
+                  onClick={() => onNavigate('shop')}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all"
+                >
+                  Prodotti <ChevronDown className="w-4 h-4 opacity-50 group-hover:opacity-100 group-hover:rotate-180 transition-all duration-300" />
+                </button>
+                <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 overflow-hidden transform origin-top-left scale-95 group-hover:scale-100">
+                  <div className="p-3 flex flex-col gap-1">
                     <button
-                      key={cat.slug}
                       onClick={() => onNavigate('shop')}
-                      className="flex items-center gap-3 text-left px-4 py-3 text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 rounded-xl transition-all group/item"
+                      className="flex items-center gap-3 text-left px-4 py-3 text-sm font-bold text-brand-orange hover:text-white hover:bg-brand-orange/10 rounded-xl transition-all group/item border border-brand-orange/20 bg-brand-orange/5 mb-1"
                     >
-                      <div className="p-2 bg-zinc-800 rounded-lg group-hover/item:bg-brand-orange/20 group-hover/item:text-brand-orange transition-colors">
-                        <cat.icon size={20} strokeWidth={1.5} />
+                      <div className="p-2 bg-brand-orange/20 rounded-lg">
+                        <Package size={20} strokeWidth={1.5} className="text-brand-orange" />
                       </div>
-                      {cat.label}
+                      Setup Curati by Amerigo
                     </button>
-                  ))}
+                    {CATEGORIES_DATA.map((cat) => (
+                      <button
+                        key={cat.slug}
+                        onClick={() => onNavigate('shop')}
+                        className="flex items-center gap-3 text-left px-4 py-3 text-sm font-medium text-zinc-300 hover:text-white hover:bg-white/5 rounded-xl transition-all group/item"
+                      >
+                        <div className="p-2 bg-zinc-800 rounded-lg group-hover/item:bg-brand-orange/20 group-hover/item:text-brand-orange transition-colors">
+                          <cat.icon size={20} strokeWidth={1.5} />
+                        </div>
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <button onClick={() => onNavigate('blog')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Recensioni & Guide</button>
-            <button onClick={() => onNavigate('configuratore')} className="relative px-4 py-2 text-sm font-bold uppercase tracking-wider text-white bg-brand-orange hover:bg-brand-orange/90 rounded-full transition-all shadow-[0_0_15px_rgba(242,125,38,0.5)]">
-              Configuratore
-              <span className="absolute -top-2 -right-2 bg-white text-black text-[9px] font-black px-1.5 py-0.5 rounded-full rotate-12">NUOVO</span>
+            )}
+
+            <button onClick={() => onNavigate('noleggio')} className="relative px-5 py-2 text-sm font-bold uppercase tracking-wider text-white bg-brand-orange hover:bg-brand-orange/90 rounded-full transition-all shadow-[0_0_15px_rgba(242,125,38,0.5)]">
+              Noleggio
             </button>
-            <button onClick={() => onNavigate('usato')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all border border-brand-orange/30">Usato</button>
-            <button onClick={() => onNavigate('compare')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Confronta</button>
+            <button onClick={() => onNavigate('blog')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Guide & Consigli</button>
             <button onClick={() => onNavigate('about')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Chi Siamo</button>
+            <button onClick={() => onNavigate('contact')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Contatti</button>
+            {SHOP_ENABLED && (
+              <>
+                <button onClick={() => onNavigate('configuratore')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Configuratore</button>
+                <button onClick={() => onNavigate('usato')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all border border-brand-orange/30">Usato</button>
+                <button onClick={() => onNavigate('compare')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Confronta</button>
+              </>
+            )}
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
@@ -152,14 +160,16 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
               </button>
             )}
 
-            <button id="cart-button" onClick={onOpenCart} className="p-2 hover:text-brand-orange transition-colors relative">
-              <ShoppingCart className="w-6 h-6" />
-              {cartCount > 0 && (
-                <span className="absolute top-0 right-0 bg-brand-orange text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </button>
+            {SHOP_ENABLED && (
+              <button id="cart-button" onClick={onOpenCart} className="p-2 hover:text-brand-orange transition-colors relative">
+                <ShoppingCart className="w-6 h-6" />
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-brand-orange text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </button>
+            )}
             <button className="md:hidden p-2 hover:text-brand-orange transition-colors" onClick={() => setIsMenuOpen(!isMenuOpen)}>
               <Menu className="w-6 h-6" />
             </button>
@@ -177,14 +187,19 @@ export function Navbar({ onNavigate, onOpenCart }: NavbarProps) {
             className="md:hidden bg-zinc-950 border-b border-white/10 overflow-hidden"
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
-              <button onClick={() => { onNavigate('shop'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Prodotti</button>
-              <button onClick={() => { onNavigate('configuratore'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-black text-brand-orange hover:bg-brand-orange/10 uppercase tracking-wider transition-colors border-b border-white/5 flex items-center justify-between">
-                Configuratore
-                <span className="bg-white text-black text-[9px] font-black px-2 py-0.5 rounded-full">NUOVO</span>
+              <button onClick={() => { onNavigate('noleggio'); setIsMenuOpen(false); }} className="w-full text-left px-4 py-4 text-lg font-black text-brand-orange hover:bg-brand-orange/10 uppercase tracking-wider transition-colors border-b border-white/5 flex items-center justify-between">
+                Noleggio
+                <span className="bg-brand-orange text-white text-[9px] font-black px-2 py-0.5 rounded-full">PACCHETTI</span>
               </button>
-              <button onClick={() => { onNavigate('blog'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Recensioni & Guide</button>
-              <button onClick={() => { onNavigate('usato'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Mercatino Usato</button>
-              <button onClick={() => { onNavigate('compare'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Confronta</button>
+              {SHOP_ENABLED && (
+                <>
+                  <button onClick={() => { onNavigate('shop'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Prodotti</button>
+                  <button onClick={() => { onNavigate('configuratore'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Configuratore</button>
+                  <button onClick={() => { onNavigate('usato'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Mercatino Usato</button>
+                  <button onClick={() => { onNavigate('compare'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Confronta</button>
+                </>
+              )}
+              <button onClick={() => { onNavigate('blog'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Guide & Consigli</button>
               <button onClick={() => { onNavigate('about'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Chi Siamo</button>
               <button onClick={() => { onNavigate('contact'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Contatti</button>
 
