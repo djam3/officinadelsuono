@@ -16,6 +16,7 @@ const PAGE_TO_PATH: Record<string, string> = {
   home: '/',
   about: '/chi-siamo',
   contact: '/contatti',
+  'cabinet-designer': '/progetta-cassa',
   terms: '/termini',
   privacy: '/privacy',
   'cookie-policy': '/cookie-policy',
@@ -31,6 +32,7 @@ function pathToPage(pathname: string): { page: string } {
 const Home = lazy(() => import('./pages/Home').then(m => ({ default: m.Home })));
 const AboutUs = lazy(() => import('./pages/AboutUs').then(m => ({ default: m.AboutUs })));
 const Contact = lazy(() => import('./pages/Contact').then(m => ({ default: m.Contact })));
+const CabinetDesigner = lazy(() => import('./pages/CabinetDesigner').then(m => ({ default: m.CabinetDesigner })));
 const Terms = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy').then(m => ({ default: m.CookiePolicy })));
@@ -89,6 +91,7 @@ export default function App() {
           {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
           {currentPage === 'about' && <AboutUs />}
           {currentPage === 'contact' && <Contact />}
+          {currentPage === 'cabinet-designer' && <CabinetDesigner />}
           {currentPage === 'terms' && <Terms />}
           {currentPage === 'privacy' && <Privacy />}
           {currentPage === 'cookie-policy' && <CookiePolicy />}
