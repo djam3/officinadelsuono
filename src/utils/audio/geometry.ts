@@ -156,17 +156,21 @@ export function volumeBreakdown(params: {
   driverDispL?: number;
   portDispL?: number;
   bracingPercent?: number;  // % del lordo occupata dai rinforzi (default 3%)
-  damping?: DampingLevel;
+  /** incremento frazionario di volume apparente dato dall'assorbente (0 = cassa vuota) */
+  volumeGain?: number;
+  /** volume che la parte solida dell'assorbente sottrae davvero (litri) */
+  absorberSolidL?: number;
 }): VolumeBreakdown {
-  const { grossL, driverDispL = 0, portDispL = 0, bracingPercent = 3, damping = 'normal' } = params;
+  const { grossL, driverDispL = 0, portDispL = 0, bracingPercent = 3, volumeGain = 0, absorberSolidL = 0 } = params;
   const bracingDisp = (grossL * bracingPercent) / 100;
-  const net = Math.max(0.1, grossL - driverDispL - portDispL - bracingDisp);
-  const effective = net * (1 + DAMPING_SPECS[damping].volumeGain);
+  const net = Math.max(0.1, grossL - driverDispL - portDispL - bracingDisp - absorberSolidL);
+  const effective = net * (1 + volumeGain);
   return {
     gross: grossL,
     driverDisp: driverDispL,
     portDisp: portDispL,
     bracingDisp,
+    absorberSolid: absorberSolidL,
     net,
     effective,
   };

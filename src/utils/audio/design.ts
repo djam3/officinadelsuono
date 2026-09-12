@@ -14,6 +14,10 @@ import {
   type PortGeometry, type PortPanel, type PortType,
 } from './ports';
 import { computeResponse } from './response';
+import {
+  ABSORBERS, QA_EMPTY, computeAbsorber, ventedBoxLosses,
+  type AbsorberId, type AbsorberResult, type Placement,
+} from './absorber';
 import { computeMaxOutput, ventVelocityCurve, applyRoomGain, type RoomPreset, type MaxOutputResult } from './performance';
 import {
   DAMPING_SPECS, GOLDEN_RATIO, cuttingList, dimensionsFromVolume, driverDisplacement,
@@ -54,6 +58,11 @@ export interface DesignInput {
   shape: BoxShape;
   wallThicknessMm: number;
   damping: DampingLevel;
+  /** materiale fonoassorbente; se assente lo deduce dal livello `damping` */
+  absorber?: AbsorberId;
+  placement?: Placement;
+  absorberDensityKgM3?: number;
+  liningThicknessMm?: number;
   useGoldenRatio: boolean;
   fixedWidthMm?: number;
   fixedHeightMm?: number;
@@ -187,6 +196,10 @@ export interface AcousticResult {
 
 export interface DesignResult {
   acoustic: AcousticResult;
+  /** materiale fonoassorbente: volume apparente, perdite e modi interni */
+  absorber: AbsorberResult;
+  /** QB equivalente della cassa reflex (fughe + assorbimento + condotto) */
+  boxLossQ: number;
   volumes: VolumeBreakdown;
   dimensions: BoxDimensions;
   panels: CutPanel[];
@@ -203,12 +216,12 @@ export interface DesignResult {
 
 // ─── Progetto acustico ────────────────────────────────────────────────────────
 
-function designSealed(input: DesignInput): AcousticResult {
+function designSealed(input: DesignInput, qa = QA_EMPTY): AcousticResult {
   const { ts } = input;
   const warnings: string[] = [];
   const res = input.customVbL
-    ? sealedFromVb(ts, input.customVbL)
-    : sealedFromQtc(ts, input.targetQtc ?? 0.707);
+    ? sealedFromVb(ts, input.customVbL, qa)
+    : sealedFromQtc(ts, input.targetQtc ?? 0.707, qa);
 
   if (res.qtc > 1.1) warnings.push(`Qtc ${res.qtc.toFixed(2)}: cassa molto piccola, risposta gonfia e poco controllata.`);
   if (res.qtc < 0.5) warnings.push(`Qtc ${res.qtc.toFixed(2)}: cassa molto grande, basso smorzato ma poco esteso.`);
@@ -219,7 +232,7 @@ function designSealed(input: DesignInput): AcousticResult {
   };
 }
 
-function designVented(input: DesignInput): AcousticResult {
+function designVented(input: DesignInput, qb = 7): AcousticResult {
   const { ts } = input;
 
   // volume e accordo dall'allineamento scelto, o imposti dall'utente
@@ -229,7 +242,7 @@ function designVented(input: DesignInput): AcousticResult {
     fb = input.customFbHz;
     alpha = ts.vas / vb;
   } else {
-    const ql = DAMPING_SPECS[input.damping].qa > 20 ? 10 : 7;
+    const ql = qb;
     const r = alignmentRatios(ts, input.alignment, ql);
     alpha = r.alpha;
     vb = ts.vas / alpha;
@@ -309,52 +322,101 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
 
 // ─── Progetto completo ────────────────────────────────────────────────────────
 
+/**
+ * Livelli storici di smorzamento tradotti nel materiale corrispondente, cosi i
+ * progetti salvati prima del modulo fonoassorbente continuano a funzionare.
+ */
+const DAMPING_AS_ABSORBER: Record<DampingLevel, { material: AbsorberId; placement: Placement; density: number }> = {
+  none:    { material: 'none', placement: 'none', density: 0 },
+  minimal: { material: 'felt-wool', placement: 'lining', density: 150 },
+  normal:  { material: 'polyester', placement: 'lining', density: 20 },
+  heavy:   { material: 'polyester', placement: 'stuffing', density: 15 },
+};
+
 export function computeDesign(input: DesignInput): DesignResult {
-  // 1. progetto acustico
-  let acoustic: AcousticResult;
-  switch (input.enclosure) {
-    case 'sealed': acoustic = designSealed(input); break;
-    case 'vented': acoustic = designVented(input); break;
-    case 'passive-radiator': acoustic = designPassiveRadiator(input); break;
-    case 'bandpass4': acoustic = designBandpass(input, 4); break;
-    case 'bandpass6': acoustic = designBandpass(input, 6); break;
-  }
+  const preset = DAMPING_AS_ABSORBER[input.damping];
+  const material = input.absorber ?? preset.material;
+  const placement = input.placement ?? preset.placement;
+  const density = input.absorberDensityKgM3
+    ?? (input.absorber ? ABSORBERS[material].defaultDensityKgM3 : preset.density);
 
-  // 2. l'assorbente fa "sembrare" la cassa più grande: il volume fisico
-  //    necessario è minore di quello acustico richiesto
-  const damping = DAMPING_SPECS[input.damping];
-  const physicalNetL = acoustic.vbL / (1 + damping.volumeGain);
-
-  // 3. ingombri interni
+  const bracingPercent = input.bracingPercent ?? 3;
   const driverDispL = driverDisplacement(
     input.ts.sd ?? 500,
     input.mountingDepthMm ?? 100,
     input.driverCount,
   );
-  const portBuild = acoustic.port
-    ? portDisplacement(acoustic.port.geometry, acoustic.port.lengthMm, input.wallThicknessMm)
-    : null;
-  const portDispL = portBuild?.displacementL ?? 0;
 
-  const bracingPercent = input.bracingPercent ?? 3;
-  const grossNeeded = grossFromNet(physicalNetL, { driverDispL, portDispL, bracingPercent });
+  // ── Progetto acustico, geometria e assorbente si determinano a vicenda ────
+  // Il materiale fa vedere al woofer un volume maggiore, quindi la cassa fisica
+  // puo essere piu piccola; ma quanto materiale ci entra dipende proprio dalle
+  // dimensioni di quella cassa. Il giro si chiude iterando: la seconda passata
+  // sposta il risultato di pochi decimi di litro, la terza di nulla.
+  let acoustic!: AcousticResult;
+  let dimensions!: BoxDimensions;
+  let absorber!: AbsorberResult;
+  let portBuild: ReturnType<typeof portDisplacement> | null = null;
+  let physicalNetL = 0;
+  let grossNeeded = 0;
+  let delta = 0;
+  let qa = QA_EMPTY;
 
-  // 4. geometria
-  const dimensions = dimensionsFromVolume(grossNeeded, {
-    shape: input.shape,
-    wallThickness: input.wallThicknessMm,
-    ratio: input.useGoldenRatio ? GOLDEN_RATIO : undefined,
-    fixedWidth: input.fixedWidthMm,
-    fixedHeight: input.fixedHeightMm,
-    taper: input.taper,
-  });
+  for (let pass = 0; pass < 4; pass++) {
+    const qb = ventedBoxLosses(qa);
+    switch (input.enclosure) {
+      case 'sealed': acoustic = designSealed(input, qa); break;
+      case 'vented': acoustic = designVented(input, qb); break;
+      case 'passive-radiator': acoustic = designPassiveRadiator(input); break;
+      case 'bandpass4': acoustic = designBandpass(input, 4); break;
+      case 'bandpass6': acoustic = designBandpass(input, 6); break;
+    }
+
+    portBuild = acoustic.port
+      ? portDisplacement(acoustic.port.geometry, acoustic.port.lengthMm, input.wallThicknessMm)
+      : null;
+    const portDispL = portBuild?.displacementL ?? 0;
+
+    physicalNetL = acoustic.vbL / (1 + delta);
+    grossNeeded = grossFromNet(physicalNetL, { driverDispL, portDispL, bracingPercent });
+    dimensions = dimensionsFromVolume(grossNeeded, {
+      shape: input.shape,
+      wallThickness: input.wallThicknessMm,
+      ratio: input.useGoldenRatio ? GOLDEN_RATIO : undefined,
+      fixedWidth: input.fixedWidthMm,
+      fixedHeight: input.fixedHeightMm,
+      taper: input.taper,
+    });
+
+    const t = input.wallThicknessMm;
+    absorber = computeAbsorber({
+      material, placement, densityKgM3: density,
+      liningThicknessMm: input.liningThicknessMm,
+      dims: {
+        widthMm: Math.max(20, dimensions.width - 2 * t),
+        heightMm: Math.max(20, dimensions.height - 2 * t),
+        depthMm: Math.max(20, dimensions.depth - 2 * t),
+      },
+      netVolumeL: physicalNetL,
+    });
+
+    const nextDelta = absorber.volume.delta;
+    const nextQa = absorber.losses.qa;
+    const settled = Math.abs(nextDelta - delta) < 1e-4 && Math.abs(nextQa - qa) < 1e-3;
+    delta = nextDelta;
+    qa = nextQa;
+    if (settled) break;
+  }
+
+  const qbFinal = ventedBoxLosses(qa);
+  acoustic.warnings = [...acoustic.warnings, ...absorber.warnings];
 
   const volumes = volumeBreakdown({
     grossL: internalVolume(dimensions),
     driverDispL,
-    portDispL,
+    portDispL: portBuild?.displacementL ?? 0,
     bracingPercent,
-    damping: input.damping,
+    volumeGain: delta,
+    absorberSolidL: absorber.fill.solidDisplacementL,
   });
 
   // 4b. verifica che il condotto entri davvero nella cassa appena dimensionata
@@ -397,7 +459,7 @@ export function computeDesign(input: DesignInput): DesignResult {
       qtc: acoustic.qtc,
       fb: acoustic.fbHz,
       alpha: acoustic.alpha,
-      ql: damping.qa > 20 ? 10 : 7,
+      ql: qbFinal,
       powerW: input.powerW,
       fMin: 15,
       fMax: 500,
@@ -434,7 +496,7 @@ export function computeDesign(input: DesignInput): DesignResult {
       ventVelocity = ventVelocityCurve({
         peakVelocityAtXmax: acoustic.port.velocity,
         fb: acoustic.fbHz,
-        ql: damping.qa > 20 ? 10 : 7,
+        ql: qbFinal,
         driveRatio,
       });
     }
@@ -449,6 +511,8 @@ export function computeDesign(input: DesignInput): DesignResult {
 
   return {
     acoustic,
+    absorber,
+    boxLossQ: qbFinal,
     volumes,
     dimensions,
     panels,

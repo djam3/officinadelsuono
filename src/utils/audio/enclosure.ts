@@ -57,18 +57,53 @@ export const calcVd = (sdCm2: number, xmaxMm: number) => sdCm2 * (xmaxMm / 10);
 //  CASSA CHIUSA (SEALED)
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Vb (litri) per un Qtc target. Vb = Vas/((Qtc/Qts)²−1) */
-export function sealedFromQtc(ts: TSParams, targetQtc: number): SealedResult {
-  const ratio = Math.pow(targetQtc / ts.qts, 2) - 1;
+/**
+ * Vb (litri) per un Qtc target.
+ *
+ * Senza perdite Vb = Vas/((Qtc/Qts)² − 1). Con l'assorbente il Qa smorza in
+ * parallelo, quindi per arrivare allo STESSO Qtc serve una cassa piu piccola.
+ * La correzione ha forma chiusa: da 1/Qtc = 1/(Qts·k) + 1/Qa, con k il fattore
+ * sqrt(alpha + 1), si ricava k = 1/(Qts·(1/Qtc − 1/Qa)) e quindi alpha = k² − 1.
+ * Senza questa correzione chiedere Qtc 0.707 con la cassa riempita restituiva
+ * un volume che in realta dava un Qtc piu basso del richiesto.
+ */
+export function sealedFromQtc(ts: TSParams, targetQtc: number, qa?: number): SealedResult {
+  let ratio: number;
+  if (qa && isFinite(qa) && qa > 0 && 1 / targetQtc > 1 / qa) {
+    // lo stesso Q che usa sealedFromVb: il parallelo di Qes e Qms quando ci
+    // sono entrambi, altrimenti il Qts dichiarato. Usare due decomposizioni
+    // diverse nelle due funzioni lasciava il target mancato dello 0.6%.
+    const q = ts.qes && ts.qms ? (ts.qes * ts.qms) / (ts.qes + ts.qms) : ts.qts;
+    const k = 1 / (q * (1 / targetQtc - 1 / qa));
+    ratio = k * k - 1;
+  } else {
+    ratio = Math.pow(targetQtc / ts.qts, 2) - 1;
+  }
   const vb = ratio > 0 ? ts.vas / ratio : ts.vas * 2;
-  return sealedFromVb(ts, vb);
+  return sealedFromVb(ts, vb, qa);
 }
 
-/** Qtc e risposta da un volume Vb dato */
-export function sealedFromVb(ts: TSParams, vbL: number): SealedResult {
+/**
+ * Qtc e risposta da un volume Vb dato.
+ *
+ * Con `qa` le perdite per assorbimento della cassa entrano in parallelo agli
+ * altri due smorzamenti, come nel circuito equivalente di Small:
+ *   1/Qtc = 1/Qec + 1/Qmc + 1/Qa
+ * Qec e Qmc sono il Qes e il Qms del driver riscalati in cassa dello stesso
+ * fattore sqrt(alpha + 1) con cui sale la risonanza. Senza il termine Qa il
+ * materiale assorbente cambiava il volume apparente ma non smorzava nulla,
+ * mentre nella cassa chiusa e proprio quello il suo effetto piu udibile.
+ */
+export function sealedFromVb(ts: TSParams, vbL: number, qa?: number): SealedResult {
   const alpha = ts.vas / vbL;
-  const qtc = ts.qts * Math.sqrt(alpha + 1);
-  const fc = ts.fs * Math.sqrt(alpha + 1);
+  const scale = Math.sqrt(alpha + 1);
+  let qtc = ts.qts * scale;
+  if (qa && isFinite(qa) && qa > 0) {
+    const qec = (ts.qes ?? ts.qts) * scale;
+    const qmc = (ts.qms ?? ts.qts * 10) * scale;
+    qtc = 1 / (1 / qec + 1 / qmc + 1 / qa);
+  }
+  const fc = ts.fs * scale;
   // F3
   const inv = 1 / (qtc * qtc);
   const f3 = fc * Math.sqrt(((inv - 2) + Math.sqrt(Math.pow(inv - 2, 2) + 4)) / 2);

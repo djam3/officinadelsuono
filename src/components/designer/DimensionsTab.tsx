@@ -1,11 +1,17 @@
 import { NumField, SelectField, Section, Stat, CheckField } from './ui';
-import { DAMPING_SPECS, SHAPE_LABELS } from '../../utils/audio';
-import type { BoxDimensions, BoxShape, CutPanel, DampingLevel, VolumeBreakdown } from '../../utils/audio';
+import { ABSORBERS, PLACEMENT_LABELS, SHAPE_LABELS } from '../../utils/audio';
+import type {
+  AbsorberId, AbsorberResult, BoxDimensions, BoxShape, CutPanel, DampingLevel, Placement, VolumeBreakdown,
+} from '../../utils/audio';
 
 export interface DimensionSettings {
   shape: BoxShape;
   wallThicknessMm: number | '';
   damping: DampingLevel;
+  absorber: AbsorberId;
+  placement: Placement;
+  absorberDensityKgM3: number | '';
+  liningThicknessMm: number | '';
   useGoldenRatio: boolean;
   fixedWidthMm: number | '';
   fixedHeightMm: number | '';
@@ -22,6 +28,7 @@ interface Props {
   panels: CutPanel[];
   panelAreaM2: number;
   weightKg: number;
+  absorber: AbsorberResult | null;
 }
 
 const MATERIAL_THICKNESS = [
@@ -34,10 +41,12 @@ const MATERIAL_THICKNESS = [
 ];
 
 export function DimensionsTab({
-  settings, onChange, dimensions, volumes, panels, panelAreaM2, weightKg,
+  settings, onChange, dimensions, volumes, panels, panelAreaM2, weightKg, absorber,
 }: Props) {
   const set = <K extends keyof DimensionSettings>(key: K, value: DimensionSettings[K]) =>
     onChange({ ...settings, [key]: value });
+
+  const spec = ABSORBERS[settings.absorber];
 
   return (
     <div className="space-y-5">
@@ -104,15 +113,45 @@ export function DimensionsTab({
               onChange={v => set('fixedHeightMm', v)}
             />
             <SelectField
-              label="Assorbente interno"
-              value={settings.damping}
-              onChange={v => set('damping', v as DampingLevel)}
-              options={Object.entries(DAMPING_SPECS).map(([value, spec]) => ({ value, label: spec.label }))}
+              label="Materiale fonoassorbente"
+              value={settings.absorber}
+              onChange={v => set('absorber', v as AbsorberId)}
+              options={Object.values(ABSORBERS).map(a => ({ value: a.id, label: a.label }))}
             />
-            <p className="text-[11px] text-zinc-500 leading-relaxed">
-              L'assorbente rallenta le onde interne: la cassa si comporta come se fosse più grande
-              (+{Math.round(DAMPING_SPECS[settings.damping].volumeGain * 100)}%) e smorza le risonanze (Qa {DAMPING_SPECS[settings.damping].qa}).
-            </p>
+            {spec.id !== 'none' && (
+              <>
+                <SelectField
+                  label="Posizionamento"
+                  value={settings.placement}
+                  onChange={v => set('placement', v as Placement)}
+                  options={(['lining', 'stuffing'] as Placement[]).map(p => ({
+                    value: p,
+                    label: PLACEMENT_LABELS[p] + (spec.suitable.includes(p) ? '' : ' — sconsigliato'),
+                  }))}
+                />
+                <NumField
+                  label="Densità del materiale"
+                  unit="kg/m³"
+                  value={settings.absorberDensityKgM3}
+                  onChange={v => set('absorberDensityKgM3', v)}
+                  placeholder={String(spec.defaultDensityKgM3)}
+                  hint={`Intervallo utilizzabile ${spec.densityRange[0]}–${spec.densityRange[1]} kg/m³.`}
+                />
+                {settings.placement === 'lining' && (
+                  <NumField
+                    label="Spessore del rivestimento"
+                    unit="mm"
+                    value={settings.liningThicknessMm}
+                    onChange={v => set('liningThicknessMm', v)}
+                    placeholder={String(spec.typicalLiningMm)}
+                  />
+                )}
+                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                  <span className="text-zinc-400">Impiego ideale:</span> {spec.bestUse.toLowerCase()}.
+                  {spec.note ? ` ${spec.note}` : ''}
+                </p>
+              </>
+            )}
           </div>
         </Section>
       </div>
@@ -146,10 +185,88 @@ export function DimensionsTab({
               <Stat label="− Rinforzi" value={volumes.bracingDisp.toFixed(2)} unit="L" />
               <Stat label="= Netto" value={volumes.net.toFixed(1)} unit="L" accent />
             </div>
-            <p className="text-[11px] text-zinc-500 mt-3">
-              Con l'assorbente scelto la cassa si comporta acusticamente come {volumes.effective.toFixed(1)} litri.
-            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+              <Stat label="− Solido assorbente" value={volumes.absorberSolid.toFixed(2)} unit="L" />
+              <Stat label="= Volume apparente" value={volumes.effective.toFixed(1)} unit="L" accent />
+            </div>
           </Section>
+
+          {absorber && absorber.spec.id !== 'none' && absorber.placement !== 'none' && (
+            <Section
+              title="Effetto del materiale fonoassorbente"
+              subtitle={`${absorber.spec.label} — ${PLACEMENT_LABELS[absorber.placement].toLowerCase()}, ${absorber.densityKgM3} kg/m³.`}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                <Stat label="Volume apparente" value={`+${(absorber.volume.delta * 100).toFixed(1)}`} unit="%" accent />
+                <Stat label="Qa assorbimento" value={absorber.losses.qa.toFixed(1)} />
+                <Stat label="Materiale" value={(absorber.fill.materialMassKg * 1000).toFixed(0)} unit="g" />
+                <Stat label="Volume occupato" value={`${(absorber.fill.fillFraction * 100).toFixed(0)}`} unit="%" />
+                <Stat label="Resistività" value={absorber.losses.sigma.toFixed(0)} unit="Pa·s/m²" />
+              </div>
+
+              <p className="text-[11px] text-zinc-500 mt-4 leading-relaxed">
+                L'incremento di volume apparente nasce dal passaggio della compressione da adiabatica a
+                isotermica: le fibre scambiano calore con l'aria, la velocità del suono cala e il woofer
+                «vede» una cassa più grande. Il limite non è convenzionale ma esatto e vale γ − 1 = 40,2%:
+                qui siamo al {(absorber.volume.fractionOfLimit * 100).toFixed(0)}% di quel limite.
+              </p>
+
+              <div className="mt-5">
+                <h4 className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">
+                  Onde stazionarie interne — f = n·c / 2d
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-[10px] uppercase tracking-wider text-zinc-500 border-b border-white/10">
+                        <th className="text-left py-2 font-bold">Asse</th>
+                        <th className="text-right py-2 font-bold">Quota</th>
+                        <th className="text-right py-2 font-bold">Ordine</th>
+                        <th className="text-right py-2 font-bold">Frequenza</th>
+                        <th className="text-right py-2 font-bold">α</th>
+                        <th className="text-right py-2 font-bold">Q modo</th>
+                        <th className="text-right py-2 font-bold">Abbattimento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {absorber.modes.slice(0, 6).map(m => (
+                        <tr key={`${m.axis}-${m.order}`} className="border-b border-white/5 text-zinc-300">
+                          <td className="py-2 capitalize">{m.axis}</td>
+                          <td className="py-2 text-right text-zinc-500">{m.dimensionMm.toFixed(0)} mm</td>
+                          <td className="py-2 text-right text-zinc-500">{m.order}</td>
+                          <td className="py-2 text-right font-mono">{m.freqHz.toFixed(0)} Hz</td>
+                          <td className="py-2 text-right font-mono">{m.alpha.toFixed(2)}</td>
+                          <td className="py-2 text-right font-mono text-zinc-500">
+                            {m.qEmpty.toFixed(0)} → {m.qDamped.toFixed(1)}
+                          </td>
+                          <td className="py-2 text-right font-mono text-brand-orange">
+                            −{m.attenuationDb.toFixed(1)} dB
+                            {!m.stillResonant && <span className="text-zinc-500 text-[10px] ml-1">non risuona</span>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+                  Assorbimento α dal modello di Miki (1990) sulla resistività al flusso; resistività dalla
+                  densità con Garai-Pompoli (2005) per il poliestere e Bies-Hansen (1980) per le lane
+                  minerali. Gli abbattimenti valgono per un modo monodimensionale fra pareti rigide, quindi
+                  sono un limite superiore rispetto a quanto si misura in una cassa vera.
+                </p>
+              </div>
+
+              {absorber.warnings.length > 0 && (
+                <ul className="mt-4 space-y-1.5">
+                  {absorber.warnings.map((w, i) => (
+                    <li key={i} className="text-[11px] text-amber-500/90 leading-relaxed flex gap-2">
+                      <span className="text-amber-500 shrink-0">▲</span>{w}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Section>
+          )}
 
           <Section title="Lista di taglio" subtitle={`${panelAreaM2.toFixed(2)} m² di pannello — circa ${Math.ceil(panelAreaM2 / 2.98)} foglio/i da 244×122 cm.`}>
             <div className="overflow-x-auto">

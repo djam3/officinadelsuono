@@ -114,6 +114,8 @@ export interface VolumeBreakdown {
   bracingDisp: number;  // litri — rinforzi interni
   net: number;          // litri — volume netto acustico
   effective: number;    // litri — netto + guadagno da assorbente
+  /** volume che la parte solida del fonoassorbente sottrae davvero (litri) */
+  absorberSolid: number;
 }
 
 export interface CutPanel {

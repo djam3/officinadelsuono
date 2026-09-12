@@ -45,6 +45,10 @@ const DEFAULT_DIMENSIONS: DimensionSettings = {
   shape: 'rectangular',
   wallThicknessMm: 18,
   damping: 'normal',
+  absorber: 'polyester',
+  placement: 'lining',
+  absorberDensityKgM3: '',
+  liningThicknessMm: '',
   useGoldenRatio: true,
   fixedWidthMm: '',
   fixedHeightMm: '',
@@ -115,6 +119,10 @@ export function CabinetDesigner() {
       shape: dimensions.shape,
       wallThicknessMm: num(dimensions.wallThicknessMm) ?? 18,
       damping: dimensions.damping,
+      absorber: dimensions.absorber,
+      placement: dimensions.placement,
+      absorberDensityKgM3: num(dimensions.absorberDensityKgM3),
+      liningThicknessMm: num(dimensions.liningThicknessMm),
       useGoldenRatio: dimensions.useGoldenRatio,
       fixedWidthMm: num(dimensions.fixedWidthMm),
       fixedHeightMm: num(dimensions.fixedHeightMm),
@@ -224,6 +232,7 @@ export function CabinetDesigner() {
                 panels={design?.panels ?? []}
                 panelAreaM2={design?.panelAreaM2 ?? 0}
                 weightKg={design?.weightKg ?? 0}
+                absorber={design?.absorber ?? null}
               />
             )}
 
