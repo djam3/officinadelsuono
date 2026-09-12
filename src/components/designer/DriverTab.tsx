@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Search, Save, Trash2, Wand2, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Save, Trash2, Wand2, Users, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { NumField, SelectField, Section, ActionButton, Stat, Warnings, CheckField, type FieldStatus } from './ui';
-import { DRIVER_LIBRARY, type LibraryDriver } from '../../data/driverLibrary';
+import { CATEGORY_LABELS, DRIVER_LIBRARY, type DriverCategory, type LibraryDriver } from '../../data/driverLibrary';
 import { WIRING_LABELS } from '../../utils/audio';
 import type { DriverConfig, DriverWiring, TSInput, TSParams, ValidationResult } from '../../utils/audio';
 
@@ -28,11 +28,12 @@ function saveCustom(list: CustomDriver[]) {
 
 function libraryToInput(d: LibraryDriver): TSInput {
   const t = d.thielSmall;
+  // `dia` non viene mai preso dal diametro di foratura: quello è la flangia,
+  // non il cono. Il diametro effettivo lo ricava il motore da Sd.
   return {
     fs: t.fs, qts: t.qts, qes: t.qes, qms: t.qms, vas: t.vas,
     xmax: t.xmax, sd: t.sd, re: t.re, mms: t.mms, bl: t.bl, le: t.le,
     pe: d.powerRMS, impedance: d.impedance, sensitivity: d.sensitivity,
-    dia: d.mountingDiameter,
   };
 }
 
@@ -52,6 +53,8 @@ export function DriverTab({
   input, onChange, derived, validation, config, onConfigChange, onAutoDerive, configWarnings, effectiveSummary,
 }: Props) {
   const [query, setQuery] = useState('');
+  const [category, setCategory] = useState<DriverCategory | 'all'>('all');
+  const [loadedId, setLoadedId] = useState<string | null>(null);
   const [custom, setCustom] = useState<CustomDriver[]>(loadCustom);
   const [saveName, setSaveName] = useState('');
 
@@ -60,11 +63,17 @@ export function DriverTab({
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return DRIVER_LIBRARY.slice(0, 6);
-    return DRIVER_LIBRARY.filter(d =>
+    const pool = category === 'all' ? DRIVER_LIBRARY : DRIVER_LIBRARY.filter(d => d.category === category);
+    if (!q) return pool;
+    return pool.filter(d =>
       `${d.brand} ${d.model} ${d.size}" ${d.type}`.toLowerCase().includes(q),
-    ).slice(0, 12);
-  }, [query]);
+    );
+  }, [query, category]);
+
+  const loadDriver = (d: LibraryDriver) => {
+    onChange(libraryToInput(d));
+    setLoadedId(d.id);
+  };
 
   /** valore da mostrare: quello inserito, altrimenti quello derivato (in grigio) */
   const shown = (key: keyof TSInput): number | '' => {
@@ -124,31 +133,65 @@ export function DriverTab({
     <div className="space-y-5">
       {/* Libreria */}
       <Section
-        title="Libreria altoparlanti"
-        subtitle="Carica un driver come punto di partenza, poi modifica liberamente i valori."
+        title={`Libreria altoparlanti · ${DRIVER_LIBRARY.length} driver`}
+        subtitle="Parametri presi dalle schede tecniche ufficiali. Caricali come punto di partenza, poi modificali liberamente."
       >
-        <div className="relative mb-3">
-          <Search className="w-4 h-4 text-zinc-600 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            placeholder="Cerca marca, modello o misura (es. 18, B&C, subwoofer)"
-            className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brand-orange transition-colors"
-          />
+        <div className="flex flex-col sm:flex-row gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 text-zinc-600 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Cerca marca, modello o misura (es. 18, B&C, subwoofer)"
+              className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brand-orange transition-colors"
+            />
+          </div>
+          <div className="flex gap-1 shrink-0">
+            {([['all', 'Tutti'], ['pro', CATEGORY_LABELS.pro], ['car', CATEGORY_LABELS.car]] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCategory(value)}
+                className={`px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                  category === value
+                    ? 'bg-brand-orange text-white border-brand-orange'
+                    : 'bg-white/5 text-zinc-400 border-white/10 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-56 overflow-y-auto">
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
           {results.map(d => (
-            <button
+            <div
               key={d.id}
-              type="button"
-              onClick={() => onChange(libraryToInput(d))}
-              className="text-left px-3 py-2 rounded-lg bg-zinc-950/60 border border-white/5 hover:border-brand-orange/40 transition-colors"
+              className={`rounded-lg border transition-colors ${
+                loadedId === d.id ? 'bg-brand-orange/10 border-brand-orange/50' : 'bg-zinc-950/60 border-white/5 hover:border-brand-orange/40'
+              }`}
             >
-              <div className="text-xs font-bold text-white">{d.brand} {d.model}</div>
-              <div className="text-[10px] text-zinc-500">
-                {d.size}" · {d.type} · Fs {d.thielSmall.fs}Hz · Qts {d.thielSmall.qts} · Vas {d.thielSmall.vas}L
+              <button type="button" onClick={() => loadDriver(d)} className="text-left w-full px-3 pt-2">
+                <div className="text-xs font-bold text-white">{d.brand} {d.model}</div>
+                <div className="text-[10px] text-zinc-500">
+                  {d.size}" · {d.type} · {d.impedance}Ω · Fs {d.thielSmall.fs}Hz · Qts {d.thielSmall.qts}
+                  {d.thielSmall.vas !== undefined && ` · Vas ${d.thielSmall.vas}L`}
+                </div>
+              </button>
+              <div className="px-3 pb-2 pt-1">
+                <a
+                  href={d.datasheet}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-[10px] text-zinc-600 hover:text-brand-orange transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" /> scheda ufficiale
+                </a>
+                {d.note && <p className="text-[10px] text-amber-500/70 mt-1 leading-relaxed">{d.note}</p>}
               </div>
-            </button>
+            </div>
           ))}
           {!results.length && <p className="text-xs text-zinc-600 italic">Nessun driver trovato.</p>}
         </div>

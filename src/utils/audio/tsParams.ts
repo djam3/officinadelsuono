@@ -43,6 +43,20 @@ export function vasFrom(sdCm2: number, cmsMmPerN: number, tempC = 20): number {
   return rho * c * c * sd * sd * cms * 1000; // m³ → litri
 }
 
+/**
+ * Sd (cm²) = √(Vas / (ρ·c²·Cms))
+ *
+ * Serve con i driver car audio: molti costruttori pubblicano come "Sd" l'area
+ * della flangia invece di quella effettiva del cono, mentre il Vas dichiarato
+ * è coerente con l'area vera. Ricavare Sd dal Vas dà il valore utilizzabile.
+ */
+export function sdFromVasCms(vasL: number, cmsMmPerN: number, tempC = 20): number {
+  const rho = airDensity(tempC);
+  const c = speedOfSound(tempC);
+  const cms = cmsMmPerN / 1000;
+  return Math.sqrt((vasL / 1000) / (rho * c * c * cms)) * 1e4;
+}
+
 /** Cms (mm/N) = Vas / (ρ·c²·Sd²) */
 export function cmsFrom(vasL: number, sdCm2: number, tempC = 20): number {
   const rho = airDensity(tempC);
@@ -130,6 +144,7 @@ export function completeTSParams(input: TSInput, tempC = 20): TSInput {
     // Compliance ↔ Vas ↔ massa mobile
     if (!has(p.vas) && has(p.sd) && has(p.cms)) p.vas = vasFrom(p.sd, p.cms, tempC);
     if (!has(p.cms) && has(p.vas) && has(p.sd)) p.cms = cmsFrom(p.vas, p.sd, tempC);
+    if (!has(p.sd) && has(p.vas) && has(p.cms)) p.sd = sdFromVasCms(p.vas, p.cms, tempC);
     if (!has(p.mms) && has(p.fs) && has(p.cms)) p.mms = mmsFrom(p.fs, p.cms);
     if (!has(p.cms) && has(p.fs) && has(p.mms)) p.cms = cmsFromMms(p.fs, p.mms);
     if (!has(p.fs) && has(p.cms) && has(p.mms)) p.fs = fsFrom(p.cms, p.mms);
