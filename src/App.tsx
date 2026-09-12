@@ -24,10 +24,14 @@ const PAGE_TO_PATH: Record<string, string> = {
 };
 
 /** Il glossario ha una voce per parametro: /glossario/<id> */
-function pathToPage(pathname: string): { page: string; param?: string } {
+function pathToPage(raw: string): { page: string; param?: string } {
+  // una barra finale non deve cambiare pagina: /glossario/qts/ e /glossario/qts
+  // sono lo stesso indirizzo
+  const pathname = raw.length > 1 ? raw.replace(/\/+$/, '') : raw;
   if (pathname === '/' || pathname === '') return { page: 'home' };
   if (pathname.startsWith('/glossario/')) {
-    return { page: 'glossary', param: pathname.slice('/glossario/'.length) };
+    const param = decodeURIComponent(pathname.slice('/glossario/'.length));
+    return param ? { page: 'glossary', param } : { page: 'glossary' };
   }
   const found = Object.entries(PAGE_TO_PATH).find(([, p]) => p === pathname);
   return found ? { page: found[0] } : { page: 'home' };
@@ -105,7 +109,7 @@ export default function App() {
           {currentPage === 'terms' && <Terms />}
           {currentPage === 'privacy' && <Privacy />}
           {currentPage === 'cookie-policy' && <CookiePolicy />}
-          {currentPage === 'glossary' && <Glossario slug={pageParam} />}
+          {currentPage === 'glossary' && <Glossario slug={pageParam} onNavigate={handleNavigate} />}
         </Suspense>
       </main>
 

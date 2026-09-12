@@ -7,6 +7,7 @@
  * corso.
  */
 
+import type { MouseEvent } from 'react';
 import { ArrowLeft, BookOpen, Info, Link2, AlertTriangle } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import {
@@ -16,6 +17,23 @@ import {
 import { Annot, Griglia, Righello } from '../components/blueprint';
 
 const ORDER: GlossaryCategory[] = ['driver', 'cassa', 'condotto', 'materiali', 'costruzione'];
+
+export type Naviga = (page: string, param?: string) => void;
+
+/**
+ * Intercetta il clic per navigare senza ricaricare tutta l'applicazione, ma
+ * lascia intatto l'href: cosi il collegamento resta un collegamento vero —
+ * apribile in una scheda nuova, copiabile, visibile ai motori di ricerca.
+ */
+function interno(naviga: Naviga | undefined, page: string, param?: string) {
+  return (e: MouseEvent<HTMLAnchorElement>) => {
+    if (!naviga) return;
+    if (e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    naviga(page, param);
+  };
+}
 
 function Blocks({ blocks }: { blocks: GlossaryBlock[] }) {
   return (
@@ -66,7 +84,7 @@ function Blocks({ blocks }: { blocks: GlossaryBlock[] }) {
   );
 }
 
-function Voce({ entry }: { entry: GlossaryEntry }) {
+function Voce({ entry, naviga }: { entry: GlossaryEntry; naviga?: Naviga }) {
   useSEO({
     title: `${entry.symbol} — ${entry.title}`,
     description: entry.summary,
@@ -79,6 +97,7 @@ function Voce({ entry }: { entry: GlossaryEntry }) {
     <article className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
       <a
         href="/glossario"
+        onClick={interno(naviga, 'glossary')}
         className="inline-flex items-center gap-2 text-xs text-graphite hover:text-marker transition-colors mb-8 uppercase tracking-[0.2em] font-black"
       >
         <ArrowLeft className="w-3.5 h-3.5" /> Glossario
@@ -137,6 +156,7 @@ function Voce({ entry }: { entry: GlossaryEntry }) {
               <a
                 key={r.id}
                 href={glossaryUrl(r.id)}
+                onClick={interno(naviga, 'glossary', r.id)}
                 className="inline-flex items-center gap-2 px-3 py-2 rounded-none bg-paper/[0.03] border border-paper/10 hover:border-marker/50 transition-colors"
               >
                 <Link2 className="w-3 h-3 text-marker" />
@@ -151,6 +171,7 @@ function Voce({ entry }: { entry: GlossaryEntry }) {
       <div className="mt-12">
         <a
           href="/progetta-cassa"
+          onClick={interno(naviga, 'cabinet-designer')}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-none bg-marker text-black font-black uppercase tracking-wider text-xs hover:bg-marker/90 transition-colors"
         >
           Torna al calcolatore
@@ -160,7 +181,7 @@ function Voce({ entry }: { entry: GlossaryEntry }) {
   );
 }
 
-function Indice() {
+function Indice({ naviga }: { naviga?: Naviga }) {
   useSEO({
     title: 'Glossario dei parametri Thiele-Small e di progettazione casse',
     description: 'Una scheda per ogni parametro del calcolatore: che cos’è, a cosa serve nel progetto, quali valori aspettarsi e dove si sbaglia.',
@@ -198,6 +219,7 @@ function Indice() {
                 <a
                   key={e.id}
                   href={glossaryUrl(e.id)}
+                  onClick={interno(naviga, 'glossary', e.id)}
                   className="tavola tavola-hover block p-4 group"
                 >
                   <div className="flex items-baseline gap-2 mb-1.5">
@@ -235,11 +257,14 @@ function Indice() {
   );
 }
 
-export function Glossario({ slug }: { slug?: string }) {
+export function Glossario({ slug, onNavigate }: { slug?: string; onNavigate?: Naviga }) {
   const entry = slug ? GLOSSARY_BY_ID[slug] : undefined;
   return (
-    <div className="min-h-screen bg-ink text-white pt-24 pb-24">
-      {entry ? <Voce entry={entry} /> : <Indice />}
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative">
+        {entry ? <Voce entry={entry} naviga={onNavigate} /> : <Indice naviga={onNavigate} />}
+      </div>
     </div>
   );
 }

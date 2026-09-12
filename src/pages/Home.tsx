@@ -15,7 +15,7 @@ import { DRIVER_LIBRARY } from '../data/driverLibrary';
 import { BUSINESS, waLink } from '../config/site';
 
 interface HomeProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: string, param?: string) => void;
 }
 
 const LAVORAZIONI = [
@@ -209,6 +209,12 @@ export function Home({ onNavigate }: HomeProps) {
                 <a
                   key={v.id}
                   href={`/glossario/${v.id}`}
+                  onClick={e => {
+                    // resta un link vero: ctrl/cmd-clic apre in una scheda nuova
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onNavigate('glossary', v.id);
+                  }}
                   className="bg-ink p-5 hover:bg-paper/[0.03] transition-colors group"
                 >
                   <div className="flex items-baseline gap-2 mb-2">

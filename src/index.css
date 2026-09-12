@@ -68,9 +68,27 @@ body {
 
 img { content-visibility: auto; }
 
-/* il cursore diventa un mirino da disegno: vedi CustomCursor */
-@media (pointer: fine) {
-  * { cursor: none !important; }
+/* ═══ CURSORE ══════════════════════════════════════════════════════════════
+   Il puntatore di sistema si nasconde SOLO quando il mirino è davvero
+   montato: la classe la mette e la toglie il componente CustomCursor. Prima
+   questa regola valeva per qualunque dispositivo con puntatore fine, e se il
+   componente non disegnava nulla — al primo fotogramma, su un dispositivo
+   ibrido, o durante il caricamento di una pagina — non restava nessun cursore.
+   Il puntatore vero è la rete di sicurezza, non un dettaglio da sopprimere. */
+html.cursore-mirino,
+html.cursore-mirino * {
+  cursor: none;
+}
+
+/* nei campi di scrittura il cursore di sistema resta: senza il tratto verticale
+   non si vede dove andrà a finire il testo */
+html.cursore-mirino :is(input, textarea, [contenteditable="true"]) {
+  cursor: auto;
+}
+
+/* dove il puntatore di sistema serve a comunicare qualcosa, torna visibile */
+html.cursore-mirino :is([disabled], [aria-disabled='true']) {
+  cursor: not-allowed;
 }
 
 a, button { transition: color .18s ease, background-color .18s ease, border-color .18s ease; }
