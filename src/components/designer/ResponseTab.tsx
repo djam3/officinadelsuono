@@ -140,6 +140,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             height={220}
             yLabel="Potenza"
             yUnit="W"
+            decimals={0}
             series={[
               { name: 'Limite', color: PLOT_COLORS[3], points: design.maxOutput.powerHandling },
               ...(ts?.pe ? [{ name: 'Pe nominale', color: '#3f3f46', points: limitLine(design.maxOutput.powerHandling, ts.pe) } as Series] : []),
@@ -155,6 +156,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             height={220}
             yLabel="Escursione"
             yUnit="mm"
+            decimals={2}
             yMin={0}
             yMax={ts?.xmax ? ts.xmax * 2.5 : undefined}
             series={[
@@ -198,7 +200,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
       {/* Fase */}
       {hasFullModel && settings.visible.phase && (
         <Section title="Fase acustica">
-          <Plot height={200} yLabel="Fase" yUnit="°" series={[{ name: 'Fase', color: PLOT_COLORS[4], points: curves!.phase }]} />
+          <Plot height={200} yLabel="Fase" yUnit="°" decimals={0} series={[{ name: 'Fase', color: PLOT_COLORS[4], points: curves!.phase }]} />
         </Section>
       )}
 

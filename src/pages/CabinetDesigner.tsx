@@ -7,7 +7,7 @@ import { EnclosureTab, type EnclosureSettings } from '../components/designer/Enc
 import { DimensionsTab, type DimensionSettings } from '../components/designer/DimensionsTab';
 import { ResponseTab, type ResponseSettings, type GraphKey } from '../components/designer/ResponseTab';
 import {
-  combineDrivers, completeTSParams, computeDesign, suggestEnclosure, toTSParams,
+  combineDrivers, completeTSParams, computeDesign, suggestEnclosure, toTSParams, validateTSParams,
   type DesignInput, type DriverConfig, type TSInput,
 } from '../utils/audio';
 
@@ -75,6 +75,8 @@ export function CabinetDesigner() {
   const [response, setResponse] = useState<ResponseSettings>(DEFAULT_RESPONSE);
 
   // ── Catena di calcolo ────────────────────────────────────────────────────
+  // la verifica lavora sui valori INSERITI: i derivati sono coerenti per costruzione
+  const validation = useMemo(() => validateTSParams(tsInput), [tsInput]);
   const derivedParams = useMemo(() => completeTSParams(tsInput), [tsInput]);
   const baseTs = useMemo(() => toTSParams(derivedParams), [derivedParams]);
   const effective = useMemo(
@@ -179,6 +181,7 @@ export function CabinetDesigner() {
                 input={tsInput}
                 onChange={setTsInput}
                 derived={derivedParams}
+                validation={validation}
                 config={driverConfig}
                 onConfigChange={setDriverConfig}
                 onAutoDerive={() => setTsInput(completeTSParams(tsInput))}

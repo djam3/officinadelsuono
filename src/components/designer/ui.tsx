@@ -3,16 +3,36 @@ import React from 'react';
 
 const ACCENT = '#F27D26';
 
+export type FieldStatus = 'ok' | 'error' | 'unknown';
+
+const STATUS_STYLE: Record<FieldStatus, { dot: string; border: string }> = {
+  ok:      { dot: 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]', border: 'border-white/10' },
+  error:   { dot: 'bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.7)]',   border: 'border-red-500/50' },
+  unknown: { dot: 'bg-zinc-700', border: 'border-white/10' },
+};
+
 export function NumField({
-  label, value, onChange, unit, step = 'any', min, placeholder, hint,
+  label, value, onChange, unit, step = 'any', min, placeholder, hint, status, statusMessage,
 }: {
   label: string; value: number | ''; onChange: (v: number | '') => void;
   unit?: string; step?: number | 'any'; min?: number; placeholder?: string; hint?: string;
+  status?: FieldStatus; statusMessage?: string;
 }) {
+  const style = STATUS_STYLE[status ?? 'unknown'];
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400 font-medium flex items-center justify-between">
-        {label} {unit && <span className="text-zinc-600">{unit}</span>}
+      <span className="text-xs text-zinc-400 font-medium flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 min-w-0">
+          {status && (
+            <span
+              title={statusMessage}
+              className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`}
+              aria-label={status === 'ok' ? 'parametro coerente' : status === 'error' ? 'parametro incongruente' : 'non verificabile'}
+            />
+          )}
+          <span className="truncate">{label}</span>
+        </span>
+        {unit && <span className="text-zinc-600 shrink-0">{unit}</span>}
       </span>
       <input
         type="number"
@@ -20,9 +40,13 @@ export function NumField({
         step={step}
         min={min}
         placeholder={placeholder}
+        title={statusMessage}
         onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-        className="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#F27D26] transition-colors"
+        className={`mt-1 w-full bg-zinc-950 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#F27D26] transition-colors ${status ? style.border : 'border-white/10'}`}
       />
+      {status === 'error' && statusMessage && (
+        <span className="text-[10px] text-red-400/90 mt-1 block leading-relaxed">{statusMessage}</span>
+      )}
       {hint && <span className="text-[10px] text-zinc-600 mt-0.5 block">{hint}</span>}
     </label>
   );
@@ -171,9 +195,25 @@ export function CheckField({ label, checked, onChange, hint }: {
 
 export interface Series { name: string; color: string; points: { f: number; v: number }[]; }
 
-export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax }: {
-  series: Series[]; yLabel?: string; yUnit?: string; height?: number; yMin?: number; yMax?: number;
+/** punto della serie più vicino alla frequenza indicata (distanza logaritmica) */
+function nearestPoint(points: { f: number; v: number }[], f: number) {
+  let best = points[0];
+  let bestDist = Infinity;
+  for (const p of points) {
+    const d = Math.abs(Math.log10(p.f) - Math.log10(f));
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  return best;
+}
+
+export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals = 1 }: {
+  series: Series[]; yLabel?: string; yUnit?: string; height?: number;
+  yMin?: number; yMax?: number; decimals?: number;
 }) {
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const [cursorF, setCursorF] = React.useState<number | null>(null);
+  const [pinned, setPinned] = React.useState(false);
+
   const W = 560, H = height, padL = 44, padR = 12, padT = 12, padB = 28;
   const allPts = series.flatMap(s => s.points).filter(p => isFinite(p.v));
   if (allPts.length === 0) return <div className="text-xs text-zinc-600 italic">—</div>;
@@ -197,8 +237,55 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax }: {
   const yticks = 4;
   const yTickVals = Array.from({ length: yticks + 1 }, (_, i) => vMin + ((vMax - vMin) * i) / yticks);
 
+  // ── lettura interattiva ───────────────────────────────────────────────────
+  const freqAtClientX = (clientX: number): number | null => {
+    const el = svgRef.current;
+    if (!el) return null;
+    const rect = el.getBoundingClientRect();
+    if (!rect.width) return null;
+    // il viewBox è scalato uniformemente: basta il rapporto di larghezza
+    const vbX = (clientX - rect.left) * (W / rect.width);
+    const clamped = Math.min(Math.max(vbX, padL), W - padR);
+    const ratio = (clamped - padL) / (W - padL - padR);
+    return Math.pow(10, lxMin + ratio * (lxMax - lxMin));
+  };
+
+  const handleMove = (e: React.PointerEvent) => {
+    if (pinned) return;
+    setCursorF(freqAtClientX(e.clientX));
+  };
+
+  const handleDown = (e: React.PointerEvent) => {
+    const f = freqAtClientX(e.clientX);
+    if (f === null) return;
+    if (pinned && cursorF !== null) {
+      // secondo clic: sblocca e segue di nuovo il puntatore
+      setPinned(false);
+      setCursorF(f);
+    } else {
+      setCursorF(f);
+      setPinned(true);
+    }
+  };
+
+  // le linee di riferimento (2 soli punti) non entrano nella lettura
+  const readable = series.filter(s => s.points.length > 2);
+  const readout = cursorF !== null
+    ? readable.map(s => ({ name: s.name, color: s.color, point: nearestPoint(s.points, cursorF) }))
+    : [];
+  const cursorHz = readout.length ? readout[0].point.f : cursorF;
+
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img">
+    <div>
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${W} ${H}`}
+      className="w-full touch-none cursor-crosshair"
+      role="img"
+      onPointerMove={handleMove}
+      onPointerDown={handleDown}
+      onPointerLeave={() => { if (!pinned) setCursorF(null); }}
+    >
       {/* griglia Y */}
       {yTickVals.map((v, i) => (
         <g key={i}>
@@ -231,7 +318,56 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax }: {
           ))}
         </g>
       )}
+
+      {/* cursore di lettura */}
+      {cursorF !== null && readout.length > 0 && (
+        <g pointerEvents="none">
+          <line
+            x1={xOf(cursorHz!)} y1={padT} x2={xOf(cursorHz!)} y2={H - padB}
+            stroke={pinned ? ACCENT : '#52525b'}
+            strokeWidth="1"
+            strokeDasharray={pinned ? undefined : '3 3'}
+          />
+          {readout.map((r, i) => (
+            isFinite(r.point.v) && (
+              <circle
+                key={i}
+                cx={xOf(r.point.f)}
+                cy={yOf(r.point.v)}
+                r="3.5"
+                fill={r.color}
+                stroke="#09090b"
+                strokeWidth="1.5"
+              />
+            )
+          ))}
+        </g>
+      )}
     </svg>
+
+    {/* valori sotto il grafico */}
+    <div className="mt-2 min-h-[26px] flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+      {cursorF !== null && readout.length > 0 ? (
+        <>
+          <span className={`font-black tabular-nums ${pinned ? 'text-brand-orange' : 'text-zinc-300'}`}>
+            {cursorHz! >= 1000 ? `${(cursorHz! / 1000).toFixed(2)} kHz` : `${cursorHz!.toFixed(1)} Hz`}
+          </span>
+          {readout.map((r, i) => (
+            <span key={i} className="inline-flex items-center gap-1.5 text-zinc-400">
+              <span className="w-2 h-0.5 rounded-full" style={{ backgroundColor: r.color }} />
+              {r.name}:
+              <span className="text-zinc-200 font-bold tabular-nums">
+                {r.point.v.toFixed(decimals)}{yUnit ? ` ${yUnit}` : ''}
+              </span>
+            </span>
+          ))}
+          <span className="text-zinc-600">{pinned ? '· clicca per sbloccare' : '· clicca per bloccare'}</span>
+        </>
+      ) : (
+        <span className="text-zinc-600">Passa o clicca sul grafico per leggere i valori punto per punto.</span>
+      )}
+    </div>
+    </div>
   );
 }
 

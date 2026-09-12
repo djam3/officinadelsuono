@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Search, Save, Trash2, Wand2, Users } from 'lucide-react';
-import { NumField, SelectField, Section, ActionButton, Stat, Warnings, CheckField } from './ui';
+import { Search, Save, Trash2, Wand2, Users, CheckCircle2, AlertCircle } from 'lucide-react';
+import { NumField, SelectField, Section, ActionButton, Stat, Warnings, CheckField, type FieldStatus } from './ui';
 import { DRIVER_LIBRARY, type LibraryDriver } from '../../data/driverLibrary';
 import { WIRING_LABELS } from '../../utils/audio';
-import type { DriverConfig, DriverWiring, TSInput } from '../../utils/audio';
+import type { DriverConfig, DriverWiring, TSInput, TSParams, ValidationResult } from '../../utils/audio';
 
 const CUSTOM_KEY = 'ods-custom-drivers';
 
@@ -40,6 +40,7 @@ interface Props {
   input: TSInput;
   onChange: (next: TSInput) => void;
   derived: TSInput;
+  validation: ValidationResult;
   config: DriverConfig;
   onConfigChange: (next: DriverConfig) => void;
   onAutoDerive: () => void;
@@ -48,7 +49,7 @@ interface Props {
 }
 
 export function DriverTab({
-  input, onChange, derived, config, onConfigChange, onAutoDerive, configWarnings, effectiveSummary,
+  input, onChange, derived, validation, config, onConfigChange, onAutoDerive, configWarnings, effectiveSummary,
 }: Props) {
   const [query, setQuery] = useState('');
   const [custom, setCustom] = useState<CustomDriver[]>(loadCustom);
@@ -76,15 +77,33 @@ export function DriverTab({
   const isDerived = (key: keyof TSInput) =>
     typeof input[key] !== 'number' && typeof derived[key] === 'number';
 
-  const field = (key: keyof TSInput, label: string, unit?: string, step?: number) => (
-    <NumField
-      label={label + (isDerived(key) ? ' ·calcolato' : '')}
-      unit={unit}
-      value={shown(key)}
-      onChange={set(key)}
-      step={step ?? 'any'}
-    />
-  );
+  /** verde = confermato dalle altre grandezze, rosso = incongruente, grigio = non verificabile */
+  const statusOf = (key: keyof TSParams): { status: FieldStatus; message: string } => {
+    const check = validation.checks[key];
+    if (check) return { status: check.status, message: check.message };
+    if (isDerived(key)) {
+      return { status: 'ok', message: 'Calcolato dagli altri parametri: coerente per costruzione.' };
+    }
+    if (typeof input[key] === 'number') {
+      return { status: 'unknown', message: 'Non verificabile: servono gli altri parametri della stessa relazione.' };
+    }
+    return { status: 'unknown', message: 'Non inserito.' };
+  };
+
+  const field = (key: keyof TSParams, label: string, unit?: string, step?: number) => {
+    const { status, message } = statusOf(key);
+    return (
+      <NumField
+        label={label + (isDerived(key) ? ' ·calcolato' : '')}
+        unit={unit}
+        value={shown(key)}
+        onChange={set(key)}
+        step={step ?? 'any'}
+        status={status}
+        statusMessage={message}
+      />
+    );
+  };
 
   const handleSave = () => {
     const name = saveName.trim();
@@ -164,6 +183,35 @@ export function DriverTab({
           </ActionButton>
         </div>
       </Section>
+
+      {/* Stato di congruenza del set */}
+      <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 border ${
+        validation.errorCount > 0
+          ? 'bg-red-500/5 border-red-500/30'
+          : 'bg-green-500/5 border-green-500/20'
+      }`}>
+        {validation.errorCount > 0
+          ? <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+          : <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />}
+        <p className="text-xs text-zinc-300 leading-relaxed">
+          {validation.errorCount > 0 ? (
+            <>
+              <span className="font-bold text-red-400">
+                {validation.errorCount === 1 ? '1 parametro non torna' : `${validation.errorCount} parametri non tornano`}
+              </span>{' '}
+              con gli altri: i campi col pallino rosso contraddicono le relazioni Thiele-Small. Correggi il valore
+              oppure cancellalo e premi «Completa» per ricalcolarlo.
+            </>
+          ) : (
+            <>
+              <span className="font-bold text-green-500">Parametri coerenti</span>
+              {validation.verifiedCount > 0
+                ? ` — ${validation.verifiedCount} valori verificati per incrocio con le relazioni Thiele-Small.`
+                : ' — inserisci più valori per poterli verificare fra loro.'}
+            </>
+          )}
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Section
