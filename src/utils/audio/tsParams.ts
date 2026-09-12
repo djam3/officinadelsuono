@@ -105,6 +105,11 @@ export function qesFromBl(fs: number, mmsG: number, re: number, bl: number): num
   return (TWO_PI * fs * (mmsG / 1000) * re) / (bl * bl);
 }
 
+/** Mms (g) = Qes·BL² / (2π·Fs·Re) — la stessa relazione risolta sulla massa */
+export function mmsFromBl(fs: number, re: number, qes: number, bl: number): number {
+  return ((qes * bl * bl) / (TWO_PI * fs * re)) * 1000;
+}
+
 /** η0 (%) = (4π²/c³)·(Fs³·Vas / Qes) */
 export function eta0From(fs: number, vasL: number, qes: number, tempC = 20): number {
   const c = speedOfSound(tempC);

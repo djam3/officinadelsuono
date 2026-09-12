@@ -91,7 +91,13 @@ export function DriverTab({
     const check = validation.checks[key];
     if (check) return { status: check.status, message: check.message };
     if (isDerived(key)) {
-      return { status: 'ok', message: 'Calcolato dagli altri parametri: coerente per costruzione.' };
+      // «coerente per costruzione» vale solo se i parametri di partenza non si
+      // contraddicono: la derivazione applica la prima relazione disponibile e
+      // si ferma, quindi dentro un insieme incongruente restituisce una delle
+      // risposte possibili — non un valore verificato.
+      return validation.errorCount === 0
+        ? { status: 'ok', message: 'Calcolato dagli altri parametri: coerente per costruzione.' }
+        : { status: 'unknown', message: 'Calcolato da parametri che non tornano fra loro: correggi prima le incongruenze in rosso.' };
     }
     if (typeof input[key] === 'number') {
       return { status: 'unknown', message: 'Non verificabile: servono gli altri parametri della stessa relazione.' };
