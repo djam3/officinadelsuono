@@ -116,6 +116,7 @@ export function DriverTab({
         step={step ?? 'any'}
         status={status}
         statusMessage={message}
+        infoId={key}
       />
     );
   };
@@ -315,7 +316,7 @@ export function DriverTab({
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <NumField
-            label="Numero di altoparlanti"
+            label="Numero di altoparlanti" infoId="wiring"
             value={config.count}
             onChange={v => {
               const count = v === '' ? 1 : Math.max(1, Math.round(v));
@@ -326,7 +327,7 @@ export function DriverTab({
             min={1}
           />
           <SelectField
-            label="Collegamento"
+            label="Collegamento" infoId="wiring"
             value={config.wiring}
             onChange={v => {
               const wiring = v as DriverWiring;

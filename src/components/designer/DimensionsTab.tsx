@@ -54,20 +54,20 @@ export function DimensionsTab({
         <Section title="Forma e materiale">
           <div className="space-y-3">
             <SelectField
-              label="Forma della cassa"
+              label="Forma della cassa" infoId="ratio"
               value={settings.shape}
               onChange={v => set('shape', v as BoxShape)}
               options={Object.entries(SHAPE_LABELS).map(([value, label]) => ({ value, label }))}
             />
             <SelectField
-              label="Spessore pannelli"
+              label="Spessore pannelli" infoId="wallthickness"
               value={String(settings.wallThicknessMm || 18)}
               onChange={v => set('wallThicknessMm', Number(v))}
               options={MATERIAL_THICKNESS}
             />
             {settings.shape === 'trapezoidal' && (
               <NumField
-                label="Rastremazione (profondità retro / fronte)"
+                label="Rastremazione (profondità retro / fronte)" infoId="ratio"
                 value={settings.taper}
                 onChange={v => set('taper', v)}
                 step={0.05}
@@ -75,14 +75,14 @@ export function DimensionsTab({
               />
             )}
             <NumField
-              label="Profondità di montaggio del driver"
+              label="Profondità di montaggio del driver" infoId="mountingdepth"
               unit="mm"
               value={settings.mountingDepthMm}
               onChange={v => set('mountingDepthMm', v)}
               hint="Serve a stimare il volume occupato da cestello e magnete."
             />
             <NumField
-              label="Rinforzi interni (bracing)"
+              label="Rinforzi interni (bracing)" infoId="bracing"
               unit="% del volume"
               value={settings.bracingPercent}
               onChange={v => set('bracingPercent', v)}
@@ -94,26 +94,26 @@ export function DimensionsTab({
         <Section title="Proporzioni e assorbente">
           <div className="space-y-3">
             <CheckField
-              label="Usa la proporzione aurea (1 : 1,618 : 0,618)"
+              label="Usa la proporzione aurea (1 : 1,618 : 0,618)" infoId="ratio"
               checked={settings.useGoldenRatio}
               onChange={v => set('useGoldenRatio', v)}
               hint="Distribuisce le risonanze interne su frequenze diverse invece di sovrapporle."
             />
             <NumField
-              label="Larghezza imposta (opzionale)"
+              label="Larghezza imposta (opzionale)" infoId="ratio"
               unit="mm"
               value={settings.fixedWidthMm}
               onChange={v => set('fixedWidthMm', v)}
               hint="Se la imposti, altezza e profondità si adattano per mantenere il volume."
             />
             <NumField
-              label="Altezza imposta (opzionale)"
+              label="Altezza imposta (opzionale)" infoId="ratio"
               unit="mm"
               value={settings.fixedHeightMm}
               onChange={v => set('fixedHeightMm', v)}
             />
             <SelectField
-              label="Materiale fonoassorbente"
+              label="Materiale fonoassorbente" infoId="absorber"
               value={settings.absorber}
               onChange={v => set('absorber', v as AbsorberId)}
               options={Object.values(ABSORBERS).map(a => ({ value: a.id, label: a.label }))}
@@ -121,7 +121,7 @@ export function DimensionsTab({
             {spec.id !== 'none' && (
               <>
                 <SelectField
-                  label="Posizionamento"
+                  label="Posizionamento" infoId="placement"
                   value={settings.placement}
                   onChange={v => set('placement', v as Placement)}
                   options={(['lining', 'stuffing'] as Placement[]).map(p => ({
@@ -130,7 +130,7 @@ export function DimensionsTab({
                   }))}
                 />
                 <NumField
-                  label="Densità del materiale"
+                  label="Densità del materiale" infoId="absorber"
                   unit="kg/m³"
                   value={settings.absorberDensityKgM3}
                   onChange={v => set('absorberDensityKgM3', v)}
@@ -139,7 +139,7 @@ export function DimensionsTab({
                 />
                 {settings.placement === 'lining' && (
                   <NumField
-                    label="Spessore del rivestimento"
+                    label="Spessore del rivestimento" infoId="absorber"
                     unit="mm"
                     value={settings.liningThicknessMm}
                     onChange={v => set('liningThicknessMm', v)}

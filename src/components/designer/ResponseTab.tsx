@@ -51,14 +51,14 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
       <Section title="Condizioni di simulazione">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <NumField
-            label="Potenza applicata"
+            label="Potenza applicata" infoId="pe"
             unit="W"
             value={settings.powerW}
             onChange={v => set('powerW', v)}
             hint="Determina escursione, velocità in porta e SPL raggiunto."
           />
           <SelectField
-            label="Ambiente di ascolto"
+            label="Ambiente di ascolto" infoId="roomgain"
             value={settings.roomPreset}
             onChange={v => set('roomPreset', v as RoomPreset)}
             options={Object.entries(ROOM_PRESETS).map(([value, spec]) => ({ value, label: spec.label }))}

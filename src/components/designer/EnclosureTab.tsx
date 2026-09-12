@@ -78,7 +78,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
         <Section title="Tipo di cassa">
           <div className="space-y-3">
             <SelectField
-              label="Tipologia"
+              label="Tipologia" infoId="vb"
               value={settings.enclosure}
               onChange={v => set('enclosure', v as EnclosureType)}
               options={Object.entries(ENCLOSURE_LABELS).map(([value, label]) => ({ value, label }))}
@@ -86,7 +86,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
 
             {settings.enclosure === 'sealed' && (
               <NumField
-                label="Qtc obiettivo"
+                label="Qtc obiettivo" infoId="qtc"
                 value={settings.targetQtc}
                 onChange={v => set('targetQtc', v)}
                 step={0.01}
@@ -97,7 +97,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             {isVentedFamily && (
               <>
                 <SelectField
-                  label="Allineamento"
+                  label="Allineamento" infoId="alignment"
                   value={settings.alignment}
                   onChange={v => set('alignment', v as AlignmentType)}
                   options={ALIGNMENTS.map(a => ({ value: a.value, label: a.label }))}
@@ -110,7 +110,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
 
             {isBandpass && (
               <NumField
-                label="Rapporto camere (anteriore / posteriore)"
+                label="Rapporto camere (anteriore / posteriore)" infoId="bandpass"
                 value={settings.bandpassS}
                 onChange={v => set('bandpassS', v)}
                 step={0.05}
@@ -122,26 +122,26 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
 
         <Section title="Progetto acustico" subtitle="Lascia vuoto per il calcolo automatico, oppure imponi i tuoi valori.">
           <div className="space-y-3">
-            <NumField label="Volume netto imposto" unit="litri" value={settings.customVbL} onChange={v => set('customVbL', v)} />
+            <NumField label="Volume netto imposto" unit="litri" infoId="vb" value={settings.customVbL} onChange={v => set('customVbL', v)} />
             {isVentedFamily && (
-              <NumField label="Accordo imposto (Fb)" unit="Hz" value={settings.customFbHz} onChange={v => set('customFbHz', v)} />
+              <NumField label="Accordo imposto (Fb)" unit="Hz" infoId="fb" value={settings.customFbHz} onChange={v => set('customFbHz', v)} />
             )}
 
             {isPR && (
               <div className="grid grid-cols-2 gap-3 pt-1">
                 <NumField
-                  label="Vas del radiatore" unit="litri"
+                  label="Vas del radiatore" unit="litri" infoId="prvas"
                   value={settings.prVasL} onChange={v => set('prVasL', v)}
                   hint="Cedevolezza della sospensione della membrana, espressa come volume equivalente: comanda la frequenza del notch."
                 />
-                <NumField label="Sd del radiatore" unit="cm²" value={settings.prSdCm2} onChange={v => set('prSdCm2', v)} />
+                <NumField label="Sd del radiatore" unit="cm²" infoId="sd" value={settings.prSdCm2} onChange={v => set('prSdCm2', v)} />
                 <NumField
-                  label="Qms del radiatore"
+                  label="Qms del radiatore" infoId="qms"
                   value={settings.prQms} onChange={v => set('prQms', v)}
                   placeholder="10"
                   hint="Perdite della sospensione: più è alto, più il notch è profondo e stretto."
                 />
-                <NumField label="Xmax del radiatore" unit="mm" value={settings.prXmaxMm} onChange={v => set('prXmaxMm', v)} />
+                <NumField label="Xmax del radiatore" unit="mm" infoId="prxmax" value={settings.prXmaxMm} onChange={v => set('prXmaxMm', v)} />
               </div>
             )}
 
@@ -186,13 +186,13 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
             <SelectField
-              label="Geometria del condotto"
+              label="Geometria del condotto" infoId="porttype"
               value={settings.portType}
               onChange={v => set('portType', v as PortType)}
               options={Object.entries(PORT_TYPES).map(([value, spec]) => ({ value, label: spec.label }))}
             />
             <NumField
-              label="Numero di condotti"
+              label="Numero di condotti" infoId="ventvelocity"
               value={settings.portCount}
               onChange={v => set('portCount', v)}
               min={1}
@@ -212,7 +212,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             {portSpec.section === 'circular' && (
               <NumField
-                label="Diametro interno"
+                label="Diametro interno" infoId="portlength"
                 unit="mm"
                 value={settings.portDiameterMm}
                 onChange={v => set('portDiameterMm', v)}
@@ -221,14 +221,14 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             )}
             {portSpec.section === 'rectangular' && (
               <>
-                <NumField label="Larghezza luce" unit="mm" value={settings.slotWidthMm} onChange={v => set('slotWidthMm', v)} hint="Vuoto = automatico" />
-                <NumField label="Altezza luce" unit="mm" value={settings.slotHeightMm} onChange={v => set('slotHeightMm', v)} />
+                <NumField label="Larghezza luce" unit="mm" infoId="portlength" value={settings.slotWidthMm} onChange={v => set('slotWidthMm', v)} hint="Vuoto = automatico" />
+                <NumField label="Altezza luce" unit="mm" infoId="portlength" value={settings.slotHeightMm} onChange={v => set('slotHeightMm', v)} />
               </>
             )}
             {portSpec.section === 'triangular' && (
               <>
-                <NumField label="Cateto A" unit="mm" value={settings.triLegAMm} onChange={v => set('triLegAMm', v)} hint="Vuoto = automatico" />
-                <NumField label="Cateto B" unit="mm" value={settings.triLegBMm} onChange={v => set('triLegBMm', v)} />
+                <NumField label="Cateto A" unit="mm" infoId="portlength" value={settings.triLegAMm} onChange={v => set('triLegAMm', v)} hint="Vuoto = automatico" />
+                <NumField label="Cateto B" unit="mm" infoId="portlength" value={settings.triLegBMm} onChange={v => set('triLegBMm', v)} />
               </>
             )}
           </div>

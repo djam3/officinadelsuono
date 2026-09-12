@@ -23,6 +23,7 @@ export function Navbar({ onNavigate }: NavbarProps) {
 
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
             <button onClick={() => onNavigate('cabinet-designer')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Calcolatore Casse</button>
+            <button onClick={() => onNavigate('glossary')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Glossario</button>
             <button onClick={() => onNavigate('about')} className="px-4 py-2 text-sm font-bold uppercase tracking-wider text-zinc-300 hover:text-brand-orange hover:bg-brand-orange/10 rounded-full transition-all">Chi Siamo</button>
             <button onClick={() => onNavigate('contact')} className="px-5 py-2 text-sm font-bold uppercase tracking-wider text-white bg-brand-orange hover:bg-brand-orange/90 rounded-full transition-all shadow-[0_0_15px_rgba(242,125,38,0.5)]">Contatti</button>
           </div>
@@ -46,6 +47,7 @@ export function Navbar({ onNavigate }: NavbarProps) {
           >
             <div className="px-4 pt-2 pb-6 space-y-1">
               <button onClick={() => { onNavigate('cabinet-designer'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Calcolatore Casse</button>
+              <button onClick={() => { onNavigate('glossary'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Glossario</button>
               <button onClick={() => { onNavigate('about'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Chi Siamo</button>
               <button onClick={() => { onNavigate('contact'); setIsMenuOpen(false); }} className="block w-full text-left px-4 py-4 text-lg font-bold text-zinc-300 hover:text-brand-orange hover:bg-white/5 uppercase tracking-wider transition-colors border-b border-white/5">Contatti</button>
             </div>

@@ -1,5 +1,6 @@
 /** Primitivi UI condivisi per i calcolatori (input, risultati, grafico SVG) */
 import React from 'react';
+import { GLOSSARY_BY_ID, glossaryUrl } from '../../data/glossary';
 
 const ACCENT = '#F27D26';
 
@@ -11,12 +12,39 @@ const STATUS_STYLE: Record<FieldStatus, { dot: string; border: string }> = {
   unknown: { dot: 'bg-zinc-700', border: 'border-white/10' },
 };
 
+/**
+ * La ⓘ accanto all'etichetta di un campo porta alla scheda del parametro.
+ *
+ * Si apre in una scheda nuova di proposito: chi sta compilando il calcolatore
+ * non deve perdere il progetto in corso per andare a leggere cos'è il Qts.
+ */
+export function InfoLink({ id }: { id?: string }) {
+  if (!id) return null;
+  const entry = GLOSSARY_BY_ID[id];
+  if (!entry) return null;
+  return (
+    <a
+      href={glossaryUrl(id)}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={e => e.stopPropagation()}
+      title={`${entry.symbol} — ${entry.summary}`}
+      aria-label={`Che cos'è ${entry.symbol}: apre la scheda in una nuova pagina`}
+      className="shrink-0 w-4 h-4 rounded-full border border-white/15 text-zinc-500 hover:text-[#F27D26] hover:border-[#F27D26]/60 transition-colors flex items-center justify-center text-[9px] font-black leading-none"
+    >
+      i
+    </a>
+  );
+}
+
 export function NumField({
-  label, value, onChange, unit, step = 'any', min, placeholder, hint, status, statusMessage,
+  label, value, onChange, unit, step = 'any', min, placeholder, hint, status, statusMessage, infoId,
 }: {
   label: string; value: number | ''; onChange: (v: number | '') => void;
   unit?: string; step?: number | 'any'; min?: number; placeholder?: string; hint?: string;
   status?: FieldStatus; statusMessage?: string;
+  /** id della scheda di glossario da aprire con la ⓘ */
+  infoId?: string;
 }) {
   const style = STATUS_STYLE[status ?? 'unknown'];
   return (
@@ -31,6 +59,7 @@ export function NumField({
             />
           )}
           <span className="truncate">{label}</span>
+          <InfoLink id={infoId} />
         </span>
         {unit && <span className="text-zinc-600 shrink-0">{unit}</span>}
       </span>
@@ -53,13 +82,18 @@ export function NumField({
 }
 
 export function SelectField({
-  label, value, onChange, options,
+  label, value, onChange, options, infoId,
 }: {
-  label: string; value: string; onChange: (v: string) => void; options: { value: string; label: string }[];
+  label: string; value: string; onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  infoId?: string;
 }) {
   return (
     <label className="block">
-      <span className="text-xs text-zinc-400 font-medium">{label}</span>
+      <span className="text-xs text-zinc-400 font-medium flex items-center gap-1.5">
+        {label}
+        <InfoLink id={infoId} />
+      </span>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
@@ -172,8 +206,8 @@ export function Warnings({ items }: { items: string[] }) {
   );
 }
 
-export function CheckField({ label, checked, onChange, hint }: {
-  label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string;
+export function CheckField({ label, checked, onChange, hint, infoId }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string; infoId?: string;
 }) {
   return (
     <label className="flex items-start gap-2.5 cursor-pointer group">
@@ -184,7 +218,10 @@ export function CheckField({ label, checked, onChange, hint }: {
         className="mt-0.5 w-4 h-4 accent-[#F27D26] cursor-pointer"
       />
       <span>
-        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{label}</span>
+        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors inline-flex items-center gap-1.5">
+          {label}
+          <InfoLink id={infoId} />
+        </span>
         {hint && <span className="block text-[10px] text-zinc-600">{hint}</span>}
       </span>
     </label>

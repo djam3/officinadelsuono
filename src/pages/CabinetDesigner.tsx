@@ -168,6 +168,12 @@ export function CabinetDesigner() {
             Inserisci i parametri Thiele-Small del driver e ottieni il progetto completo: volume, accordo,
             condotto, dimensioni, lista di taglio e curve di risposta.
           </p>
+          <p className="text-sm text-zinc-500 mt-3">
+            Non sai cosa scrivere in un campo? Accanto a ogni etichetta c'e una{' '}
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-white/20 text-[9px] font-black align-middle">i</span>
+            {' '}che apre la scheda di quel parametro, oppure vai al{' '}
+            <a href="/glossario" className="text-brand-orange hover:underline">glossario completo</a>.
+          </p>
         </div>
 
         {/* Riepilogo sempre visibile */}

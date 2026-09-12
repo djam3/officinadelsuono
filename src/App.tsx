@@ -20,10 +20,15 @@ const PAGE_TO_PATH: Record<string, string> = {
   terms: '/termini',
   privacy: '/privacy',
   'cookie-policy': '/cookie-policy',
+  glossary: '/glossario',
 };
 
-function pathToPage(pathname: string): { page: string } {
+/** Il glossario ha una voce per parametro: /glossario/<id> */
+function pathToPage(pathname: string): { page: string; param?: string } {
   if (pathname === '/' || pathname === '') return { page: 'home' };
+  if (pathname.startsWith('/glossario/')) {
+    return { page: 'glossary', param: pathname.slice('/glossario/'.length) };
+  }
   const found = Object.entries(PAGE_TO_PATH).find(([, p]) => p === pathname);
   return found ? { page: found[0] } : { page: 'home' };
 }
@@ -36,6 +41,7 @@ const CabinetDesigner = lazy(() => import('./pages/CabinetDesigner').then(m => (
 const Terms = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy').then(m => ({ default: m.CookiePolicy })));
+const Glossario = lazy(() => import('./pages/Glossario').then(m => ({ default: m.Glossario })));
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
@@ -47,6 +53,7 @@ const PageLoader = () => (
 export default function App() {
   const initialRoute = pathToPage(window.location.pathname);
   const [currentPage, setCurrentPage] = useState(initialRoute.page);
+  const [pageParam, setPageParam] = useState(initialRoute.param);
   const isPopState = useRef(false);
 
   useEffect(() => {
@@ -65,6 +72,7 @@ export default function App() {
       isPopState.current = true;
       const route = pathToPage(window.location.pathname);
       setCurrentPage(route.page);
+      setPageParam(route.param);
       trackPageView(window.location.pathname);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -72,9 +80,11 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  const handleNavigate = (requestedPage: string) => {
+  const handleNavigate = (requestedPage: string, param?: string) => {
     setCurrentPage(requestedPage);
-    const path = PAGE_TO_PATH[requestedPage] || '/';
+    setPageParam(param);
+    const base = PAGE_TO_PATH[requestedPage] || '/';
+    const path = param ? `${base}/${param}` : base;
     window.history.pushState({ page: requestedPage }, '', path);
     trackPageView(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -95,6 +105,7 @@ export default function App() {
           {currentPage === 'terms' && <Terms />}
           {currentPage === 'privacy' && <Privacy />}
           {currentPage === 'cookie-policy' && <CookiePolicy />}
+          {currentPage === 'glossary' && <Glossario slug={pageParam} />}
         </Suspense>
       </main>
 
