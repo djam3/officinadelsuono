@@ -88,6 +88,8 @@ export interface ResponseCurves {
   impedance: CurvePoint[];  // Ω
   groupDelay: CurvePoint[]; // ms
   phase: CurvePoint[];      // gradi
+  /** solo radiatore passivo: escursione della membrana passiva (mm picco) */
+  prExcursion?: CurvePoint[];
 }
 
 // ─── Geometria e lista di taglio ──────────────────────────────────────────────

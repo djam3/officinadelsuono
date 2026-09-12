@@ -14,6 +14,7 @@ import {
   type PortGeometry, type PortPanel, type PortType,
 } from './ports';
 import { computeResponse } from './response';
+import { computePRResponse, prCircuit } from './prCircuit';
 import {
   ABSORBERS, QA_EMPTY, computeAbsorber, ventedBoxLosses,
   type AbsorberId, type AbsorberResult, type Placement,
@@ -53,6 +54,10 @@ export interface DesignInput {
   /** radiatore passivo */
   prVasL?: number;
   prSdCm2?: number;
+  /** escursione lineare del radiatore (mm, una direzione) */
+  prXmaxMm?: number;
+  /** Q meccanico della sospensione del radiatore: comanda la profondita del notch */
+  prQms?: number;
 
   /** costruzione */
   shape: BoxShape;
@@ -191,6 +196,12 @@ export interface AcousticResult {
   chambers?: { rearL: number; frontL: number; fLow: number; fHigh: number; fbFront?: number };
   /** radiatore passivo: massa mobile TOTALE che deve avere (zavorra inclusa) */
   prTotalMassG?: number;
+  /** radiatore passivo: risonanza in aria libera della membrana = frequenza del notch */
+  prFpHz?: number;
+  /** radiatore passivo: dati usati per la simulazione */
+  pr?: { vasL: number; sdCm2: number; qms: number; xmaxMm?: number };
+  /** radiatore passivo: escursione che la membrana raggiunge quando il driver è a Xmax (mm) */
+  prRequiredXmaxMm?: number;
   warnings: string[];
 }
 
@@ -267,23 +278,30 @@ function designVented(input: DesignInput, qb = 7): AcousticResult {
   return { vbL: vb, fbHz: actualFbHz, f3Hz: f3, alpha, port, warnings };
 }
 
-function designPassiveRadiator(input: DesignInput): AcousticResult {
+function designPassiveRadiator(input: DesignInput, qb = 7): AcousticResult {
   const { ts } = input;
   const warnings: string[] = [];
   // il volume si dimensiona come un reflex, l'accordo lo fa la massa del PR
   const base = ventedDesign(ts, input.alignment, 100, 1, 0.732,
     input.customVbL && input.customFbHz ? { vbL: input.customVbL, fb: input.customFbHz } : undefined);
+  void qb;
 
   const prVas = input.prVasL ?? ts.vas * 1.5;
   const prSd = input.prSdCm2 ?? (ts.sd ?? 500) * 1.5;
-  const tuning = passiveRadiatorTuning({ vbL: base.vb, fbTarget: base.fb, prVasL: prVas, prSdCm2: prSd });
+  const prQms = input.prQms ?? 10;
+  const circuit = prCircuit({ ts, vbL: base.vb, fbHz: base.fb, prVasL: prVas, prSdCm2: prSd });
 
-  warnings.push('Il radiatore passivo deve avere Sd e volume spostabile almeno pari al doppio del driver, altrimenti va in fondo corsa prima del previsto.');
-  warnings.push(`La massa indicata è quella mobile TOTALE del radiatore: la zavorra da aggiungere è la differenza rispetto a quanto pesa già il PR che scegli (dato di targa del costruttore).`);
+  warnings.push(
+    `La membrana passiva ha una sua risonanza in aria libera a ${circuit.fpHz.toFixed(1)} Hz, sotto l'accordo: è lì che la sua uscita si annulla e la risposta ha un notch. È la differenza vera rispetto a un reflex, dove il condotto è una massa d'aria senza molla.`,
+  );
+  warnings.push('La massa indicata è quella mobile TOTALE del radiatore: la zavorra da aggiungere è la differenza rispetto a quanto pesa già il PR che scegli (dato di targa del costruttore).');
 
   return {
     vbL: base.vb, fbHz: base.fb, f3Hz: base.f3, alpha: base.alpha,
-    prTotalMassG: tuning.totalMassG, warnings,
+    prTotalMassG: circuit.prTotalMassG,
+    prFpHz: circuit.fpHz,
+    pr: { vasL: prVas, sdCm2: prSd, qms: prQms, xmaxMm: input.prXmaxMm },
+    warnings,
   };
 }
 
@@ -321,6 +339,25 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
 
 
 // ─── Progetto completo ────────────────────────────────────────────────────────
+
+/**
+ * F3 letta sulla curva calcolata invece che da un curve-fit, cosi il numero
+ * dichiarato coincide sempre col grafico qualunque sia il tipo di cassa. Il fit
+ * di Keele vale solo per il QB3 e sbagliava fino al 27% sugli altri.
+ *
+ * La soglia cade quasi sempre FRA due campioni: agganciarsi al primo punto gia
+ * sopra i -3 dB arrotondava sempre per eccesso, di un passo di griglia (1.27%
+ * fra 15 e 500 Hz su 280 punti). Interpolando fra i due campioni che
+ * attraversano la soglia il numero torna a coincidere con la teoria.
+ */
+function measuredF3(spl: CurvePoint[], fallback: number): number {
+  const i = spl.findIndex(p => p.v >= -3);
+  if (i === 0) return spl[0].f;
+  if (i < 0) return fallback;
+  const a = spl[i - 1];
+  const b = spl[i];
+  return a.f + ((-3 - a.v) / (b.v - a.v)) * (b.f - a.f);
+}
 
 /**
  * Livelli storici di smorzamento tradotti nel materiale corrispondente, cosi i
@@ -366,7 +403,7 @@ export function computeDesign(input: DesignInput): DesignResult {
     switch (input.enclosure) {
       case 'sealed': acoustic = designSealed(input, qa); break;
       case 'vented': acoustic = designVented(input, qb); break;
-      case 'passive-radiator': acoustic = designPassiveRadiator(input); break;
+      case 'passive-radiator': acoustic = designPassiveRadiator(input, qb); break;
       case 'bandpass4': acoustic = designBandpass(input, 4); break;
       case 'bandpass6': acoustic = designBandpass(input, 6); break;
     }
@@ -451,7 +488,60 @@ export function computeDesign(input: DesignInput): DesignResult {
   let ventVelocity: CurvePoint[] | null = null;
   let splWithRoom: CurvePoint[] | null = null;
 
-  if (modelled) {
+  if (input.enclosure === 'passive-radiator' && acoustic.pr) {
+    // Il radiatore passivo NON e' un reflex: la sospensione della membrana
+    // aggiunge una coppia di zeri, cioe' il notch alla sua risonanza in aria
+    // libera, e sotto quel punto la membrana si irrigidisce e la cassa torna a
+    // comportarsi da chiusa. Simularlo col modello del reflex cancellava
+    // entrambe le cose. Qui si valuta il circuito equivalente completo.
+    const pr = computePRResponse({
+      ts: input.ts,
+      vbL: acoustic.vbL,
+      fbHz: acoustic.fbHz!,
+      prVasL: acoustic.pr.vasL,
+      prSdCm2: acoustic.pr.sdCm2,
+      prQms: acoustic.pr.qms,
+      ql: qbFinal,
+      powerW: input.powerW,
+      fMin: 15,
+      fMax: 500,
+    });
+    curves = {
+      spl: pr.spl, excursion: pr.excursion, impedance: pr.impedance,
+      groupDelay: pr.groupDelay, phase: pr.phase, prExcursion: pr.prExcursion,
+    };
+    maxOutput = computeMaxOutput({
+      ts: input.ts, curves, refPowerW: input.powerW,
+      sensitivity: input.ts.sensitivity, roomPreset: input.roomPreset,
+    });
+    splWithRoom = applyRoomGain(curves.spl, input.roomPreset);
+    acoustic.f3Hz = measuredF3(curves.spl, acoustic.f3Hz);
+
+    // Quanto deve muoversi la membrana quando il driver e' al suo limite. La
+    // regola del pollice dice "volume spostabile almeno doppio"; qui il numero
+    // si calcola invece di ripeterlo, perche' dipende dall'accordo e dal
+    // rapporto fra le aree.
+    // I picchi si cercano sopra l'accordo: sotto, l'escursione di entrambi
+    // scappa e serve comunque un filtro subsonico, quindi prendere li il
+    // massimo del driver falserebbe il confronto verso il basso.
+    const xmax = input.ts.xmax;
+    const band = (c: CurvePoint[]) => c.filter(p => p.f >= acoustic.fbHz!);
+    const peakD = Math.max(...band(curves.excursion).map(p => p.v), 1e-9);
+    const peakP = Math.max(...band(pr.prExcursion).map(p => p.v), 0);
+    if (xmax && peakD > 0) {
+      const needed = peakP * (xmax / peakD);
+      acoustic.prRequiredXmaxMm = needed;
+      const vdRatio = (needed * acoustic.pr.sdCm2) / (xmax * (input.ts.sd ?? 500));
+      acoustic.warnings.push(
+        `Portando il driver a Xmax (${xmax} mm) in banda utile, la membrana passiva ne percorre ${needed.toFixed(1)}: serve un radiatore con almeno quell'escursione lineare, cioè ${vdRatio.toFixed(1)} volte il volume spostabile del driver.`,
+      );
+      if (acoustic.pr.xmaxMm && needed > acoustic.pr.xmaxMm) {
+        acoustic.warnings.push(
+          `Il radiatore scelto ha Xmax ${acoustic.pr.xmaxMm} mm, meno dei ${needed.toFixed(1)} mm richiesti: va in fondo corsa prima del driver e diventa lui il limite del sistema. Serve un radiatore con più escursione, oppure due.`,
+        );
+      }
+    }
+  } else if (modelled) {
     curves = computeResponse({
       ts: input.ts,
       type: input.enclosure === 'sealed' ? 'sealed' : 'vented',
@@ -470,25 +560,7 @@ export function computeDesign(input: DesignInput): DesignResult {
     });
     splWithRoom = applyRoomGain(curves.spl, input.roomPreset);
 
-    // F3 MISURATA sulla curva appena calcolata invece che da un curve-fit:
-    // così il numero dichiarato coincide sempre col grafico, qualunque sia
-    // l'allineamento scelto. Il fit di Keele vale solo per il QB3 e sbagliava
-    // fino al 27% sugli altri.
-    // La soglia cade quasi sempre FRA due campioni: agganciarsi al primo punto
-    // gia' sopra i -3 dB arrotondava sempre per eccesso, di un passo di griglia
-    // (1.27% fra 15 e 500 Hz su 280 punti). Su una chiusa con Qtc 0.84 la F3
-    // dichiarata risultava 35.70 Hz contro i 35.52 Hz della formula chiusa.
-    // Interpolando fra i due campioni che attraversano la soglia il numero
-    // torna a coincidere con la teoria entro il centesimo di hertz.
-    const iCross = curves.spl.findIndex(p => p.v >= -3);
-    if (iCross === 0) {
-      acoustic.f3Hz = curves.spl[0].f;
-    } else if (iCross > 0) {
-      const a = curves.spl[iCross - 1];
-      const b = curves.spl[iCross];
-      const t = (-3 - a.v) / (b.v - a.v);
-      acoustic.f3Hz = a.f + t * (b.f - a.f);
-    }
+    acoustic.f3Hz = measuredF3(curves.spl, acoustic.f3Hz);
 
     if (acoustic.port && acoustic.fbHz) {
       const peakExcursion = Math.max(...curves.excursion.map(p => p.v));

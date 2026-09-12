@@ -39,6 +39,10 @@ const DEFAULT_ENCLOSURE: EnclosureSettings = {
   triLegAMm: '',
   triLegBMm: '',
   bandpassS: 0.7,
+  prVasL: '',
+  prSdCm2: '',
+  prQms: '',
+  prXmaxMm: '',
 };
 
 const DEFAULT_DIMENSIONS: DimensionSettings = {
@@ -116,6 +120,10 @@ export function CabinetDesigner() {
       triLegAMm: num(enclosure.triLegAMm),
       triLegBMm: num(enclosure.triLegBMm),
       bandpassS: num(enclosure.bandpassS),
+      prVasL: num(enclosure.prVasL),
+      prSdCm2: num(enclosure.prSdCm2),
+      prQms: num(enclosure.prQms),
+      prXmaxMm: num(enclosure.prXmaxMm),
       shape: dimensions.shape,
       wallThicknessMm: num(dimensions.wallThicknessMm) ?? 18,
       damping: dimensions.damping,

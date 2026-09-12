@@ -151,7 +151,10 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
 
       {/* Escursione */}
       {hasFullModel && settings.visible.excursion && (
-        <Section title="Escursione del cono" subtitle={`Alla potenza di ${settings.powerW || 0} W, confrontata con Xmax.`}>
+        <Section
+          title={curves!.prExcursion ? 'Escursione di cono e membrana passiva' : 'Escursione del cono'}
+          subtitle={`Alla potenza di ${settings.powerW || 0} W, confrontata con Xmax.`}
+        >
           <Plot
             height={220}
             yLabel="Escursione"
@@ -160,11 +163,21 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             yMin={0}
             yMax={ts?.xmax ? ts.xmax * 2.5 : undefined}
             series={[
-              { name: 'Escursione', color: PLOT_COLORS[0], points: curves!.excursion },
+              { name: 'Driver', color: PLOT_COLORS[0], points: curves!.excursion },
+              ...(curves!.prExcursion
+                ? [{ name: 'Membrana passiva', color: PLOT_COLORS[2], points: curves!.prExcursion } as Series]
+                : []),
               ...(ts?.xmax ? [{ name: 'Xmax', color: '#ef4444', points: limitLine(curves!.excursion, ts.xmax) } as Series] : []),
               ...(ts?.xmech ? [{ name: 'Xmech', color: '#7f1d1d', points: limitLine(curves!.excursion, ts.xmech) } as Series] : []),
             ]}
           />
+          {curves!.prExcursion && (
+            <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+              La membrana passiva si muove molto più del cono all'accordo, dove il driver è quasi fermo:
+              è lei a irradiare. Per questo deve avere un volume spostabile ben maggiore di quello del
+              driver, altrimenti va in fondo corsa per prima e limita tutto il sistema.
+            </p>
+          )}
         </Section>
       )}
 

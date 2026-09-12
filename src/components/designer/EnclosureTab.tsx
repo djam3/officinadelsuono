@@ -20,6 +20,10 @@ export interface EnclosureSettings {
   triLegAMm: number | '';
   triLegBMm: number | '';
   bandpassS: number | '';
+  prVasL: number | '';
+  prSdCm2: number | '';
+  prQms: number | '';
+  prXmaxMm: number | '';
 }
 
 interface Props {
@@ -36,6 +40,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
   const isVentedFamily = settings.enclosure === 'vented' || settings.enclosure === 'passive-radiator';
   const isBandpass = settings.enclosure === 'bandpass4' || settings.enclosure === 'bandpass6';
   const hasPort = settings.enclosure === 'vented' || isBandpass;
+  const isPR = settings.enclosure === 'passive-radiator';
   const portSpec = PORT_TYPES[settings.portType];
 
   return (
@@ -122,6 +127,24 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
               <NumField label="Accordo imposto (Fb)" unit="Hz" value={settings.customFbHz} onChange={v => set('customFbHz', v)} />
             )}
 
+            {isPR && (
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <NumField
+                  label="Vas del radiatore" unit="litri"
+                  value={settings.prVasL} onChange={v => set('prVasL', v)}
+                  hint="Cedevolezza della sospensione della membrana, espressa come volume equivalente: comanda la frequenza del notch."
+                />
+                <NumField label="Sd del radiatore" unit="cm²" value={settings.prSdCm2} onChange={v => set('prSdCm2', v)} />
+                <NumField
+                  label="Qms del radiatore"
+                  value={settings.prQms} onChange={v => set('prQms', v)}
+                  placeholder="10"
+                  hint="Perdite della sospensione: più è alto, più il notch è profondo e stretto."
+                />
+                <NumField label="Xmax del radiatore" unit="mm" value={settings.prXmaxMm} onChange={v => set('prXmaxMm', v)} />
+              </div>
+            )}
+
             {acoustic && (
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Stat label="Volume netto" value={acoustic.vbL.toFixed(1)} unit="L" accent />
@@ -134,6 +157,12 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                 )}
                 {acoustic.prTotalMassG !== undefined && (
                   <Stat label="Massa mobile totale PR" value={Math.round(acoustic.prTotalMassG)} unit="g" accent />
+                )}
+                {acoustic.prFpHz !== undefined && (
+                  <Stat label="fp — notch del radiatore" value={acoustic.prFpHz.toFixed(1)} unit="Hz" />
+                )}
+                {acoustic.prRequiredXmaxMm !== undefined && (
+                  <Stat label="Xmax richiesto al radiatore" value={acoustic.prRequiredXmaxMm.toFixed(1)} unit="mm" />
                 )}
               </div>
             )}
