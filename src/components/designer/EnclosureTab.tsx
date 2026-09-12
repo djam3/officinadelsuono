@@ -1,8 +1,8 @@
-import { Lightbulb } from 'lucide-react';
+import { Lightbulb, Wind } from 'lucide-react';
 import { NumField, SelectField, Section, ActionButton, Stat, Warnings } from './ui';
-import { ALIGNMENTS, ENCLOSURE_LABELS } from '../../utils/audio';
+import { ALIGNMENTS, ENCLOSURE_LABELS, PORT_TYPES } from '../../utils/audio';
 import type {
-  AlignmentType, AcousticResult, EnclosureSuggestion, EnclosureType, PortShape,
+  AlignmentType, AcousticResult, EnclosureSuggestion, EnclosureType, PortType,
 } from '../../utils/audio';
 
 export interface EnclosureSettings {
@@ -11,11 +11,13 @@ export interface EnclosureSettings {
   targetQtc: number | '';
   customVbL: number | '';
   customFbHz: number | '';
-  portShape: PortShape;
+  portType: PortType;
   portCount: number | '';
   portDiameterMm: number | '';
   slotWidthMm: number | '';
   slotHeightMm: number | '';
+  triLegAMm: number | '';
+  triLegBMm: number | '';
   bandpassS: number | '';
 }
 
@@ -33,6 +35,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
   const isVentedFamily = settings.enclosure === 'vented' || settings.enclosure === 'passive-radiator';
   const isBandpass = settings.enclosure === 'bandpass4' || settings.enclosure === 'bandpass6';
   const hasPort = settings.enclosure === 'vented' || isBandpass;
+  const portSpec = PORT_TYPES[settings.portType];
 
   return (
     <div className="space-y-5">
@@ -147,41 +150,103 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
       </div>
 
       {hasPort && (
-        <Section title="Condotto reflex" subtitle="La sezione va scelta per tenere la velocità dell'aria sotto i 17 m/s.">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <Section
+          title="Condotto reflex"
+          subtitle="Ogni geometria ha una sua correzione terminale, una sua soglia di turbolenza e un suo modo di occupare spazio nella cassa."
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
             <SelectField
-              label="Forma"
-              value={settings.portShape}
-              onChange={v => set('portShape', v as PortShape)}
-              options={[
-                { value: 'circular', label: 'Circolare (tubo)' },
-                { value: 'slot', label: 'Rettangolare (slot)' },
-              ]}
+              label="Geometria del condotto"
+              value={settings.portType}
+              onChange={v => set('portType', v as PortType)}
+              options={Object.entries(PORT_TYPES).map(([value, spec]) => ({ value, label: spec.label }))}
             />
-            <NumField label="Numero condotti" value={settings.portCount} onChange={v => set('portCount', v)} min={1} />
-            {settings.portShape === 'circular' ? (
-              <NumField label="Diametro (vuoto = automatico)" unit="mm" value={settings.portDiameterMm} onChange={v => set('portDiameterMm', v)} />
-            ) : (
+            <NumField
+              label="Numero di condotti"
+              value={settings.portCount}
+              onChange={v => set('portCount', v)}
+              min={1}
+              hint="Più condotti = più area totale, quindi meno velocità a parità di accordo."
+            />
+          </div>
+
+          <div className="flex items-start gap-2 mb-4 text-[11px] text-zinc-500 leading-relaxed">
+            <Wind className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-600" />
+            <span>
+              {portSpec.description}
+              {' '}Soglia di turbolenza <span className="text-zinc-300 font-bold">{portSpec.maxVelocity} m/s</span>,
+              correzione terminale <span className="text-zinc-300 font-bold">k = {portSpec.endCorrection}</span>.
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            {portSpec.section === 'circular' && (
+              <NumField
+                label="Diametro interno"
+                unit="mm"
+                value={settings.portDiameterMm}
+                onChange={v => set('portDiameterMm', v)}
+                hint="Vuoto = dimensionato automaticamente"
+              />
+            )}
+            {portSpec.section === 'rectangular' && (
               <>
-                <NumField label="Larghezza slot" unit="mm" value={settings.slotWidthMm} onChange={v => set('slotWidthMm', v)} />
-                <NumField label="Altezza slot" unit="mm" value={settings.slotHeightMm} onChange={v => set('slotHeightMm', v)} />
+                <NumField label="Larghezza luce" unit="mm" value={settings.slotWidthMm} onChange={v => set('slotWidthMm', v)} hint="Vuoto = automatico" />
+                <NumField label="Altezza luce" unit="mm" value={settings.slotHeightMm} onChange={v => set('slotHeightMm', v)} />
+              </>
+            )}
+            {portSpec.section === 'triangular' && (
+              <>
+                <NumField label="Cateto A" unit="mm" value={settings.triLegAMm} onChange={v => set('triLegAMm', v)} hint="Vuoto = automatico" />
+                <NumField label="Cateto B" unit="mm" value={settings.triLegBMm} onChange={v => set('triLegBMm', v)} />
               </>
             )}
           </div>
 
           {acoustic?.port && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {acoustic.port.diameterMm && <Stat label="Diametro" value={acoustic.port.diameterMm} unit="mm" />}
-              {acoustic.port.slotWidthMm && <Stat label="Slot" value={`${acoustic.port.slotWidthMm}×${acoustic.port.slotHeightMm}`} unit="mm" />}
-              <Stat label="Lunghezza condotto" value={acoustic.port.lengthMm} unit="mm" accent />
-              <Stat label="Area totale" value={acoustic.port.areaCm2.toFixed(0)} unit="cm²" />
-              <Stat
-                label="Velocità aria"
-                value={acoustic.port.velocity.toFixed(1)}
-                unit="m/s"
-                accent={acoustic.port.velocity > 17}
-              />
-            </div>
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Stat label="Sezione" value={acoustic.port.description.split(' × ')[0]} />
+                <Stat label="Lunghezza sviluppata" value={acoustic.port.lengthMm} unit="mm" accent />
+                <Stat label="Area totale" value={acoustic.port.areaCm2.toFixed(0)} unit="cm²" />
+                <Stat label="Ø equivalente" value={acoustic.port.equivalentDiameterMm.toFixed(0)} unit="mm" />
+                <Stat
+                  label={`Velocità (limite ${acoustic.port.velocityLimit})`}
+                  value={acoustic.port.velocity.toFixed(1)}
+                  unit="m/s"
+                  accent={!acoustic.port.velocityOk}
+                />
+                <Stat label="Area minima (Small)" value={acoustic.port.minAreaCm2.toFixed(0)} unit="cm²" />
+              </div>
+
+              {acoustic.port.segments && acoustic.port.segments.length > 1 && (
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Sviluppo del condotto</p>
+                  <div className="space-y-1">
+                    {acoustic.port.segments.map((s, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-zinc-400">{s.name}</span>
+                        <span className="text-zinc-200 font-bold tabular-nums">{s.lengthMm} mm</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {acoustic.port.panels && acoustic.port.panels.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-white/5">
+                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Pezzi per costruirlo</p>
+                  <div className="space-y-1">
+                    {acoustic.port.panels.map((p, i) => (
+                      <div key={i} className="flex justify-between text-xs">
+                        <span className="text-zinc-400">{p.name} ×{p.quantity}</span>
+                        <span className="text-zinc-200 font-bold tabular-nums">{p.widthMm} × {p.heightMm} mm</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </Section>
       )}

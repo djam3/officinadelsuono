@@ -147,25 +147,6 @@ export function driverDisplacement(sdCm2: number, mountingDepthMm: number, count
   return (sdCm2 * (mountingDepthMm / 10) * 0.35 * count) / 1000;
 }
 
-/** Volume del condotto reflex (litri) */
-export function portDisplacement(params: {
-  shape: 'circular' | 'slot';
-  diameterMm?: number;
-  slotWidthMm?: number;
-  slotHeightMm?: number;
-  lengthMm: number;
-  count?: number;
-}): number {
-  const n = params.count ?? 1;
-  if (params.shape === 'circular' && params.diameterMm) {
-    return (Math.PI * Math.pow(params.diameterMm / 2, 2) * params.lengthMm * n) / 1e6;
-  }
-  if (params.slotWidthMm && params.slotHeightMm) {
-    return (params.slotWidthMm * params.slotHeightMm * params.lengthMm * n) / 1e6;
-  }
-  return 0;
-}
-
 /**
  * Bilancio dei volumi: dal lordo interno al netto acustico, più il volume
  * "apparente" aggiunto dall'assorbente.

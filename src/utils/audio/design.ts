@@ -4,19 +4,24 @@
  */
 
 import {
-  sealedFromQtc, sealedFromVb, ventedDesign, portLength, portVelocity,
-  tuningFromPort, bandpass4thOrder, bandpass4Response, bandpass6thOrder,
+  sealedFromQtc, sealedFromVb, ventedDesign, alignmentRatios,
+  bandpass4thOrder, bandpass4Response, bandpass6thOrder,
   bandpass6Response, passiveRadiatorTuning,
 } from './enclosure';
+import {
+  PORT_TYPES, autoSizePort, describePort, equivalentDiameter, portDisplacement,
+  portFit, portLengthFor, totalPortArea, tuningOf, velocityCheck,
+  type PortGeometry, type PortPanel, type PortType,
+} from './ports';
 import { computeResponse } from './response';
 import { computeMaxOutput, ventVelocityCurve, applyRoomGain, type RoomPreset, type MaxOutputResult } from './performance';
 import {
   DAMPING_SPECS, GOLDEN_RATIO, cuttingList, dimensionsFromVolume, driverDisplacement,
-  estimatedWeight, grossFromNet, internalVolume, portDisplacement, totalPanelArea, volumeBreakdown,
+  estimatedWeight, grossFromNet, internalVolume, totalPanelArea, volumeBreakdown,
 } from './geometry';
 import type {
   AlignmentType, BoxDimensions, BoxShape, CurvePoint, CutPanel, DampingLevel,
-  EnclosureType, PortShape, ResponseCurves, TSParams, VolumeBreakdown,
+  EnclosureType, ResponseCurves, TSParams, VolumeBreakdown,
 } from './types';
 
 export interface DesignInput {
@@ -29,13 +34,14 @@ export interface DesignInput {
   customFbHz?: number;
   targetQtc?: number;
 
-  /** condotto */
-  portShape: PortShape;
+  /** condotto: geometria scelta e misure (se assenti vengono dimensionate) */
+  portType: PortType;
   portCount: number;
-  /** mm — se assente sceglie il minimo che tiene la velocità sotto soglia */
   portDiameterMm?: number;
   slotWidthMm?: number;
   slotHeightMm?: number;
+  triLegAMm?: number;
+  triLegBMm?: number;
 
   /** bandpass: rapporto volumi camera anteriore/posteriore */
   bandpassS?: number;
@@ -62,15 +68,81 @@ export interface DesignInput {
 }
 
 export interface PortResult {
-  shape: PortShape;
-  diameterMm?: number;
-  slotWidthMm?: number;
-  slotHeightMm?: number;
+  geometry: PortGeometry;
+  typeLabel: string;
+  /** lunghezza sviluppata sull'asse (mm) */
   lengthMm: number;
-  count: number;
-  velocity: number;      // m/s al massimo spostamento
-  minAreaCm2: number;    // area minima consigliata (criterio di Small)
   areaCm2: number;
+  equivalentDiameterMm: number;
+  velocity: number;        // m/s al massimo spostamento
+  velocityLimit: number;   // soglia di questa geometria
+  velocityOk: boolean;
+  minAreaCm2: number;      // criterio di Small
+  description: string;
+  /** tratti di sviluppo, noti solo dopo aver dimensionato la cassa */
+  segments?: { name: string; lengthMm: number }[];
+  /** pannelli necessari a costruirlo */
+  panels?: PortPanel[];
+}
+
+/** Costruisce la geometria dai dati inseriti, o la dimensiona se mancano */
+function resolvePortGeometry(input: DesignInput, fbHz: number, sdCm2: number, xmaxMm: number): PortGeometry {
+  const spec = PORT_TYPES[input.portType];
+  const count = Math.max(1, input.portCount);
+
+  const given: PortGeometry = { type: input.portType, count };
+  if (spec.section === 'circular' && input.portDiameterMm) {
+    return { ...given, diameterMm: input.portDiameterMm };
+  }
+  if (spec.section === 'rectangular' && input.slotWidthMm && input.slotHeightMm) {
+    return { ...given, widthMm: input.slotWidthMm, heightMm: input.slotHeightMm };
+  }
+  if (spec.section === 'triangular' && input.triLegAMm && input.triLegBMm) {
+    return { ...given, legAMm: input.triLegAMm, legBMm: input.triLegBMm };
+  }
+  return autoSizePort(input.portType, count, fbHz, sdCm2, xmaxMm);
+}
+
+/** Progetto del condotto: misure, accordo e verifica della velocità */
+function designPort(input: DesignInput, fbHz: number, vbL: number): { port: PortResult; warnings: string[] } {
+  const warnings: string[] = [];
+  const sd = input.ts.sd ?? 500;
+  const xmax = input.ts.xmax ?? 6;
+
+  const geometry = resolvePortGeometry(input, fbHz, sd, xmax);
+  const lengthMm = portLengthFor(geometry, fbHz, vbL);
+  const vc = velocityCheck(geometry, fbHz, sd, xmax);
+  const areaCm2 = totalPortArea(geometry);
+  const spec = PORT_TYPES[geometry.type];
+
+  if (!vc.ok) {
+    warnings.push(
+      `Velocità in porta ${vc.velocity.toFixed(1)} m/s contro i ${vc.limit} m/s che questa geometria tollera: allarga la sezione, aggiungi un condotto o passa a uno svasato.`,
+    );
+  }
+  // il 2% di margine evita che l'avviso scatti quando l'area coincide col minimo
+  if (areaCm2 < vc.minAreaCm2 * 0.98) {
+    warnings.push(`Area ${areaCm2.toFixed(0)} cm² sotto il minimo di Small (${vc.minAreaCm2.toFixed(0)} cm²) per questo accordo.`);
+  }
+  if (spec.sharedWalls > 0) {
+    warnings.push(`${spec.label}: ${spec.sharedWalls === 1 ? 'una parete della cassa fa' : 'due pareti della cassa fanno'} da lato del condotto, quindi il volume sottratto è minore di uno slot indipendente.`);
+  }
+
+  return {
+    port: {
+      geometry,
+      typeLabel: spec.label,
+      lengthMm: Math.round(lengthMm),
+      areaCm2,
+      equivalentDiameterMm: equivalentDiameter(geometry),
+      velocity: vc.velocity,
+      velocityLimit: vc.limit,
+      velocityOk: vc.ok,
+      minAreaCm2: vc.minAreaCm2,
+      description: describePort(geometry, lengthMm),
+    },
+    warnings,
+  };
 }
 
 export interface AcousticResult {
@@ -104,8 +176,6 @@ export interface DesignResult {
   simplifiedModel: boolean;
 }
 
-const PORT_DIAMETERS = [50, 65, 80, 100, 120, 150, 180, 200];
-const VELOCITY_TARGET = 17; // m/s
 
 // ─── Progetto acustico ────────────────────────────────────────────────────────
 
@@ -127,62 +197,24 @@ function designSealed(input: DesignInput): AcousticResult {
 
 function designVented(input: DesignInput): AcousticResult {
   const { ts } = input;
-  const warnings: string[] = [];
-  const np = Math.max(1, input.portCount);
 
-  const custom = input.customVbL && input.customFbHz
-    ? { vbL: input.customVbL, fb: input.customFbHz }
-    : undefined;
-
-  // diametro: scelto dall'utente o il minimo che tiene la velocità sotto soglia
-  let chosen = ventedDesign(ts, custom ? 'CUSTOM' : input.alignment, input.portDiameterMm ?? PORT_DIAMETERS[0], np, 0.732, custom);
-  if (!input.portDiameterMm && input.portShape === 'circular') {
-    chosen = ventedDesign(ts, custom ? 'CUSTOM' : input.alignment, PORT_DIAMETERS[PORT_DIAMETERS.length - 1], np, 0.732, custom);
-    for (const dv of PORT_DIAMETERS) {
-      const test = ventedDesign(ts, custom ? 'CUSTOM' : input.alignment, dv, np, 0.732, custom);
-      if (test.portVelocity <= VELOCITY_TARGET) { chosen = test; break; }
-    }
-  }
-
-  let port: PortResult;
-
-  if (input.portShape === 'slot') {
-    // area equivalente → condotto rettangolare di pari sezione
-    const areaCm2 = Math.PI * Math.pow(chosen.portDiameter / 2, 2) * np / 100;
-    const slotWidth = input.slotWidthMm ?? Math.round(Math.sqrt(areaCm2 * 100 * 4));
-    const slotHeight = input.slotHeightMm ?? Math.max(20, Math.round((areaCm2 * 100) / slotWidth));
-    // diametro idraulico equivalente per la lunghezza di accordo
-    const dEq = 2 * Math.sqrt((slotWidth * slotHeight) / Math.PI);
-    const len = portLength(dEq, chosen.fb, chosen.vb, 1, 0.85);
-    const pv = portVelocity(ts, chosen.fb, dEq, 1);
-    port = {
-      shape: 'slot', slotWidthMm: slotWidth, slotHeightMm: slotHeight,
-      lengthMm: Math.max(25, Math.round(len)), count: 1,
-      velocity: pv.velocity, minAreaCm2: pv.minVentAreaCm2, areaCm2: (slotWidth * slotHeight) / 100,
-    };
+  // volume e accordo dall'allineamento scelto, o imposti dall'utente
+  let vb: number, fb: number, alpha: number;
+  if (input.customVbL && input.customFbHz) {
+    vb = input.customVbL;
+    fb = input.customFbHz;
+    alpha = ts.vas / vb;
   } else {
-    const pv = portVelocity(ts, chosen.fb, chosen.portDiameter, np);
-    port = {
-      shape: 'circular', diameterMm: chosen.portDiameter,
-      lengthMm: Math.max(25, Math.round(chosen.portLength)), count: np,
-      velocity: chosen.portVelocity, minAreaCm2: chosen.minVentArea, areaCm2: pv.portAreaCm2,
-    };
+    const r = alignmentRatios(ts, input.alignment);
+    alpha = r.alpha;
+    vb = ts.vas / alpha;
+    fb = r.h * ts.fs;
   }
 
-  if (port.velocity > VELOCITY_TARGET) {
-    warnings.push(`Velocità in porta ${port.velocity.toFixed(1)} m/s: sopra i ${VELOCITY_TARGET} m/s si sente il soffio. Aumenta diametro o numero di condotti.`);
-  }
-  if (port.areaCm2 < port.minAreaCm2) {
-    warnings.push(`Area del condotto ${port.areaCm2.toFixed(0)} cm² sotto il minimo consigliato da Small (${port.minAreaCm2.toFixed(0)} cm²).`);
-  }
-  if (port.lengthMm > 600) {
-    warnings.push(`Condotto lungo ${Math.round(port.lengthMm)} mm: valuta una porta a slot ripiegata per farlo stare nella cassa.`);
-  }
+  const f3 = 0.26 * ts.fs * Math.pow(ts.qts, -1.4); // stima di Keele
+  const { port, warnings } = designPort(input, fb, vb);
 
-  return {
-    vbL: chosen.vb, fbHz: chosen.fb, f3Hz: chosen.f3, alpha: chosen.alpha,
-    port, warnings,
-  };
+  return { vbL: vb, fbHz: fb, f3Hz: f3, alpha, port, warnings };
 }
 
 function designPassiveRadiator(input: DesignInput): AcousticResult {
@@ -214,33 +246,28 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
     const S = input.bandpassS ?? 0.7;
     const alpha = ts.vas / (input.customVbL ?? sealedFromQtc(ts, 0.707).vb);
     const bp = bandpass4thOrder(ts, { S, alpha, dvMm: dv, np });
-    const pv = portVelocity(ts, bp.fb, dv, np);
-    warnings.push('Bandpass 4° ordine: il driver è nascosto, tutta l\'emissione passa dal condotto. Controlla la velocità dell\'aria con attenzione.');
-    if (pv.velocity > VELOCITY_TARGET) warnings.push(`Velocità in porta ${pv.velocity.toFixed(1)} m/s: troppo alta, aumenta la sezione.`);
+    // il condotto appartiene alla camera anteriore: si dimensiona sul suo volume
+    const { port, warnings: portWarnings } = designPort(input, bp.fb, bp.vfL);
+    warnings.push('Bandpass 4° ordine: il driver è nascosto e tutta l’emissione passa dal condotto, quindi la velocità dell’aria va controllata con particolare attenzione.');
+    warnings.push(...portWarnings);
     return {
       vbL: bp.vrL + bp.vfL, fbHz: bp.fb, f3Hz: bp.fL, alpha,
       chambers: { rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH },
-      port: {
-        shape: 'circular', diameterMm: dv, lengthMm: Math.round(bp.portLengthMm), count: np,
-        velocity: pv.velocity, minAreaCm2: pv.minVentAreaCm2, areaCm2: pv.portAreaCm2,
-      },
-      warnings,
+      port, warnings,
     };
   }
 
   const bp = bandpass6thOrder(ts, { S: input.bandpassS ?? 0.6, dvMm: dv, np });
-  const pv = portVelocity(ts, bp.fbFront, dv, np);
+  const { port, warnings: portWarnings } = designPort(input, bp.fbFront, bp.vfL);
   warnings.push('Bandpass 6° ordine: due camere accordate, banda più larga ma taratura critica. Progetto di partenza da rifinire con misura.');
+  warnings.push(...portWarnings);
   return {
     vbL: bp.vrL + bp.vfL, fbHz: bp.fbRear, f3Hz: bp.fL, alpha: ts.vas / bp.vrL,
     chambers: { rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH, fbFront: bp.fbFront },
-    port: {
-      shape: 'circular', diameterMm: dv, lengthMm: Math.round(bp.portFrontLenMm), count: np,
-      velocity: pv.velocity, minAreaCm2: pv.minVentAreaCm2, areaCm2: pv.portAreaCm2,
-    },
-    warnings,
+    port, warnings,
   };
 }
+
 
 // ─── Progetto completo ────────────────────────────────────────────────────────
 
@@ -266,16 +293,10 @@ export function computeDesign(input: DesignInput): DesignResult {
     input.mountingDepthMm ?? 100,
     input.driverCount,
   );
-  const portDispL = acoustic.port
-    ? portDisplacement({
-        shape: acoustic.port.shape,
-        diameterMm: acoustic.port.diameterMm,
-        slotWidthMm: acoustic.port.slotWidthMm,
-        slotHeightMm: acoustic.port.slotHeightMm,
-        lengthMm: acoustic.port.lengthMm,
-        count: acoustic.port.count,
-      })
-    : 0;
+  const portBuild = acoustic.port
+    ? portDisplacement(acoustic.port.geometry, acoustic.port.lengthMm, input.wallThicknessMm)
+    : null;
+  const portDispL = portBuild?.displacementL ?? 0;
 
   const bracingPercent = input.bracingPercent ?? 3;
   const grossNeeded = grossFromNet(physicalNetL, { driverDispL, portDispL, bracingPercent });
@@ -298,7 +319,29 @@ export function computeDesign(input: DesignInput): DesignResult {
     damping: input.damping,
   });
 
+  // 4b. verifica che il condotto entri davvero nella cassa appena dimensionata
+  if (acoustic.port && portBuild) {
+    const t = input.wallThicknessMm;
+    const fit = portFit(acoustic.port.geometry, acoustic.port.lengthMm, {
+      internalHeightMm: dimensions.height - 2 * t,
+      internalDepthMm: dimensions.depth - 2 * t,
+    });
+    acoustic.port.segments = fit.segments;
+    acoustic.port.panels = portBuild.panels;
+    acoustic.warnings = [...acoustic.warnings, ...fit.warnings];
+  }
+
   const panels = cuttingList(dimensions);
+  if (portBuild) {
+    panels.push(...portBuild.panels.map(p => ({
+      name: p.name,
+      width: p.widthMm,
+      height: p.heightMm,
+      thickness: input.wallThicknessMm,
+      quantity: p.quantity,
+      note: 'Pezzo del condotto reflex',
+    })));
+  }
 
   // 5. curve
   const modelled = input.enclosure === 'sealed' || input.enclosure === 'vented' || input.enclosure === 'passive-radiator';
@@ -360,7 +403,7 @@ export function computeDesign(input: DesignInput): DesignResult {
   };
 }
 
-/** Ricava l'accordo reale da un condotto già costruito (verifica a posteriori) */
-export function verifyTuning(diameterMm: number, lengthMm: number, vbL: number, count = 1): number {
-  return tuningFromPort(diameterMm, lengthMm, vbL, count, 0.732);
+/** Accordo reale di un condotto già costruito — verifica a posteriori */
+export function verifyTuning(geometry: PortGeometry, lengthMm: number, vbL: number): number {
+  return tuningOf(geometry, lengthMm, vbL);
 }
