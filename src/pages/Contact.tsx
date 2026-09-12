@@ -5,25 +5,17 @@ import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown } from 'lucide-r
 
 const FAQS = [
   {
-    question: "Quali sono i tempi di consegna?",
-    answer: "Le spedizioni vengono effettuate tramite corriere espresso assicurato. I tempi di consegna variano solitamente da 24 a 48 ore lavorative in tutta Italia, isole comprese."
+    question: "Offrite consulenza per la scelta dell'attrezzatura?",
+    answer: "Sì, Amerigo è a disposizione per consulenze personalizzate tramite WhatsApp o email per aiutarti a scegliere la soluzione audio giusta per le tue esigenze."
   },
   {
-    question: "La spedizione è gratuita?",
-    answer: "Sì, offriamo la spedizione assicurata gratuita su tutti gli ordini sopra i 199€. Per ordini inferiori, il costo viene calcolato al checkout."
+    question: "In quanto tempo rispondete?",
+    answer: "Rispondiamo su WhatsApp solitamente entro 15 minuti negli orari di consulenza (Lun-Ven 09:00 - 18:00)."
   },
   {
-    question: "I prodotti hanno garanzia italiana?",
-    answer: "Certamente. Tutti i nostri prodotti sono nuovi e godono della Garanzia Italiana ufficiale di 24 mesi fornita direttamente dai produttori."
+    question: "Dove operate?",
+    answer: "Siamo con sede a Forino (AV) e operiamo principalmente ad Avellino e provincia."
   },
-  {
-    question: "Offrite consulenza per la scelta del setup?",
-    answer: "Sì, Amerigo e il nostro team di esperti sono a disposizione per consulenze personalizzate tramite WhatsApp o email per aiutarti a configurare il setup perfetto per le tue esigenze."
-  },
-  {
-    question: "Quali metodi di pagamento accettate?",
-    answer: "Accettiamo pagamenti sicuri tramite Carta di Credito/Debito, Google Pay, Apple Pay, Klarna (per il pagamento in 3 rate senza interessi) e Bonifico Bancario."
-  }
 ];
 
 function FAQItem({ question, answer, isOpen, onClick }: { question: string, answer: string, isOpen: boolean, onClick: () => void }) {

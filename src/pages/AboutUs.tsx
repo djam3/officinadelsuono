@@ -1,36 +1,13 @@
 import { motion } from 'framer-motion';
 import { useSEO } from '../hooks/useSEO';
-import { Award, MapPin, Star, Music, ShieldCheck } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { getDirectDriveUrl } from '../utils/drive';
-import { SHOP_ENABLED } from '../config/site';
+import { Award, Star, Music, ShieldCheck } from 'lucide-react';
 
 export function AboutUs() {
   useSEO({
     title: 'Chi Siamo — Amerigo De Cristofaro & Officina del Suono',
-    description: SHOP_ENABLED
-      ? 'Scopri chi è Amerigo De Cristofaro: sound engineer certificato MAT Academy, esperto di attrezzatura DJ e audio professionale. La storia di Officina del Suono.'
-      : 'Officina del Suono: noleggio di attrezzature audio, video e DJ ad Avellino e provincia, curato da Amerigo De Cristofaro, sound engineer certificato MAT Academy.',
+    description: 'Scopri chi è Amerigo De Cristofaro: sound engineer certificato MAT Academy, esperto di attrezzatura audio professionale. La storia di Officina del Suono.',
     url: '/chi-siamo',
   });
-
-  const [profileImage, setProfileImage] = useState('/profile_new.jpg');
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const profileDoc = await getDoc(doc(db, 'settings', 'profile'));
-        if (profileDoc.exists() && profileDoc.data().profileImage) {
-          setProfileImage(profileDoc.data().profileImage);
-        }
-      } catch (error) {
-        console.error("Error fetching profile image:", error);
-      }
-    };
-    fetchProfile();
-  }, []);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24">
@@ -49,39 +26,19 @@ export function AboutUs() {
             </div>
             
             <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">
-              {SHOP_ENABLED ? (
-                <>Il Negozio Nato per <span className="text-brand-orange">Salvare i Tuoi Soldi</span>.</>
-              ) : (
-                <>Il suono giusto per <span className="text-brand-orange">ogni evento</span>.</>
-              )}
+              Il suono giusto per <span className="text-brand-orange">ogni progetto</span>.
             </h1>
 
             <div className="space-y-6 text-lg text-zinc-400 leading-relaxed">
-              {SHOP_ENABLED ? (
-                <>
-                  <p>
-                    Tutto inizia con un'ossessione: vedere troppi DJ e producer sprecare migliaia di euro in attrezzatura sbagliata, consigliati da commessi incompetenti o da algoritmi senza volto. <strong>Amerigo De Cristofaro</strong> ha fondato Officinadelsuono non per venderti l'ennesimo cavo, ma per offrirti la consulenza ingegneristica che ti salva dal fare l'acquisto sbagliato.
-                  </p>
-                  <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
-                    "Ho visto troppi artisti rovinare la propria performance a causa di un setup non idoneo. Io testo tutto sul campo e studio l'ingegneria dietro ogni prodotto, per garantirti zero compromessi e zero sorprese."
-                  </p>
-                  <p>
-                    Nata a <strong>Forino (AV)</strong>, Officinadelsuono è oggi il punto di riferimento per chi cerca competenza reale, supportata da certificazioni internazionali. Trasparenza totale: se un prodotto fa schifo, noi non lo vendiamo.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Officina del Suono nasce da una convinzione semplice: per far riuscire una festa non serve comprare un impianto, serve avere quello giusto la sera giusta. <strong>Amerigo De Cristofaro</strong>, sound engineer certificato MAT Academy, ha messo a disposizione la sua attrezzatura da lavoro — casse FBT, console Numark, mixer Soundcraft, microfoni wireless — per compleanni, karaoke, cerimonie ed eventi ad <strong>Avellino e provincia</strong>.
-                  </p>
-                  <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
-                    "Ho visto troppe feste rovinate da un impianto sottodimensionato o collegato male. Io ti do attrezzatura professionale, controllata pezzo per pezzo, e ti spiego come si collega."
-                  </p>
-                  <p>
-                    Con sede a <strong>Forino (AV)</strong>, seguiamo ogni noleggio di persona: verifica dell'attrezzatura prima della consegna, spiegazione dei collegamenti al ritiro e assistenza su WhatsApp durante l'evento. Prezzi chiari, senza sorprese.
-                  </p>
-                </>
-              )}
+              <p>
+                Officina del Suono nasce da una convinzione semplice: la differenza tra un evento riuscito e uno mediocre è quasi sempre nella scelta dell'attrezzatura audio giusta. <strong>Amerigo De Cristofaro</strong>, sound engineer certificato MAT Academy, mette a disposizione competenza tecnica reale, testata sul campo.
+              </p>
+              <p className="text-white font-medium border-l-2 border-brand-orange pl-6 italic">
+                "Ho visto troppi progetti rovinati da un setup sottodimensionato o collegato male. Io ti do consulenza professionale, verificata pezzo per pezzo."
+              </p>
+              <p>
+                Con sede a <strong>Forino (AV)</strong>, seguiamo ogni richiesta di persona: verifica tecnica, spiegazione chiara e assistenza diretta su WhatsApp. Prezzi chiari, senza sorprese.
+              </p>
             </div>
           </motion.div>
 
