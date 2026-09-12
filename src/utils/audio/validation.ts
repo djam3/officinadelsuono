@@ -128,15 +128,6 @@ const RELATIONS: Relation[] = [
       return null;
     },
   },
-  {
-    label: 'Sensibilità = 112.16 + 10·log10(η0)',
-    keys: ['sensitivity', 'eta0'],
-    tolerance: 0.02, // ≈ ±1.8 dB su 90 dB
-    solve: (p, t) => {
-      if (t === 'sensitivity' && has(p.eta0)) return sensitivityFrom(p.eta0);
-      return null;
-    },
-  },
 ];
 
 const UNITS: Partial<Record<keyof TSParams, string>> = {
@@ -217,6 +208,61 @@ function amplification(
 }
 
 /**
+ * Controlli sulla sensibilita, tenuti fuori da RELATIONS perche vanno fatti in
+ * dB ASSOLUTI: su una grandezza logaritmica lo scarto relativo non vuol dire
+ * niente, e una banda del 2% varrebbe 1.6 dB su 81 dB e 1.9 dB su 96.
+ *
+ * Le due soglie hanno natura diversa:
+ *  - contro un η0 dichiarato la relazione e una DEFINIZIONE, quindi deve
+ *    tornare quasi esattamente;
+ *  - contro il η0 ricavato da Fs, Vas e Qes resta un identita teorica, ma la
+ *    sensibilita pubblicata e una misura, con le sue convenzioni. Sui 32 driver
+ *    di libreria presi dai datasheet ufficiali lo scarto vale in media +0.91 dB
+ *    (i costruttori dichiarano un filo ottimistico), con deviazione standard
+ *    1.12 dB e massimo 3.71 dB: la banda di 5 dB non ne tocca nessuno e
+ *    intercetta comunque gli errori grossolani, che sono di tutt altro ordine.
+ *
+ * Senza questo controllo la contraddizione restava invisibile, perche passa per
+ * l η0, che quasi nessuno digita: un set con Fs 20 Hz, Vas 50 L e Qes 0.50
+ * dichiarato 96 dB/W/m passava con zero errori, mentre quella combinazione ne
+ * rende 81.1.
+ */
+const SENS_BAND_DEFINITION_DB = 0.5;
+const SENS_BAND_THEORETICAL_DB = 5;
+
+function sensitivityChecks(p: TSInput): ValidationMap {
+  const out: ValidationMap = {};
+  if (!has(p.sensitivity)) return out;
+
+  let expected: number | null = null;
+  let band = SENS_BAND_THEORETICAL_DB;
+  let via = '';
+  if (has(p.eta0)) {
+    expected = sensitivityFrom(p.eta0);
+    band = SENS_BAND_DEFINITION_DB;
+    via = 'dalla definizione 112.16 + 10·log10(η0)';
+  } else if (has(p.fs) && has(p.vas) && has(p.qes)) {
+    expected = sensitivityFrom(eta0From(p.fs, p.vas, p.qes));
+    via = 'da Fs, Vas e Qes';
+  }
+  if (expected === null || !isFinite(expected)) return out;
+
+  const delta = p.sensitivity - expected;
+  const ok = Math.abs(delta) <= band;
+  const check: ParamCheck = {
+    status: ok ? 'ok' : 'error',
+    expected,
+    deviation: Math.abs(delta) / Math.abs(expected),
+    message: ok
+      ? `Compatibile con il rendimento ricavato ${via}: ${expected.toFixed(1)} dB, scarto ${delta >= 0 ? '+' : ''}${delta.toFixed(1)} dB.`
+      : `Il rendimento ricavato ${via} vale ${expected.toFixed(1)} dB/W/m, cioè ${Math.abs(delta).toFixed(1)} dB ${delta > 0 ? 'sotto' : 'sopra'} il valore dichiarato. Il rendimento di un altoparlante non si sceglie: lo fissano risonanza, volume equivalente e smorzamento elettrico, e da questi tre non si può ricavare quel numero.`,
+  };
+  out.sensitivity = check;
+  if (has(p.eta0)) out.eta0 = { ...check };
+  return out;
+}
+
+/**
  * Verifica l'intero set. `input` deve contenere solo i valori inseriti
  * dall'utente: i parametri derivati automaticamente sono coerenti per
  * costruzione e confermerebbero sé stessi.
@@ -266,6 +312,9 @@ export function validateTSParams(input: TSInput): ValidationResult {
 
   // chiusure a due strade: contraddizioni che passano per grandezze non digitate
   mergeClosures(checks, runClosures(input));
+
+  // sensibilita: banda in dB assoluti, non in percentuale
+  mergeClosures(checks, sensitivityChecks(input));
 
   // i vincoli rigidi hanno la precedenza su qualsiasi conferma
   Object.assign(checks, hardConstraints(input));
