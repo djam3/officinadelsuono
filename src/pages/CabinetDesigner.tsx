@@ -1,221 +1,240 @@
 import { useMemo, useState } from 'react';
-import { Box, Wind, Wand2 } from 'lucide-react';
+import { Speaker, Box, Ruler, LineChart } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
-import { NumField, SelectField, Stat, CalcShell, Plot, PLOT_COLORS } from '../components/CalcUI';
+import { TabBar, Stat } from '../components/designer/ui';
+import { DriverTab } from '../components/designer/DriverTab';
+import { EnclosureTab, type EnclosureSettings } from '../components/designer/EnclosureTab';
+import { DimensionsTab, type DimensionSettings } from '../components/designer/DimensionsTab';
+import { ResponseTab, type ResponseSettings, type GraphKey } from '../components/designer/ResponseTab';
 import {
-  sealedFromQtc, ventedDesign, computeResponse,
-  type TSParams, type AlignmentType,
+  combineDrivers, completeTSParams, computeDesign, suggestEnclosure, toTSParams,
+  type DesignInput, type DriverConfig, type TSInput,
 } from '../utils/audio';
 
-type EnclosureType = 'sealed' | 'vented';
+type TabId = 'driver' | 'enclosure' | 'dimensions' | 'response';
 
-const ALIGNMENT_OPTIONS: { value: AlignmentType; label: string }[] = [
-  { value: 'QB3', label: 'QB3 (box compatta, Qts basso)' },
-  { value: 'B4', label: 'B4 — Butterworth (bilanciato)' },
-  { value: 'C4', label: 'C4 — Chebyshev (bassi estesi)' },
-  { value: 'SBB4', label: 'SBB4 (accordo = Fs)' },
-  { value: 'BESSEL', label: 'Bessel (transienti puliti)' },
-];
+/** woofer 12" realistico: la pagina mostra un progetto sensato già al primo accesso */
+const DEFAULT_DRIVER: TSInput = {
+  fs: 35, qts: 0.35, qes: 0.38, qms: 4.5, vas: 60,
+  re: 5.6, le: 1.2, sd: 530, xmax: 6, mms: 95, bl: 17,
+  pe: 400, impedance: 8, dia: 260,
+};
 
-const PORT_DIAMETERS = [50, 65, 80, 100, 120, 150, 180]; // mm
-const MAX_PORT_VELOCITY = 17; // m/s — oltre si sente il rumore d'aria ("chuffing")
+const DEFAULT_ENCLOSURE: EnclosureSettings = {
+  enclosure: 'vented',
+  alignment: 'B4',
+  targetQtc: 0.707,
+  customVbL: '',
+  customFbHz: '',
+  portShape: 'circular',
+  portCount: 1,
+  portDiameterMm: '',
+  slotWidthMm: '',
+  slotHeightMm: '',
+  bandpassS: 0.7,
+};
 
-/** Dimensioni esterne stimate (proporzioni auree) dal volume netto */
-function boxDimensionsFromVolume(volumeLiters: number, wallThicknessMm: number) {
-  const volumeMm3 = volumeLiters * 1e6;
-  const RATIO_H = 1.26;
-  const RATIO_D = 1.618;
-  const w = Math.cbrt(volumeMm3 / (RATIO_H * RATIO_D));
-  const h = w * RATIO_H;
-  const d = w * RATIO_D;
-  return {
-    width: Math.round(w + 2 * wallThicknessMm),
-    height: Math.round(h + 2 * wallThicknessMm),
-    depth: Math.round(d + 2 * wallThicknessMm),
-  };
-}
+const DEFAULT_DIMENSIONS: DimensionSettings = {
+  shape: 'rectangular',
+  wallThicknessMm: 18,
+  damping: 'normal',
+  useGoldenRatio: true,
+  fixedWidthMm: '',
+  fixedHeightMm: '',
+  taper: 0.6,
+  bracingPercent: 3,
+  mountingDepthMm: 120,
+};
+
+const ALL_GRAPHS: Record<GraphKey, boolean> = {
+  spl: true, maxspl: true, power: false, excursion: true,
+  vent: true, impedance: false, phase: false, delay: false,
+};
+
+const DEFAULT_RESPONSE: ResponseSettings = {
+  powerW: 200,
+  roomPreset: 'none',
+  visible: ALL_GRAPHS,
+};
+
+const num = (v: number | '' | undefined): number | undefined =>
+  typeof v === 'number' && isFinite(v) ? v : undefined;
 
 export function CabinetDesigner() {
   useSEO({
-    title: 'Calcolatore Casse Acustiche — Chiusa e Bass-Reflex',
-    description: 'Calcola il volume, la porta bass-reflex e le dimensioni della cassa acustica a partire dai parametri Thiele-Small del driver.',
+    title: 'Progettazione Casse Acustiche — Calcolatore Thiele-Small',
+    description: 'Calcolatore professionale per casse acustiche: parametri Thiele-Small, casse chiuse, bass-reflex, radiatore passivo e bandpass, con curve di risposta, SPL massimo e lista di taglio.',
     url: '/progetta-cassa',
   });
 
-  // ── Parametri Thiele-Small del driver ────────────────────────────────────
-  const [fs, setFs] = useState<number | ''>(35);
-  const [qts, setQts] = useState<number | ''>(0.35);
-  const [vas, setVas] = useState<number | ''>(60);
-  const [xmax, setXmax] = useState<number | ''>(6);
-  const [sd, setSd] = useState<number | ''>(530);
+  const [tab, setTab] = useState<TabId>('driver');
+  const [tsInput, setTsInput] = useState<TSInput>(DEFAULT_DRIVER);
+  const [driverConfig, setDriverConfig] = useState<DriverConfig>({ count: 1, wiring: 'single' });
+  const [enclosure, setEnclosure] = useState<EnclosureSettings>(DEFAULT_ENCLOSURE);
+  const [dimensions, setDimensions] = useState<DimensionSettings>(DEFAULT_DIMENSIONS);
+  const [response, setResponse] = useState<ResponseSettings>(DEFAULT_RESPONSE);
 
-  // ── Impostazioni cassa ────────────────────────────────────────────────────
-  const [enclosureType, setEnclosureType] = useState<EnclosureType>('vented');
-  const [targetQtc, setTargetQtc] = useState<number | ''>(0.707);
-  const [alignment, setAlignment] = useState<AlignmentType>('QB3');
-  const [portCount, setPortCount] = useState<number | ''>(1);
-  const [wallThickness, setWallThickness] = useState<number | ''>(18);
+  // ── Catena di calcolo ────────────────────────────────────────────────────
+  const derivedParams = useMemo(() => completeTSParams(tsInput), [tsInput]);
+  const baseTs = useMemo(() => toTSParams(derivedParams), [derivedParams]);
+  const effective = useMemo(
+    () => (baseTs ? combineDrivers(baseTs, driverConfig) : null),
+    [baseTs, driverConfig],
+  );
+  const suggestion = useMemo(
+    () => (effective ? suggestEnclosure(effective.ts) : null),
+    [effective],
+  );
 
-  const ts: TSParams | null = useMemo(() => {
-    if (fs === '' || qts === '' || vas === '') return null;
-    return {
-      fs: Number(fs), qts: Number(qts), qes: Number(qts), qms: Number(qts) * 10,
-      vas: Number(vas),
-      sd: sd === '' ? undefined : Number(sd),
-      xmax: xmax === '' ? undefined : Number(xmax),
+  const design = useMemo(() => {
+    if (!effective) return null;
+    const input: DesignInput = {
+      ts: effective.ts,
+      enclosure: enclosure.enclosure,
+      alignment: enclosure.alignment,
+      targetQtc: num(enclosure.targetQtc),
+      customVbL: num(enclosure.customVbL),
+      customFbHz: num(enclosure.customFbHz),
+      portShape: enclosure.portShape,
+      portCount: num(enclosure.portCount) ?? 1,
+      portDiameterMm: num(enclosure.portDiameterMm),
+      slotWidthMm: num(enclosure.slotWidthMm),
+      slotHeightMm: num(enclosure.slotHeightMm),
+      bandpassS: num(enclosure.bandpassS),
+      shape: dimensions.shape,
+      wallThicknessMm: num(dimensions.wallThicknessMm) ?? 18,
+      damping: dimensions.damping,
+      useGoldenRatio: dimensions.useGoldenRatio,
+      fixedWidthMm: num(dimensions.fixedWidthMm),
+      fixedHeightMm: num(dimensions.fixedHeightMm),
+      taper: num(dimensions.taper),
+      bracingPercent: num(dimensions.bracingPercent),
+      mountingDepthMm: num(dimensions.mountingDepthMm),
+      driverCount: effective.radiatingCones,
+      powerW: num(response.powerW) ?? 100,
+      roomPreset: response.roomPreset,
     };
-  }, [fs, qts, vas, sd, xmax]);
+    return computeDesign(input);
+  }, [effective, enclosure, dimensions, response.powerW, response.roomPreset]);
 
-  const sealedResult = useMemo(() => {
-    if (!ts || enclosureType !== 'sealed' || targetQtc === '') return null;
-    return sealedFromQtc(ts, Number(targetQtc));
-  }, [ts, enclosureType, targetQtc]);
-
-  const ventedResult = useMemo(() => {
-    if (!ts || enclosureType !== 'vented') return null;
-    const np = portCount === '' ? 1 : Number(portCount);
-    // sceglie il diametro più piccolo che tiene la velocità ≤ 17 m/s
-    let chosen = ventedDesign(ts, alignment, PORT_DIAMETERS[PORT_DIAMETERS.length - 1], np);
-    for (const dv of PORT_DIAMETERS) {
-      const test = ventedDesign(ts, alignment, dv, np);
-      if (test.portVelocity <= MAX_PORT_VELOCITY) { chosen = test; break; }
-    }
-    return chosen;
-  }, [ts, enclosureType, alignment, portCount]);
-
-  const netVolume = sealedResult?.vb ?? ventedResult?.vb ?? null;
-
-  const dimensions = useMemo(() => {
-    if (netVolume == null || wallThickness === '') return null;
-    return boxDimensionsFromVolume(netVolume, Number(wallThickness));
-  }, [netVolume, wallThickness]);
-
-  const responseCurve = useMemo(() => {
-    if (!ts) return null;
-    if (enclosureType === 'sealed' && sealedResult) {
-      return computeResponse({ ts, type: 'sealed', fc: sealedResult.fc, qtc: sealedResult.qtc, fMin: 15, fMax: 500 });
-    }
-    if (enclosureType === 'vented' && ventedResult) {
-      return computeResponse({ ts, type: 'vented', fb: ventedResult.fb, alpha: ventedResult.alpha, fMin: 15, fMax: 500 });
-    }
-    return null;
-  }, [ts, enclosureType, sealedResult, ventedResult]);
+  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'driver', label: 'Driver', icon: <Speaker className="w-3.5 h-3.5" /> },
+    { id: 'enclosure', label: 'Cassa', icon: <Box className="w-3.5 h-3.5" /> },
+    { id: 'dimensions', label: 'Dimensioni', icon: <Ruler className="w-3.5 h-3.5" /> },
+    { id: 'response', label: 'Grafici', icon: <LineChart className="w-3.5 h-3.5" /> },
+  ];
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-5">
             <Box className="w-4 h-4" />
             <span className="text-xs font-black uppercase tracking-[0.2em]">Strumento Tecnico</span>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tighter mb-4 uppercase">
-            Calcolatore <span className="text-brand-orange">Casse Acustiche</span>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-3 uppercase">
+            Progettazione <span className="text-brand-orange">Casse Acustiche</span>
           </h1>
-          <p className="text-zinc-400 max-w-2xl mx-auto">
-            Inserisci i parametri Thiele-Small del driver e ottieni il progetto della cassa: volume, porta bass-reflex e dimensioni finali.
+          <p className="text-zinc-400 max-w-3xl">
+            Inserisci i parametri Thiele-Small del driver e ottieni il progetto completo: volume, accordo,
+            condotto, dimensioni, lista di taglio e curve di risposta.
           </p>
         </div>
 
-        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-10">
-          <CalcShell
-            title="Parametri Driver & Cassa"
-            inputs={
-              <>
-                <NumField label="Fs — Frequenza di risonanza" unit="Hz" value={fs} onChange={setFs} />
-                <NumField label="Qts — Q totale" value={qts} onChange={setQts} step={0.01} />
-                <NumField label="Vas — Volume equivalente" unit="litri" value={vas} onChange={setVas} />
-                <NumField label="Sd — Area radiante (opzionale, per velocità porta)" unit="cm²" value={sd} onChange={setSd} />
-                <NumField label="Xmax — Escursione lineare (opzionale)" unit="mm" value={xmax} onChange={setXmax} />
+        {/* Riepilogo sempre visibile */}
+        {design && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+            <Stat label="Volume netto" value={design.acoustic.vbL.toFixed(1)} unit="L" accent />
+            {design.acoustic.fbHz !== undefined ? (
+              <Stat label="Accordo Fb" value={Math.round(design.acoustic.fbHz)} unit="Hz" />
+            ) : (
+              <Stat label="Qtc" value={design.acoustic.qtc?.toFixed(2) ?? '—'} />
+            )}
+            <Stat label="F3" value={Math.round(design.acoustic.f3Hz)} unit="Hz" />
+            <Stat
+              label="Ingombro"
+              value={
+                design.dimensions.shape === 'cylindrical'
+                  ? `Ø${design.dimensions.diameter}×${design.dimensions.height}`
+                  : `${design.dimensions.width}×${design.dimensions.height}×${design.dimensions.depth}`
+              }
+              unit="mm"
+            />
+            <Stat
+              label="SPL max"
+              value={design.maxOutput ? design.maxOutput.peakSpl.toFixed(0) : '—'}
+              unit={design.maxOutput ? 'dB' : undefined}
+            />
+          </div>
+        )}
 
-                <div className="pt-2">
-                  <SelectField
-                    label="Tipo di cassa"
-                    value={enclosureType}
-                    onChange={v => setEnclosureType(v as EnclosureType)}
-                    options={[
-                      { value: 'vented', label: 'Bass-Reflex' },
-                      { value: 'sealed', label: 'Chiusa (sealed)' },
-                    ]}
-                  />
-                </div>
+        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl overflow-hidden">
+          <div className="px-5 pt-2">
+            <TabBar<TabId> tabs={tabs} active={tab} onChange={id => setTab(id)} />
+          </div>
 
-                {enclosureType === 'sealed' && (
-                  <NumField label="Qtc obiettivo" value={targetQtc} onChange={setTargetQtc} step={0.01} hint="0.707 = Butterworth, massimamente piatto" />
-                )}
+          <div className="p-5 md:p-6">
+            {tab === 'driver' && (
+              <DriverTab
+                input={tsInput}
+                onChange={setTsInput}
+                derived={derivedParams}
+                config={driverConfig}
+                onConfigChange={setDriverConfig}
+                onAutoDerive={() => setTsInput(completeTSParams(tsInput))}
+                configWarnings={effective?.warnings ?? []}
+                effectiveSummary={{
+                  impedance: effective?.totalImpedance ?? 0,
+                  power: effective?.totalPower ?? 0,
+                  sensitivityDelta: effective?.sensitivityDelta ?? 0,
+                  cones: effective?.radiatingCones ?? 1,
+                }}
+              />
+            )}
 
-                {enclosureType === 'vented' && (
-                  <>
-                    <SelectField label="Allineamento" value={alignment} onChange={v => setAlignment(v as AlignmentType)} options={ALIGNMENT_OPTIONS} />
-                    <NumField label="Numero di porte" value={portCount} onChange={setPortCount} min={1} />
-                  </>
-                )}
+            {tab === 'enclosure' && (
+              <EnclosureTab
+                settings={enclosure}
+                onChange={setEnclosure}
+                suggestion={suggestion}
+                acoustic={design?.acoustic ?? null}
+              />
+            )}
 
-                <NumField label="Spessore pannelli" unit="mm" value={wallThickness} onChange={setWallThickness} />
-              </>
-            }
-            results={
-              <>
-                {!ts && (
-                  <p className="text-sm text-zinc-500 italic">Inserisci Fs, Qts e Vas per calcolare il progetto.</p>
-                )}
+            {tab === 'dimensions' && (
+              <DimensionsTab
+                settings={dimensions}
+                onChange={setDimensions}
+                dimensions={design?.dimensions ?? null}
+                volumes={design?.volumes ?? null}
+                panels={design?.panels ?? []}
+                panelAreaM2={design?.panelAreaM2 ?? 0}
+                weightKg={design?.weightKg ?? 0}
+              />
+            )}
 
-                {ts && enclosureType === 'sealed' && sealedResult && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Stat label="Volume netto" value={sealedResult.vb.toFixed(1)} unit="L" accent />
-                    <Stat label="Qtc risultante" value={sealedResult.qtc.toFixed(2)} />
-                    <Stat label="F3 (-3dB)" value={Math.round(sealedResult.f3)} unit="Hz" />
-                    <Stat label="Picco risonanza" value={sealedResult.peakingDb.toFixed(1)} unit="dB" />
-                  </div>
-                )}
-
-                {ts && enclosureType === 'vented' && ventedResult && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <Stat label="Volume netto" value={ventedResult.vb.toFixed(1)} unit="L" accent />
-                    <Stat label="Fb — Accordo porta" value={Math.round(ventedResult.fb)} unit="Hz" />
-                    <Stat label="F3 (-3dB)" value={Math.round(ventedResult.f3)} unit="Hz" />
-                    <Stat label="Diametro porta" value={ventedResult.portDiameter} unit="mm" />
-                    <Stat label="Lunghezza porta" value={Math.round(ventedResult.portLength)} unit="mm" />
-                    <Stat
-                      label="Velocità aria in porta"
-                      value={ventedResult.portVelocity.toFixed(1)}
-                      unit="m/s"
-                      accent={ventedResult.portVelocity > MAX_PORT_VELOCITY}
-                    />
-                    {ventedResult.portVelocity > MAX_PORT_VELOCITY && (
-                      <p className="col-span-2 text-xs text-amber-500 flex items-center gap-1.5">
-                        <Wind className="w-3.5 h-3.5 shrink-0" /> Velocità alta: rischio di rumore d'aria ("chuffing"). Aumenta numero o diametro porte.
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {dimensions && (
-                  <div className="pt-2 border-t border-white/5">
-                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                      <Wand2 className="w-3.5 h-3.5" /> Box finale suggerito (proporzioni auree)
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <Stat label="Larghezza" value={dimensions.width} unit="mm" />
-                      <Stat label="Altezza" value={dimensions.height} unit="mm" />
-                      <Stat label="Profondità" value={dimensions.depth} unit="mm" />
-                    </div>
-                  </div>
-                )}
-              </>
-            }
-          />
-
-          {responseCurve && (
-            <div className="mt-8 pt-8 border-t border-white/5">
-              <h3 className="text-sm font-black uppercase tracking-wider text-zinc-400 mb-4">Risposta in Frequenza Stimata</h3>
-              <Plot series={[{ name: 'SPL', color: PLOT_COLORS[0], points: responseCurve.spl }]} yLabel="SPL relativo" yUnit="dB" />
-            </div>
-          )}
+            {tab === 'response' && (
+              <ResponseTab
+                settings={response}
+                onChange={setResponse}
+                design={design}
+                ts={effective?.ts ?? null}
+              />
+            )}
+          </div>
         </div>
 
-        <p className="text-xs text-zinc-600 mt-6 text-center max-w-2xl mx-auto">
-          Calcoli basati sulle formule Thiele/Small standard del settore. Modello lineare "small-signal", valido sotto ~300 Hz: non considera distorsione, compressione di potenza o acustica dell'ambiente reale.
+        {!baseTs && (
+          <p className="text-sm text-amber-500/90 mt-5">
+            Servono almeno Fs, Qts (oppure Qes e Qms) e Vas per calcolare il progetto.
+          </p>
+        )}
+
+        <p className="text-xs text-zinc-600 mt-6 leading-relaxed">
+          Motore di calcolo basato sulle formule Thiele/Small pubblicate (Thiele 1961, Small 1972–73, Keele 1973,
+          Bullock 1981, Dickason «Loudspeaker Design Cookbook»). Modello lineare small-signal, valido sotto i
+          ~300 Hz: non simula distorsione, compressione di potenza, breakup del cono né l'acustica reale della
+          stanza. Verifica sempre le misure prima del taglio.
         </p>
       </div>
     </div>

@@ -75,9 +75,96 @@ export function CalcShell({ title, subtitle, inputs, results }: {
   );
 }
 
-// Disclaimer rimosso su richiesta: non mostra più alcun testo sotto i calcolatori.
-export function Disclaimer() {
-  return null;
+// ─── Primitivi aggiuntivi del progettista ────────────────────────────────────
+
+export function Section({ title, subtitle, children, right }: {
+  title: string; subtitle?: string; children: React.ReactNode; right?: React.ReactNode;
+}) {
+  return (
+    <div className="bg-zinc-900/40 border border-white/5 rounded-2xl p-5">
+      <div className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <h3 className="text-xs font-black uppercase tracking-[0.15em] text-brand-orange">{title}</h3>
+          {subtitle && <p className="text-[11px] text-zinc-500 mt-1">{subtitle}</p>}
+        </div>
+        {right}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function ActionButton({ children, onClick, variant = 'ghost', disabled, title }: {
+  children: React.ReactNode; onClick?: () => void;
+  variant?: 'primary' | 'ghost'; disabled?: boolean; title?: string;
+}) {
+  const base = 'px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed';
+  const styles = variant === 'primary'
+    ? 'bg-brand-orange text-white hover:bg-orange-600'
+    : 'bg-white/5 text-zinc-300 hover:bg-white/10 hover:text-white border border-white/10';
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} title={title} className={`${base} ${styles}`}>
+      {children}
+    </button>
+  );
+}
+
+export function TabBar<T extends string>({ tabs, active, onChange }: {
+  tabs: { id: T; label: string; icon?: React.ReactNode }[];
+  active: T;
+  onChange: (id: T) => void;
+}) {
+  return (
+    <div className="flex gap-1 overflow-x-auto border-b border-white/10 -mx-1 px-1">
+      {tabs.map(tab => (
+        <button
+          key={tab.id}
+          type="button"
+          onClick={() => onChange(tab.id)}
+          className={`shrink-0 px-4 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+            active === tab.id
+              ? 'text-brand-orange border-brand-orange'
+              : 'text-zinc-500 border-transparent hover:text-zinc-300'
+          }`}
+        >
+          {tab.icon}
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function Warnings({ items }: { items: string[] }) {
+  if (!items.length) return null;
+  return (
+    <div className="space-y-2">
+      {items.map((w, i) => (
+        <p key={i} className="text-[11px] text-amber-500/90 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 leading-relaxed">
+          {w}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+export function CheckField({ label, checked, onChange, hint }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void; hint?: string;
+}) {
+  return (
+    <label className="flex items-start gap-2.5 cursor-pointer group">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={e => onChange(e.target.checked)}
+        className="mt-0.5 w-4 h-4 accent-[#F27D26] cursor-pointer"
+      />
+      <span>
+        <span className="text-xs text-zinc-300 group-hover:text-white transition-colors">{label}</span>
+        {hint && <span className="block text-[10px] text-zinc-600">{hint}</span>}
+      </span>
+    </label>
+  );
 }
 
 // ─── Grafico SVG (asse X logaritmico) ─────────────────────────────────────────

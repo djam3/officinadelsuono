@@ -83,6 +83,9 @@ export function computeResponse(input: ResponseInput): ResponseCurves {
     return { f, v: sens + 20 * Math.log10(Math.max(boxMag * hfMag(f), 1e-6)) };
   });
 
+  // Fase acustica (gradi)
+  const phase: CurvePoint[] = grid.map(f => ({ f, v: (cphase(Gat(f)) * 180) / Math.PI }));
+
   // Group delay = -dφ/dω (ms)
   const groupDelay: CurvePoint[] = grid.map(f => {
     const df = f * 0.01;
@@ -147,7 +150,7 @@ export function computeResponse(input: ResponseInput): ResponseCurves {
   // Impedenza modellata
   const impedance = computeImpedance(input, grid);
 
-  return { spl, excursion, impedance, groupDelay };
+  return { spl, excursion, impedance, groupDelay, phase };
 }
 
 /** Impedenza |Z(f)|: picco(i) di risonanza + salita induttiva Le */

@@ -110,6 +110,13 @@ export function alignmentRatios(ts: TSParams, alignment: AlignmentType): { alpha
       const vb = ts.vas * q * (4.96 * q - 0.136);
       return { alpha: ts.vas / Math.max(vb, ts.vas * 0.2), h: 1 };
     }
+    case 'SC4': {
+      // Bullock SC4 (sub-Chebyshev): per Qts alti, box ampia e Fb sotto Fs.
+      // Estensione in basso maggiore del C4 al prezzo di un lieve ripple.
+      const vb = 22 * ts.vas * Math.pow(q, 2.5);
+      const fb = 0.36 * ts.fs * Math.pow(q, -0.85);
+      return { alpha: ts.vas / vb, h: fb / ts.fs };
+    }
     case 'BESSEL': {
       const vb = 16 * ts.vas * Math.pow(q, 2.9);
       const fb = 0.40 * ts.fs * Math.pow(q, -0.9);
@@ -197,4 +204,133 @@ export function ventedDesign(
     portDiameter: dvMm, portLength: lv, portCount: np,
     portVelocity: pv.velocity, minVentArea: pv.minVentAreaCm2,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  PASSIVE RADIATOR (accordo per massa aggiunta)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Accordo PR: Fb = 1/(2π·√(Cmsr·Mres)). Dato un Fb target e la compliance del
+ * PR (da Vas_pr & Vb), ricava la massa totale necessaria del PR.
+ */
+export function passiveRadiatorTuning(params: {
+  vbL: number;
+  fbTarget: number;
+  prVasL: number;   // Vas del radiatore passivo
+  prSdCm2: number;  // area PR
+  tempC?: number;
+}): { addedMassG: number; totalMassG: number; cmsr: number } {
+  const { vbL, fbTarget, prVasL, prSdCm2, tempC = 20 } = params;
+  const rho = airDensity(tempC);
+  const c = speedOfSound(tempC);
+  const sd = prSdCm2 / 1e4; // m²
+  // Compliance acustica del box: Cab = Vb/(ρc²); compliance PR Cmp da Vas_pr
+  const cmp = (prVasL / 1000) / (rho * c * c * sd * sd); // m/N
+  const cab = (vbL / 1000) / (rho * c * c); // m⁵/N (acustica)
+  // Compliance meccanica risultante del PR caricato dal box (serie con air spring)
+  const cabMech = cab * sd * sd; // m/N
+  const cmsr = (cmp * cabMech) / (cmp + cabMech);
+  // Mres dalla frequenza: Mres = 1/((2πFb)²·Cmsr)
+  const mres = 1 / (Math.pow(TWO_PI * fbTarget, 2) * cmsr); // kg
+  // massa "nativa" del PR ~ stimata da Vas_pr e Sd se nota Fs_pr; qui restituiamo totale
+  const totalMassG = mres * 1000;
+  return { addedMassG: totalMassG, totalMassG, cmsr };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BANDPASS (4°/6° ordine)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Bandpass 4° ordine (single-reflex): camera posteriore sigillata Vr + camera
+ * anteriore ported Vf. S = Vf/Vr (≈0.7 piatto), α = Vas/Vr.
+ */
+export function bandpass4thOrder(ts: TSParams, params: {
+  S: number;       // Vf/Vr
+  alpha: number;   // Vas/Vr
+  dvMm: number;
+  np?: number;
+}): { vrL: number; vfL: number; fb: number; portLengthMm: number; fL: number; fH: number } {
+  const { S, alpha, dvMm, np = 1 } = params;
+  const vr = ts.vas / alpha;
+  const vf = S * vr;
+  // Fc camera posteriore (sealed): Fc = Fs·√(1+α)
+  const fcRear = ts.fs * Math.sqrt(1 + alpha);
+  // Tuning camera anteriore ~ Fc per risposta centrata
+  const fb = fcRear;
+  const lv = portLength(dvMm, fb, vf, np);
+  // Larghezza banda approssimata
+  const bw = 1 + 1 / S;
+  const fL = fb / Math.sqrt(bw);
+  const fH = fb * Math.sqrt(bw);
+  return { vrL: vr, vfL: vf, fb, portLengthMm: lv, fL, fH };
+}
+
+/**
+ * Risposta bandpass 4° ordine (dB, picco 0): fianchi 12 dB/oct simmetrici,
+ * Q di banda = Fb/(fH−fL).
+ */
+export function bandpass4Response(fb: number, fL: number, fH: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
+  const qbp = fb / Math.max(1, fH - fL);
+  return logFreqGrid(fMin, fMax, points).map(f => {
+    const x = qbp * (f / fb - fb / f);
+    return { f, v: 20 * Math.log10(1 / (1 + x * x)) };
+  });
+}
+
+export interface Bandpass6Result {
+  vrL: number;          // camera posteriore (litri)
+  fbRear: number;       // accordo camera posteriore (Hz)
+  portRearLenMm: number;
+  vfL: number;          // camera anteriore (litri)
+  fbFront: number;      // accordo camera anteriore (Hz)
+  portFrontLenMm: number;
+  fL: number;           // stima -3 dB
+  fH: number;
+}
+
+/**
+ * Bandpass 6° ordine serie (entrambe le camere accordate) — PROGETTO DI
+ * PARTENZA: camera posteriore da allineamento QB3, camera anteriore Vf = S·Vr
+ * accordata più in alto (ratio·FbRear). Il modello è una cascata di due
+ * risonatori: buono per dimensionare, da rifinire con misura (o BassBox).
+ */
+export function bandpass6thOrder(ts: TSParams, params: {
+  S?: number;        // Vf/Vr (default 0.6)
+  ratio?: number;    // FbFront/FbRear (default 1.6)
+  dvMm: number;
+  np?: number;
+}): Bandpass6Result {
+  const { S = 0.6, ratio = 1.6, dvMm, np = 1 } = params;
+  const r = alignmentRatios(ts, 'QB3');
+  const vr = ts.vas / r.alpha;
+  const fbRear = r.h * ts.fs;
+  const vf = S * vr;
+  const fbFront = fbRear * ratio;
+  const portRearLenMm = portLength(dvMm, fbRear, vr, np);
+  const portFrontLenMm = portLength(dvMm, fbFront, vf, np);
+  // bordi banda dalla curva stimata (-3 dB dal picco)
+  const curve = bandpass6Response(fbRear, fbFront);
+  const peak = Math.max(...curve.map(p => p.v));
+  const above = curve.filter(p => p.v >= peak - 3);
+  const fL = above.length ? above[0].f : fbRear * 0.8;
+  const fH = above.length ? above[above.length - 1].f : fbFront * 1.2;
+  return { vrL: vr, fbRear, portRearLenMm, vfL: vf, fbFront, portFrontLenMm, fL, fH };
+}
+
+/**
+ * Risposta bandpass 6° ordine stimata (dB, picco 0): prodotto di due
+ * risonatori del 2° ordine centrati sui due accordi (fianchi ±12 dB/oct,
+ * banda più larga del 4°). Stima di progetto, non simulazione completa.
+ */
+export function bandpass6Response(fbRear: number, fbFront: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
+  const q = 1.2;
+  const bp2 = (f: number, f0: number) => {
+    const x = q * (f / f0 - f0 / f);
+    return 1 / Math.sqrt(1 + x * x);
+  };
+  const raw = logFreqGrid(fMin, fMax, points).map(f => ({ f, v: bp2(f, fbRear) * bp2(f, fbFront) }));
+  const peak = Math.max(...raw.map(p => p.v), 1e-9);
+  return raw.map(p => ({ f: p.f, v: 20 * Math.log10(Math.max(p.v / peak, 1e-6)) }));
 }

@@ -1,24 +1,61 @@
-/** Tipi condivisi per i calcolatori audio */
+/** Tipi condivisi per il motore di calcolo acustico */
+
+// ─── Parametri Thiele-Small ───────────────────────────────────────────────────
 
 export interface TSParams {
-  fs: number;      // Hz
-  qts: number;
-  qes: number;
-  qms: number;
-  vas: number;     // litri
-  re?: number;     // Ω
-  le?: number;     // mH
-  sd?: number;     // cm²
-  xmax?: number;   // mm (one-way)
-  bl?: number;     // T·m
-  mms?: number;    // g
-  cms?: number;    // mm/N
-  pe?: number;     // W (thermal)
-  sensitivity?: number; // dB 1W/1m
-  impedance?: number;   // Ω nominale
+  fs: number;        // Hz — risonanza in aria libera
+  qts: number;       // Q totale
+  qes: number;       // Q elettrico
+  qms: number;       // Q meccanico
+  vas: number;       // litri — volume d'aria equivalente alla compliance
+  re?: number;       // Ω — resistenza DC bobina
+  le?: number;       // mH — induttanza bobina
+  sd?: number;       // cm² — area radiante effettiva
+  xmax?: number;     // mm — escursione lineare (one-way)
+  xmech?: number;    // mm — escursione meccanica massima (one-way)
+  bl?: number;       // T·m — fattore di forza
+  mms?: number;      // g — massa mobile totale
+  cms?: number;      // mm/N — compliance sospensioni
+  rms?: number;      // kg/s — resistenza meccanica
+  pe?: number;       // W — potenza termica continua
+  vd?: number;       // cm³ — volume spostato (Sd · Xmax)
+  eta0?: number;     // % — efficienza di riferimento
+  sensitivity?: number; // dB SPL 1W/1m
+  impedance?: number;   // Ω nominali
+  dia?: number;      // mm — diametro effettivo del cono
 }
 
-export type AlignmentType = 'B4' | 'QB3' | 'C4' | 'SBB4' | 'BESSEL' | 'CUSTOM';
+/** Campi che l'utente può inserire: tutti opzionali, il motore deriva i mancanti */
+export type TSInput = Partial<Record<keyof TSParams, number>>;
+
+// ─── Configurazione altoparlanti multipli ─────────────────────────────────────
+
+export type DriverWiring = 'single' | 'parallel' | 'series' | 'isobaric' | 'push-pull';
+
+export interface DriverConfig {
+  count: number;         // numero di altoparlanti
+  wiring: DriverWiring;
+}
+
+// ─── Tipologie di cassa ───────────────────────────────────────────────────────
+
+export type EnclosureType = 'sealed' | 'vented' | 'passive-radiator' | 'bandpass4' | 'bandpass6';
+
+export type AlignmentType = 'B4' | 'QB3' | 'C4' | 'SBB4' | 'SC4' | 'BESSEL' | 'CUSTOM';
+
+export type PortShape = 'circular' | 'slot';
+
+// ─── Assorbente interno ───────────────────────────────────────────────────────
+
+export type DampingLevel = 'none' | 'minimal' | 'normal' | 'heavy';
+
+export interface DampingSpec {
+  qa: number;              // Q delle perdite per assorbimento
+  volumeGain: number;      // incremento apparente di Vb (0.20 = +20%)
+  label: string;
+}
+
+// ─── Risultati ────────────────────────────────────────────────────────────────
 
 export interface SealedResult {
   vb: number;       // litri
@@ -46,8 +83,44 @@ export interface VentedResult {
 export interface CurvePoint { f: number; v: number; }
 
 export interface ResponseCurves {
-  spl: CurvePoint[];        // dB relativi (0 = passband)
-  excursion: CurvePoint[];  // mm one-way @ potenza data
+  spl: CurvePoint[];        // dB (relativi o assoluti se data la sensibilità)
+  excursion: CurvePoint[];  // mm one-way alla potenza indicata
   impedance: CurvePoint[];  // Ω
   groupDelay: CurvePoint[]; // ms
+  phase: CurvePoint[];      // gradi
+}
+
+// ─── Geometria e lista di taglio ──────────────────────────────────────────────
+
+export type BoxShape = 'rectangular' | 'trapezoidal' | 'cylindrical';
+
+export interface BoxDimensions {
+  shape: BoxShape;
+  /** mm — esterne */
+  width: number;
+  height: number;
+  depth: number;
+  /** mm — solo trapezoidale: profondità della faccia posteriore */
+  depthRear?: number;
+  /** mm — solo cilindrico */
+  diameter?: number;
+  wallThickness: number; // mm
+}
+
+export interface VolumeBreakdown {
+  gross: number;        // litri — volume interno lordo
+  driverDisp: number;   // litri — ingombro cestello/magnete
+  portDisp: number;     // litri — volume occupato dai condotti
+  bracingDisp: number;  // litri — rinforzi interni
+  net: number;          // litri — volume netto acustico
+  effective: number;    // litri — netto + guadagno da assorbente
+}
+
+export interface CutPanel {
+  name: string;
+  width: number;    // mm
+  height: number;   // mm
+  thickness: number; // mm
+  quantity: number;
+  note?: string;
 }
