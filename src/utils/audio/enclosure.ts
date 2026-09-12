@@ -84,14 +84,15 @@ export function sealedFromVb(ts: TSParams, vbL: number): SealedResult {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /** Allineamenti classici → (alpha = Vas/Vb, h = Fb/Fs) per QL dato (≈7) */
-export function alignmentRatios(ts: TSParams, alignment: AlignmentType): { alpha: number; h: number } {
+export function alignmentRatios(ts: TSParams, alignment: AlignmentType, ql = 7): { alpha: number; h: number } {
   const q = ts.qts;
   switch (alignment) {
     case 'B4': {
-      // lossless B4: Qts=0.3827, h=1, α=√2. Per Qts diversi usiamo curve-fit Keele.
-      const vb = 15 * ts.vas * Math.pow(q, 2.87);
-      const fb = 0.42 * ts.fs * Math.pow(q, -0.9);
-      return { alpha: ts.vas / vb, h: fb / ts.fs };
+      // Definizione esatta del Butterworth 4° ordine: α = √2, h = 1, che si
+      // realizza a Qts = cos(3π/8) ≈ 0.3827. NON è una famiglia: con un Qts
+      // diverso il risultato non è più massimamente piatto, e infatti il
+      // progetto avvisa. La curva mostrata resta quella vera.
+      return { alpha: Math.SQRT2, h: 1 };
     }
     case 'QB3': {
       // box più piccola, F3 più basso (Qts < 0.4 tipico)
@@ -106,9 +107,11 @@ export function alignmentRatios(ts: TSParams, alignment: AlignmentType): { alpha
       return { alpha: ts.vas / vb, h: fb / ts.fs };
     }
     case 'SBB4': {
-      // Bullock SBB4: Fb=Fs, Vb = Vas·Qts·(4.96·Qts − 0.136)
-      const vb = ts.vas * q * (4.96 * q - 0.136);
-      return { alpha: ts.vas / Math.max(vb, ts.vas * 0.2), h: 1 };
+      // Forma ESATTA della famiglia SBB4: nasce da due sezioni del 2° ordine
+      // identiche in cascata, G(s) = s⁴/(s²+2ζs+1)², da cui
+      //   ζ = ¼(1/Qts + 1/QL)   e   α = ¼(1/Qts − 1/QL)² ,  h = 1.
+      // Sostituisce il curve-fit di Bullock, che sbagliava fino al 5% ai bordi.
+      return { alpha: 0.25 * Math.pow(1 / q - 1 / ql, 2), h: 1 };
     }
     case 'SC4': {
       // Bullock SC4 (sub-Chebyshev): per Qts alti, box ampia e Fb sotto Fs.

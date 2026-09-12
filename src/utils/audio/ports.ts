@@ -51,6 +51,14 @@ export interface PortTypeSpec {
   folded: boolean;
 }
 
+/**
+ * La correzione terminale è la SOMMA delle due bocche: 0.425 per una bocca
+ * flangiata (a filo di un pannello) e 0.307 per una libera. Da qui i tre
+ * valori classici dei tubi: 0.614 (due libere), 0.732 (una flangiata) e
+ * 0.850 (due flangiate). Per gli slot vale lo stesso criterio: più la bocca
+ * interna è circondata dalle pareti della cassa, più si avvicina al caso
+ * flangiato, quindi k cresce col numero di pareti condivise.
+ */
 export const PORT_TYPES: Record<PortType, PortTypeSpec> = {
   'circular-free': {
     label: 'Tubo circolare — estremità libere',
@@ -75,7 +83,7 @@ export const PORT_TYPES: Record<PortType, PortTypeSpec> = {
   slot: {
     label: 'Slot rettangolare',
     description: 'Condotto a fessura costruito con quattro pareti proprie. Si integra bene nel mobile e si può fare molto largo.',
-    section: 'rectangular', endCorrection: 0.830, maxVelocity: 20, bends: 0, sharedWalls: 0, folded: false,
+    section: 'rectangular', endCorrection: 0.732, maxVelocity: 20, bends: 0, sharedWalls: 0, folded: false,
   },
   shelf: {
     label: 'Shelf port — una parete condivisa',
@@ -85,12 +93,12 @@ export const PORT_TYPES: Record<PortType, PortTypeSpec> = {
   'corner-slot': {
     label: 'Slot d\'angolo — due pareti condivise',
     description: 'Slot ricavato in uno spigolo della cassa: due lati sono già le pareti del mobile, bastano due pannelli.',
-    section: 'rectangular', endCorrection: 0.800, maxVelocity: 20, bends: 0, sharedWalls: 2, folded: false,
+    section: 'rectangular', endCorrection: 0.850, maxVelocity: 20, bends: 0, sharedWalls: 2, folded: false,
   },
   triangular: {
     label: 'Condotto triangolare d\'angolo',
     description: 'Un solo pannello diagonale chiude lo spigolo. Semplicissimo da costruire, ma a parità di area gli angoli acuti aumentano le perdite: tienilo più generoso.',
-    section: 'triangular', endCorrection: 0.750, maxVelocity: 18, bends: 0, sharedWalls: 2, folded: false,
+    section: 'triangular', endCorrection: 0.850, maxVelocity: 18, bends: 0, sharedWalls: 2, folded: false,
   },
   'l-folded': {
     label: 'Slot ripiegato a L',

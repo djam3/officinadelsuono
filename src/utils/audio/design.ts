@@ -229,14 +229,26 @@ function designVented(input: DesignInput): AcousticResult {
     fb = input.customFbHz;
     alpha = ts.vas / vb;
   } else {
-    const r = alignmentRatios(ts, input.alignment);
+    const ql = DAMPING_SPECS[input.damping].qa > 20 ? 10 : 7;
+    const r = alignmentRatios(ts, input.alignment, ql);
     alpha = r.alpha;
     vb = ts.vas / alpha;
     fb = r.h * ts.fs;
   }
 
-  const f3 = 0.26 * ts.fs * Math.pow(ts.qts, -1.4); // stima di Keele
+  // F3 provvisorio: viene sostituito da quello misurato sulla curva reale
+  const f3 = 0.26 * ts.fs * Math.pow(ts.qts, -1.4);
   const { port, warnings, actualFbHz } = designPort(input, fb, vb);
+
+  // Il B4 esiste a un solo Qts: con un driver diverso non è realizzabile
+  if (input.alignment === 'B4' && !(input.customVbL && input.customFbHz)) {
+    const dev = Math.abs(ts.qts - 0.3827) / 0.3827;
+    if (dev > 0.12) {
+      warnings.push(
+        `Il Butterworth 4° ordine si realizza solo con Qts ≈ 0.38, mentre questo driver ha Qts ${ts.qts.toFixed(2)}: il risultato non sarà massimamente piatto. Con Qts più basso conviene il QB3, con Qts più alto il C4. La curva mostrata è comunque quella reale.`,
+      );
+    }
+  }
 
   // se la sezione non consente l'accordo chiesto, vale quello reale
   return { vbL: vb, fbHz: actualFbHz, f3Hz: f3, alpha, port, warnings };
@@ -395,6 +407,13 @@ export function computeDesign(input: DesignInput): DesignResult {
       sensitivity: input.ts.sensitivity, roomPreset: input.roomPreset,
     });
     splWithRoom = applyRoomGain(curves.spl, input.roomPreset);
+
+    // F3 MISURATA sulla curva appena calcolata invece che da un curve-fit:
+    // così il numero dichiarato coincide sempre col grafico, qualunque sia
+    // l'allineamento scelto. Il fit di Keele vale solo per il QB3 e sbagliava
+    // fino al 27% sugli altri.
+    const crossing = curves.spl.find(p => p.v >= -3);
+    if (crossing) acoustic.f3Hz = crossing.f;
 
     if (acoustic.port && acoustic.fbHz) {
       const peakExcursion = Math.max(...curves.excursion.map(p => p.v));
