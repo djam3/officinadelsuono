@@ -412,8 +412,21 @@ export function computeDesign(input: DesignInput): DesignResult {
     // così il numero dichiarato coincide sempre col grafico, qualunque sia
     // l'allineamento scelto. Il fit di Keele vale solo per il QB3 e sbagliava
     // fino al 27% sugli altri.
-    const crossing = curves.spl.find(p => p.v >= -3);
-    if (crossing) acoustic.f3Hz = crossing.f;
+    // La soglia cade quasi sempre FRA due campioni: agganciarsi al primo punto
+    // gia' sopra i -3 dB arrotondava sempre per eccesso, di un passo di griglia
+    // (1.27% fra 15 e 500 Hz su 280 punti). Su una chiusa con Qtc 0.84 la F3
+    // dichiarata risultava 35.70 Hz contro i 35.52 Hz della formula chiusa.
+    // Interpolando fra i due campioni che attraversano la soglia il numero
+    // torna a coincidere con la teoria entro il centesimo di hertz.
+    const iCross = curves.spl.findIndex(p => p.v >= -3);
+    if (iCross === 0) {
+      acoustic.f3Hz = curves.spl[0].f;
+    } else if (iCross > 0) {
+      const a = curves.spl[iCross - 1];
+      const b = curves.spl[iCross];
+      const t = (-3 - a.v) / (b.v - a.v);
+      acoustic.f3Hz = a.f + t * (b.f - a.f);
+    }
 
     if (acoustic.port && acoustic.fbHz) {
       const peakExcursion = Math.max(...curves.excursion.map(p => p.v));
