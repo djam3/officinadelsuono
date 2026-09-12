@@ -60,6 +60,7 @@ export interface DesignInput {
   taper?: number;
   bracingPercent?: number;
   mountingDepthMm?: number;
+  /** numero di driver FISICI presenti nella cassa (per l'ingombro) */
   driverCount: number;
 
   /** simulazione */
@@ -179,8 +180,8 @@ export interface AcousticResult {
   port?: PortResult;
   /** bandpass: volumi delle due camere */
   chambers?: { rearL: number; frontL: number; fLow: number; fHigh: number; fbFront?: number };
-  /** radiatore passivo: massa da aggiungere */
-  prAddedMassG?: number;
+  /** radiatore passivo: massa mobile TOTALE che deve avere (zavorra inclusa) */
+  prTotalMassG?: number;
   warnings: string[];
 }
 
@@ -253,10 +254,11 @@ function designPassiveRadiator(input: DesignInput): AcousticResult {
   const tuning = passiveRadiatorTuning({ vbL: base.vb, fbTarget: base.fb, prVasL: prVas, prSdCm2: prSd });
 
   warnings.push('Il radiatore passivo deve avere Sd e volume spostabile almeno pari al doppio del driver, altrimenti va in fondo corsa prima del previsto.');
+  warnings.push(`La massa indicata è quella mobile TOTALE del radiatore: la zavorra da aggiungere è la differenza rispetto a quanto pesa già il PR che scegli (dato di targa del costruttore).`);
 
   return {
     vbL: base.vb, fbHz: base.fb, f3Hz: base.f3, alpha: base.alpha,
-    prAddedMassG: tuning.totalMassG, warnings,
+    prTotalMassG: tuning.totalMassG, warnings,
   };
 }
 

@@ -202,16 +202,23 @@ export function cuttingList(dims: BoxDimensions): CutPanel[] {
 
   const panels: CutPanel[] = [
     { name: 'Frontale (baffle)', width: dims.width, height: dims.height, thickness: t, quantity: 1, note: 'Consigliato doppio spessore per ridurre le risonanze' },
-    { name: 'Posteriore', width: dims.width, height: dims.height, thickness: t, quantity: 1 },
   ];
 
   if (dims.shape === 'trapezoidal' && dims.depthRear) {
+    // Cuneo: la profondità varia lungo l'altezza, quindi il fondo è più
+    // profondo del cielo e il pannello posteriore è INCLINATO — la sua
+    // lunghezza vera è l'ipotenusa, non l'altezza della cassa.
+    const deep = dims.depth - 2 * t;      // profondità sul fondo
+    const shallow = dims.depthRear - 2 * t; // profondità sul cielo
+    const slant = Math.round(Math.hypot(dims.height, deep - shallow));
     panels.push(
-      { name: 'Laterale (trapezoidale)', width: dims.depth - 2 * t, height: dims.height, thickness: t, quantity: 2, note: `Taglio a cuneo: ${dims.depth - 2 * t}mm sul fronte → ${dims.depthRear - 2 * t}mm sul retro` },
-      { name: 'Superiore', width: dims.width - 2 * t, height: dims.depth - 2 * t, thickness: t, quantity: 1, note: 'Trapezio: segue il cuneo dei laterali' },
-      { name: 'Inferiore', width: dims.width - 2 * t, height: dims.depth - 2 * t, thickness: t, quantity: 1, note: 'Trapezio: segue il cuneo dei laterali' },
+      { name: 'Posteriore (inclinato)', width: dims.width, height: slant, thickness: t, quantity: 1, note: `Pannello in pendenza: ${slant}mm di sviluppo contro i ${dims.height}mm di altezza della cassa. Bordi da smussare per appoggiare sui laterali.` },
+      { name: 'Laterale (trapezoidale)', width: deep, height: dims.height, thickness: t, quantity: 2, note: `Trapezio rettangolo: ${deep}mm di profondità sul fondo, ${shallow}mm sul cielo, ${dims.height}mm di altezza.` },
+      { name: 'Cielo', width: dims.width - 2 * t, height: shallow, thickness: t, quantity: 1, note: 'Il lato corto del cuneo.' },
+      { name: 'Fondo', width: dims.width - 2 * t, height: deep, thickness: t, quantity: 1, note: 'Il lato lungo del cuneo.' },
     );
   } else {
+    panels.push({ name: 'Posteriore', width: dims.width, height: dims.height, thickness: t, quantity: 1 });
     panels.push(
       { name: 'Laterale', width: dims.depth - 2 * t, height: dims.height, thickness: t, quantity: 2 },
       { name: 'Superiore', width: dims.width - 2 * t, height: dims.depth - 2 * t, thickness: t, quantity: 1 },

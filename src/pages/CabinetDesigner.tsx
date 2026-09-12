@@ -116,7 +116,9 @@ export function CabinetDesigner() {
       taper: num(dimensions.taper),
       bracingPercent: num(dimensions.bracingPercent),
       mountingDepthMm: num(dimensions.mountingDepthMm),
-      driverCount: effective.radiatingCones,
+      // conta i driver FISICI, non i coni radianti: in un isobarico i cestelli
+      // dentro la cassa sono due per ogni cono che irradia, e occupano volume
+      driverCount: driverConfig.count,
       powerW: num(response.powerW) ?? 100,
       roomPreset: response.roomPreset,
     };

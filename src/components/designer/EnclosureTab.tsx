@@ -132,8 +132,8 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                 {acoustic.peakingDb !== undefined && acoustic.peakingDb > 0 && (
                   <Stat label="Picco in banda" value={acoustic.peakingDb.toFixed(1)} unit="dB" />
                 )}
-                {acoustic.prAddedMassG !== undefined && (
-                  <Stat label="Massa sul radiatore" value={Math.round(acoustic.prAddedMassG)} unit="g" accent />
+                {acoustic.prTotalMassG !== undefined && (
+                  <Stat label="Massa mobile totale PR" value={Math.round(acoustic.prTotalMassG)} unit="g" accent />
                 )}
               </div>
             )}

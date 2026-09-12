@@ -220,22 +220,27 @@ export function passiveRadiatorTuning(params: {
   prVasL: number;   // Vas del radiatore passivo
   prSdCm2: number;  // area PR
   tempC?: number;
-}): { addedMassG: number; totalMassG: number; cmsr: number } {
+}): { totalMassG: number; cmsr: number } {
   const { vbL, fbTarget, prVasL, prSdCm2, tempC = 20 } = params;
   const rho = airDensity(tempC);
   const c = speedOfSound(tempC);
   const sd = prSdCm2 / 1e4; // m²
-  // Compliance acustica del box: Cab = Vb/(ρc²); compliance PR Cmp da Vas_pr
+  // Compliance meccanica del PR, dal suo Vas: Cmp = Vas/(ρc²·Sd²)
   const cmp = (prVasL / 1000) / (rho * c * c * sd * sd); // m/N
-  const cab = (vbL / 1000) / (rho * c * c); // m⁵/N (acustica)
-  // Compliance meccanica risultante del PR caricato dal box (serie con air spring)
-  const cabMech = cab * sd * sd; // m/N
+  // Compliance ACUSTICA dell'aria in cassa: Cab = Vb/(ρc²)
+  const cab = (vbL / 1000) / (rho * c * c); // m⁵/N
+  // Riferita al lato meccanico del PR si DIVIDE per Sd², non si moltiplica:
+  // Cm = x/F, con x = V/Sd e F = p·Sd, quindi Cm = (V/p)/Sd² = Cab/Sd².
+  const cabMech = cab / (sd * sd); // m/N
+  // Sospensione del PR e molla d'aria agiscono in parallelo sullo stesso cono:
+  // le rigidezze si sommano, quindi le compliance si combinano così.
   const cmsr = (cmp * cabMech) / (cmp + cabMech);
   // Mres dalla frequenza: Mres = 1/((2πFb)²·Cmsr)
   const mres = 1 / (Math.pow(TWO_PI * fbTarget, 2) * cmsr); // kg
-  // massa "nativa" del PR ~ stimata da Vas_pr e Sd se nota Fs_pr; qui restituiamo totale
+  // è la massa mobile TOTALE che il radiatore deve avere: quanto zavorrare
+  // dipende da quanto pesa già il PR scelto, dato che il costruttore dichiara
   const totalMassG = mres * 1000;
-  return { addedMassG: totalMassG, totalMassG, cmsr };
+  return { totalMassG, cmsr };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
