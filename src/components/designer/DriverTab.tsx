@@ -145,12 +145,12 @@ export function DriverTab({
       >
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-zinc-600 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-graphite-dim absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Cerca marca, modello o misura (es. 18, B&C, subwoofer)"
-              className="w-full bg-zinc-950 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-brand-orange transition-colors"
+              className="w-full bg-ink border border-paper/10 rounded-none pl-9 pr-3 py-2 text-sm focus:outline-none focus:border-marker transition-colors"
             />
           </div>
           <div className="flex gap-1 shrink-0">
@@ -159,10 +159,10 @@ export function DriverTab({
                 key={value}
                 type="button"
                 onClick={() => setCategory(value)}
-                className={`px-3 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                className={`px-3 py-2 rounded-none text-xs font-bold uppercase tracking-wider transition-all border ${
                   category === value
-                    ? 'bg-brand-orange text-white border-brand-orange'
-                    : 'bg-white/5 text-zinc-400 border-white/10 hover:text-white'
+                    ? 'bg-marker text-white border-marker'
+                    : 'bg-paper/5 text-graphite border-paper/10 hover:text-white'
                 }`}
               >
                 {label}
@@ -175,13 +175,13 @@ export function DriverTab({
           {results.map(d => (
             <div
               key={d.id}
-              className={`rounded-lg border transition-colors ${
-                loadedId === d.id ? 'bg-brand-orange/10 border-brand-orange/50' : 'bg-zinc-950/60 border-white/5 hover:border-brand-orange/40'
+              className={`rounded-none border transition-colors ${
+                loadedId === d.id ? 'bg-marker/10 border-marker/50' : 'bg-ink/60 border-paper/[0.06] hover:border-marker/40'
               }`}
             >
               <button type="button" onClick={() => loadDriver(d)} className="text-left w-full px-3 pt-2">
                 <div className="text-xs font-bold text-white">{d.brand} {d.model}</div>
-                <div className="text-[10px] text-zinc-500">
+                <div className="text-[10px] text-graphite">
                   {d.size}" · {d.type} · {d.impedance}Ω · Fs {d.thielSmall.fs}Hz · Qts {d.thielSmall.qts}
                   {d.thielSmall.vas !== undefined && ` · Vas ${d.thielSmall.vas}L`}
                 </div>
@@ -192,7 +192,7 @@ export function DriverTab({
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={e => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-[10px] text-zinc-600 hover:text-brand-orange transition-colors"
+                  className="inline-flex items-center gap-1 text-[10px] text-graphite-dim hover:text-marker transition-colors"
                 >
                   <ExternalLink className="w-3 h-3" /> scheda ufficiale
                 </a>
@@ -200,19 +200,19 @@ export function DriverTab({
               </div>
             </div>
           ))}
-          {!results.length && <p className="text-xs text-zinc-600 italic">Nessun driver trovato.</p>}
+          {!results.length && <p className="text-xs text-graphite-dim italic">Nessun driver trovato.</p>}
         </div>
 
         {custom.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/5">
-            <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">I tuoi driver salvati</p>
+          <div className="mt-4 pt-4 border-t border-paper/[0.06]">
+            <p className="text-[10px] uppercase tracking-wider text-graphite mb-2">I tuoi driver salvati</p>
             <div className="flex flex-wrap gap-2">
               {custom.map(c => (
-                <span key={c.name} className="inline-flex items-center gap-1.5 bg-zinc-950/60 border border-white/10 rounded-lg pl-3 pr-1.5 py-1">
-                  <button type="button" onClick={() => onChange(c.params)} className="text-xs font-bold text-zinc-200 hover:text-brand-orange transition-colors">
+                <span key={c.name} className="inline-flex items-center gap-1.5 bg-ink/60 border border-paper/10 rounded-none pl-3 pr-1.5 py-1">
+                  <button type="button" onClick={() => onChange(c.params)} className="text-xs font-bold text-paper hover:text-marker transition-colors">
                     {c.name}
                   </button>
-                  <button type="button" onClick={() => handleDelete(c.name)} className="text-zinc-600 hover:text-red-400 transition-colors" title="Elimina">
+                  <button type="button" onClick={() => handleDelete(c.name)} className="text-graphite-dim hover:text-red-400 transition-colors" title="Elimina">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </span>
@@ -221,12 +221,12 @@ export function DriverTab({
           </div>
         )}
 
-        <div className="mt-4 pt-4 border-t border-white/5 flex gap-2">
+        <div className="mt-4 pt-4 border-t border-paper/[0.06] flex gap-2">
           <input
             value={saveName}
             onChange={e => setSaveName(e.target.value)}
             placeholder="Nome per salvare questo driver"
-            className="flex-1 bg-zinc-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand-orange transition-colors"
+            className="flex-1 bg-ink border border-paper/10 rounded-none px-3 py-2 text-sm focus:outline-none focus:border-marker transition-colors"
           />
           <ActionButton onClick={handleSave} disabled={!saveName.trim()}>
             <span className="flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Salva</span>
@@ -235,7 +235,7 @@ export function DriverTab({
       </Section>
 
       {/* Stato di congruenza del set */}
-      <div className={`flex items-start gap-2.5 rounded-xl px-4 py-3 border ${
+      <div className={`flex items-start gap-2.5 rounded-none px-4 py-3 border ${
         validation.errorCount > 0
           ? 'bg-red-500/5 border-red-500/30'
           : 'bg-green-500/5 border-green-500/20'
@@ -243,7 +243,7 @@ export function DriverTab({
         {validation.errorCount > 0
           ? <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
           : <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />}
-        <p className="text-xs text-zinc-300 leading-relaxed">
+        <p className="text-xs text-paper/90 leading-relaxed">
           {validation.errorCount > 0 ? (
             <>
               <span className="font-bold text-red-400">
@@ -312,7 +312,7 @@ export function DriverTab({
       <Section
         title="Configurazione altoparlanti"
         subtitle="Più driver nella stessa cassa: cambia volume richiesto, impedenza e resa."
-        right={<Users className="w-4 h-4 text-zinc-600" />}
+        right={<Users className="w-4 h-4 text-graphite-dim" />}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <NumField

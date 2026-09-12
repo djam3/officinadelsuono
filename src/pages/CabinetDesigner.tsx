@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Speaker, Box, Ruler, LineChart } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
+import { Annot, Griglia } from '../components/blueprint';
 import { TabBar, Stat } from '../components/designer/ui';
 import { DriverTab } from '../components/designer/DriverTab';
 import { EnclosureTab, type EnclosureSettings } from '../components/designer/EnclosureTab';
@@ -154,25 +155,27 @@ export function CabinetDesigner() {
   ];
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-24">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-5">
-            <Box className="w-4 h-4" />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Strumento Tecnico</span>
+          <div className="flex items-baseline gap-3 mb-6">
+            <Annot tone="blueprint">Tav. 10</Annot>
+            <div className="quota flex-1 max-w-[200px]" aria-hidden />
+            <Annot>Banco di progettazione</Annot>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-3 uppercase">
-            Progettazione <span className="text-brand-orange">Casse Acustiche</span>
+          <h1 className="titolo text-4xl md:text-6xl mb-4">
+            Progettazione <span className="text-marker">casse acustiche</span>
           </h1>
-          <p className="text-zinc-400 max-w-3xl">
+          <p className="text-graphite max-w-3xl">
             Inserisci i parametri Thiele-Small del driver e ottieni il progetto completo: volume, accordo,
             condotto, dimensioni, lista di taglio e curve di risposta.
           </p>
-          <p className="text-sm text-zinc-500 mt-3">
+          <p className="text-sm text-graphite mt-3">
             Non sai cosa scrivere in un campo? Accanto a ogni etichetta c'e una{' '}
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-white/20 text-[9px] font-black align-middle">i</span>
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-paper/20 text-[9px] font-black align-middle">i</span>
             {' '}che apre la scheda di quel parametro, oppure vai al{' '}
-            <a href="/glossario" className="text-brand-orange hover:underline">glossario completo</a>.
+            <a href="/glossario" className="text-marker hover:underline">glossario completo</a>.
           </p>
         </div>
 
@@ -203,7 +206,7 @@ export function CabinetDesigner() {
           </div>
         )}
 
-        <div className="bg-zinc-900/50 border border-white/10 rounded-3xl overflow-hidden">
+        <div className="bg-ink-2/70 border border-paper/10 rounded-none overflow-hidden">
           <div className="px-5 pt-2">
             <TabBar<TabId> tabs={tabs} active={tab} onChange={id => setTab(id)} />
           </div>
@@ -267,7 +270,7 @@ export function CabinetDesigner() {
           </p>
         )}
 
-        <p className="text-xs text-zinc-600 mt-6 leading-relaxed">
+        <p className="text-xs text-graphite-dim mt-6 leading-relaxed">
           Motore di calcolo basato sulle formule Thiele/Small pubblicate (Thiele 1961, Small 1972–73, Keele 1973,
           Bullock 1981, Dickason «Loudspeaker Design Cookbook»). Modello lineare small-signal, valido sotto i
           ~300 Hz: non simula distorsione, compressione di potenza, breakup del cono né l'acustica reale della

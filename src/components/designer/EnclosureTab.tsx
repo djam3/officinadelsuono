@@ -59,12 +59,12 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
           }
         >
           <div className="flex items-start gap-3">
-            <Lightbulb className="w-4 h-4 text-brand-orange shrink-0 mt-0.5" />
+            <Lightbulb className="w-4 h-4 text-marker shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-zinc-300 leading-relaxed">{suggestion.reason}</p>
-              <p className="text-xs text-zinc-500 mt-2">
-                Consigliato: <span className="text-brand-orange font-bold">{ENCLOSURE_LABELS[suggestion.type]}</span>
-                {suggestion.type === 'vented' && <> con allineamento <span className="text-brand-orange font-bold">{suggestion.alignment}</span></>}
+              <p className="text-sm text-paper/90 leading-relaxed">{suggestion.reason}</p>
+              <p className="text-xs text-graphite mt-2">
+                Consigliato: <span className="text-marker font-bold">{ENCLOSURE_LABELS[suggestion.type]}</span>
+                {suggestion.type === 'vented' && <> con allineamento <span className="text-marker font-bold">{suggestion.alignment}</span></>}
                 {suggestion.alternatives.length > 0 && (
                   <> · alternative: {suggestion.alternatives.map(a => ENCLOSURE_LABELS[a]).join(', ')}</>
                 )}
@@ -102,7 +102,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                   onChange={v => set('alignment', v as AlignmentType)}
                   options={ALIGNMENTS.map(a => ({ value: a.value, label: a.label }))}
                 />
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
+                <p className="text-[11px] text-graphite leading-relaxed">
                   {ALIGNMENTS.find(a => a.value === settings.alignment)?.description}
                 </p>
               </>
@@ -168,7 +168,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             )}
 
             {acoustic?.chambers && (
-              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/5">
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-paper/[0.06]">
                 <Stat label="Camera posteriore" value={acoustic.chambers.rearL.toFixed(1)} unit="L" />
                 <Stat label="Camera anteriore" value={acoustic.chambers.frontL.toFixed(1)} unit="L" />
                 <Stat label="Banda utile" value={`${Math.round(acoustic.chambers.fLow)}–${Math.round(acoustic.chambers.fHigh)}`} unit="Hz" accent />
@@ -200,12 +200,12 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             />
           </div>
 
-          <div className="flex items-start gap-2 mb-4 text-[11px] text-zinc-500 leading-relaxed">
-            <Wind className="w-3.5 h-3.5 shrink-0 mt-0.5 text-zinc-600" />
+          <div className="flex items-start gap-2 mb-4 text-[11px] text-graphite leading-relaxed">
+            <Wind className="w-3.5 h-3.5 shrink-0 mt-0.5 text-graphite-dim" />
             <span>
               {portSpec.description}
-              {' '}Soglia di turbolenza <span className="text-zinc-300 font-bold">{portSpec.maxVelocity} m/s</span>,
-              correzione terminale <span className="text-zinc-300 font-bold">k = {portSpec.endCorrection}</span>.
+              {' '}Soglia di turbolenza <span className="text-paper/90 font-bold">{portSpec.maxVelocity} m/s</span>,
+              correzione terminale <span className="text-paper/90 font-bold">k = {portSpec.endCorrection}</span>.
             </span>
           </div>
 
@@ -235,7 +235,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
 
           {acoustic?.port && (
             <>
-              <div className="bg-zinc-950/60 border border-white/5 rounded-xl p-3 mb-4">
+              <div className="bg-ink/60 border border-paper/[0.06] rounded-none p-3 mb-4">
                 <PortDrawing
                   geometry={acoustic.port.geometry}
                   lengthMm={acoustic.port.lengthMm}
@@ -258,13 +258,13 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
               </div>
 
               {acoustic.port.segments && acoustic.port.segments.length > 1 && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Sviluppo del condotto</p>
+                <div className="mt-4 pt-4 border-t border-paper/[0.06]">
+                  <p className="text-[10px] uppercase tracking-wider text-graphite mb-2">Sviluppo del condotto</p>
                   <div className="space-y-1">
                     {acoustic.port.segments.map((s, i) => (
                       <div key={i} className="flex justify-between text-xs">
-                        <span className="text-zinc-400">{s.name}</span>
-                        <span className="text-zinc-200 font-bold tabular-nums">{s.lengthMm} mm</span>
+                        <span className="text-graphite">{s.name}</span>
+                        <span className="text-paper font-bold tabular-nums">{s.lengthMm} mm</span>
                       </div>
                     ))}
                   </div>
@@ -272,13 +272,13 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
               )}
 
               {acoustic.port.panels && acoustic.port.panels.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-white/5">
-                  <p className="text-[10px] uppercase tracking-wider text-zinc-500 mb-2">Pezzi per costruirlo</p>
+                <div className="mt-4 pt-4 border-t border-paper/[0.06]">
+                  <p className="text-[10px] uppercase tracking-wider text-graphite mb-2">Pezzi per costruirlo</p>
                   <div className="space-y-1">
                     {acoustic.port.panels.map((p, i) => (
                       <div key={i} className="flex justify-between text-xs">
-                        <span className="text-zinc-400">{p.name} ×{p.quantity}</span>
-                        <span className="text-zinc-200 font-bold tabular-nums">{p.widthMm} × {p.heightMm} mm</span>
+                        <span className="text-graphite">{p.name} ×{p.quantity}</span>
+                        <span className="text-paper font-bold tabular-nums">{p.widthMm} × {p.heightMm} mm</span>
                       </div>
                     ))}
                   </div>

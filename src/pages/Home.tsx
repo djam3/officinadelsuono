@@ -1,335 +1,262 @@
-import { ArrowRight, MessageCircle, ShieldCheck, Award, Package, Star, CheckCircle } from 'lucide-react';
+/**
+ * Pagina iniziale, rifatta attorno a quello che il sito fa davvero oggi:
+ * un calcolatore di casse acustiche e il glossario che lo accompagna.
+ *
+ * L'impianto grafico è quello della tavola di disegno — griglia millimetrata,
+ * quote, cartiglio, sezioni numerate — perché è la stessa grammatica che il
+ * calcolatore usa quando produce disegni e liste di taglio.
+ */
+
+import { ArrowRight, MessageCircle, Ruler, Waves, Scissors, ScrollText } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
-import { Logo } from '../components/Logo';
-import { HeroBackground } from '../components/HeroBackground';
-import { MouseGlow } from '../components/MouseGlow';
+import { Annot, Cartiglio, Griglia, IntestazioneSezione, Quota, Righello, Tavola } from '../components/blueprint';
+import { GLOSSARY } from '../data/glossary';
+import { DRIVER_LIBRARY } from '../data/driverLibrary';
 import { BUSINESS, waLink } from '../config/site';
 
 interface HomeProps {
   onNavigate: (page: string) => void;
 }
 
-const DIFFERENTIATORS = [
+const LAVORAZIONI = [
   {
-    icon: Award,
-    title: 'Esperto certificato',
-    body: 'Consulenza tecnica specializzata firmata da un Sound Engineer con Certificazione MAT Academy.',
-    highlight: 'Certificazione MAT Academy',
+    n: '01',
+    icon: Ruler,
+    titolo: 'Parametri che si controllano da soli',
+    corpo:
+      'I parametri Thiele-Small sono legati da identità esatte. Il calcolatore le verifica tutte e accende un pallino rosso quando due valori non possono coesistere sullo stesso altoparlante — e ti dice quale relazione non torna, non solo che qualcosa non va.',
+    nota: 'Verifica incrociata',
   },
   {
-    icon: Package,
-    title: 'Attrezzatura professionale',
-    body: 'Solo hardware audio/DJ di livello professionale, controllato e testato prima di ogni consegna.',
-    highlight: 'Marchi professionali',
+    n: '02',
+    icon: Waves,
+    titolo: 'Cinque tipi di cassa, un modello per ciascuno',
+    corpo:
+      'Chiusa, bass-reflex, radiatore passivo, bandpass di quarto e di sesto ordine. Ognuno con la sua fisica: il radiatore passivo non è un reflex con un tappo, e il bandpass non è una campana disegnata a mano. Curve di risposta, escursione, impedenza, fase e ritardo di gruppo.',
+    nota: 'Circuito equivalente',
   },
   {
-    icon: MessageCircle,
-    title: 'Assistenza diretta su WhatsApp',
-    body: 'Sempre raggiungibile per una consulenza gratuita o per un chiarimento tecnico, senza intermediari.',
-    highlight: 'Risposta in 15 minuti',
+    n: '03',
+    icon: Scissors,
+    titolo: 'Dalla teoria al pannello da tagliare',
+    corpo:
+      'Volume netto e lordo, ingombri di driver e condotto, dimensioni esterne, lista di taglio pezzo per pezzo con le quote, peso stimato e metri quadri di pannello. Compreso il disegno del condotto, che cambia forma a seconda della geometria scelta.',
+    nota: 'Lista di taglio',
+  },
+  {
+    n: '04',
+    icon: ScrollText,
+    titolo: 'Ogni campo ha la sua scheda',
+    corpo:
+      'Accanto a ogni parametro c’è una ⓘ che apre una pagina dedicata: che cos’è, a cosa serve nel progetto, quali valori aspettarsi e dove si sbaglia di solito. Con le formule, i valori tipici e la fonte da cui vengono i numeri.',
+    nota: 'Glossario',
   },
 ];
 
 export function Home({ onNavigate }: HomeProps) {
   useSEO({
-    title: `${BUSINESS.name} — ${BUSINESS.tagline}`,
-    description: BUSINESS.description,
+    title: 'Officina del Suono — Progettazione di casse acustiche',
+    description:
+      'Calcolatore per casse acustiche: parametri Thiele-Small verificati, cinque tipi di cassa, curve di risposta, dimensioni e lista di taglio. Con il glossario di ogni parametro.',
     url: '/',
   });
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Parallax: il progresso dello scroll della pagina intera
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ['start start', 'end end'] });
-  // L'hero si muove più lentamente (parallax)
-  const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -80]);
+  const nVoci = GLOSSARY.length;
+  const nDriver = DRIVER_LIBRARY.length;
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-black text-white relative font-sans overflow-x-hidden">
-      <MouseGlow />
+    <div className="bg-ink text-paper">
+      {/* ═══ TAVOLA 00 — apertura ═══════════════════════════════════════ */}
+      <section className="relative overflow-hidden border-b border-paper/10">
+        <Griglia />
 
-      {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col items-center justify-center pt-20 pb-20 md:pt-24 md:pb-24 overflow-hidden">
-        <HeroBackground />
-        {/* Parallax wrapper per il contenuto hero */}
-        <motion.div className="absolute inset-0 z-[1]" style={{ y: heroY }} />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 md:pt-24 md:pb-28">
+          <div className="flex items-baseline gap-3 mb-8 animate-fade-in-up">
+            <Annot tone="blueprint">Tav. 00</Annot>
+            <div className="quota flex-1 max-w-[180px]" />
+            <Annot>Scala 1:1</Annot>
+          </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 50 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 1.5, ease: [0.19, 1, 0.22, 1] }}
-            className="flex justify-center mb-8 md:mb-12 pointer-events-none"
-          >
-            <motion.div
-              animate={{
-                scale: [1, 1.1, 1],
-                filter: ["brightness(1) blur(0px)", "brightness(1.5) blur(2px)", "brightness(1) blur(0px)"],
-              }}
-              transition={{
-                duration: 6,
-                ease: "easeInOut",
-                repeat: Infinity,
-              }}
-            >
-              <Logo className="w-20 h-20 md:w-32 md:h-32 drop-shadow-[0_0_30px_rgba(255,100,0,0.5)]" />
-            </motion.div>
-          </motion.div>
+          <h1 className="titolo text-[13vw] leading-[0.86] sm:text-7xl md:text-8xl lg:text-9xl mb-8 animate-fade-in-up">
+            <span className="block text-paper">Si progetta</span>
+            <span className="block titolo-tracciato">prima</span>
+            <span className="block text-marker">di tagliare.</span>
+          </h1>
 
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-6"
-          >
-            <ShieldCheck className="w-5 h-5 shrink-0" />
-            <span className="text-xs md:text-sm font-black tracking-[0.2em] uppercase">
-              Sound Engineer Certificato MAT Academy
-            </span>
-          </motion.div>
+          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
+            <p className="text-lg md:text-xl text-graphite leading-relaxed max-w-2xl animate-fade-in-up">
+              Un calcolatore per casse acustiche che non ti chiede di fidarti. Inserisci i parametri
+              dell&rsquo;altoparlante e ottieni volume, accordo, condotto, dimensioni, lista di taglio e curve
+              di risposta — con ogni numero riconducibile alla formula da cui esce.
+            </p>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="text-5xl md:text-[6.5rem] font-black tracking-tighter mb-5 md:mb-7 leading-[1.05] font-display uppercase"
-          >
-            Il suono giusto<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange to-orange-500 drop-shadow-[0_0_20px_rgba(255,100,0,0.3)] text-shimmer">
-              per ogni progetto.
-            </span>
-          </motion.h1>
+            <div className="flex flex-col sm:flex-row gap-3 shrink-0 animate-fade-in-up">
+              <button onClick={() => onNavigate('cabinet-designer')} className="btn-marker justify-center">
+                Apri il calcolatore <ArrowRight className="w-4 h-4" />
+              </button>
+              <button onClick={() => onNavigate('glossary')} className="btn-tratto justify-center">
+                Glossario
+              </button>
+            </div>
+          </div>
+        </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.5, delay: 1.2, ease: "easeOut" }}
-            className="text-lg md:text-2xl text-zinc-300 max-w-3xl mx-auto mb-8 md:mb-10 leading-relaxed font-medium tracking-tight"
-          >
-            {BUSINESS.description}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, delay: 1.5, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-6 px-4"
-          >
-            <a
-              href={waLink(`Ciao! Vorrei una consulenza tecnica.`)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-premium w-full sm:w-auto px-12 py-5 bg-brand-orange hover:bg-orange-600 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 group shadow-[0_20px_50px_rgba(255,95,0,0.3)] hover:scale-105 active:scale-95 glow-pulse"
-            >
-              Scrivimi su WhatsApp
-              <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform shrink-0" />
-            </a>
-
-            <button
-              onClick={() => onNavigate('contact')}
-              className="w-full sm:w-auto px-12 py-5 bg-zinc-900/50 hover:bg-zinc-800 text-white rounded-[1.5rem] font-black text-xl transition-all flex items-center justify-center gap-3 border border-white/10 backdrop-blur-md"
-            >
-              <MessageCircle className="w-6 h-6 text-green-500 shrink-0" />
-              Contattaci
-            </button>
-          </motion.div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
+          <Cartiglio
+            titolo="Officina del Suono — banco di progettazione"
+            campi={[
+              { etichetta: 'Tipi di cassa', valore: '5' },
+              { etichetta: 'Schede parametri', valore: String(nVoci) },
+              { etichetta: 'Driver in libreria', valore: String(nDriver) },
+              { etichetta: 'Costo', valore: 'Gratuito' },
+            ]}
+          />
         </div>
       </section>
 
-      {/* Prove Sociali — Social Proof Bar */}
-      <section className="py-10 bg-zinc-950 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
-            {[
-              { value: 'MAT', label: 'Certificazione Academy' },
-              { value: '15 min', label: 'Consulenza gratuita' },
-              { value: BUSINESS.area, label: 'Zona di attività' },
-              { value: '100%', label: 'Clienti soddisfatti' },
-            ].map((stat, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="text-center"
-              >
-                <p className="text-3xl md:text-4xl font-black text-brand-orange tracking-tighter">{stat.value}</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-[0.15em] font-bold mt-1">{stat.label}</p>
-              </motion.div>
+      {/* ═══ TAVOLA 01 — cosa fa ════════════════════════════════════════ */}
+      <section className="relative border-b border-paper/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+          <IntestazioneSezione
+            numero="Tav. 01"
+            occhiello="Lavorazioni"
+            titolo={<>Cosa trovi <span className="text-marker">sul banco</span></>}
+            sottotitolo="Quattro cose che lo strumento fa, e che puoi verificare mentre le fa."
+            className="mb-14"
+          />
+
+          <div className="grid md:grid-cols-2 gap-px bg-paper/10 border border-paper/10">
+            {LAVORAZIONI.map(l => (
+              <div key={l.n} className="bg-ink p-7 md:p-9 relative group">
+                <div className="flex items-center justify-between mb-6">
+                  <Annot tone="blueprint">{l.n}</Annot>
+                  <Annot>{l.nota}</Annot>
+                </div>
+                <l.icon className="w-7 h-7 text-marker mb-5" strokeWidth={1.4} />
+                <h3 className="titolo text-xl md:text-2xl mb-3 text-paper">{l.titolo}</h3>
+                <div className="quota max-w-[72px] mb-4" aria-hidden />
+                <p className="text-graphite leading-relaxed text-[15px]">{l.corpo}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Perché Sceglierci — Competitive Differentiators */}
-      <section className="py-24 md:py-32 bg-zinc-950 border-t border-white/5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,95,0,0.04),transparent_60%)]" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16 md:mb-20"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-orange/10 text-brand-orange border border-brand-orange/20 mb-8">
-              <Star className="w-4 h-4" />
-              <span className="text-xs font-black uppercase tracking-[0.2em]">Cosa Ci Rende Diversi</span>
+      {/* ═══ TAVOLA 02 — il metodo ══════════════════════════════════════ */}
+      <section className="relative border-b border-paper/10 mdf">
+        <Griglia fade={false} className="opacity-40" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+          <IntestazioneSezione
+            numero="Tav. 02"
+            occhiello="Metodo"
+            titolo={<>Come faccio a dire <span className="text-marker">che è giusto</span></>}
+            sottotitolo={'Un calcolatore può sbagliare in silenzio per anni. L’unico modo per accorgersene è controllarlo contro qualcosa che non dipende da lui.'}
+            className="mb-14"
+          />
+
+          <div className="grid md:grid-cols-3 gap-5">
+            <Tavola className="p-7">
+              <Annot tone="blueprint">Casi limite</Annot>
+              <p className="mt-4 text-paper leading-relaxed text-[15px]">
+                Un radiatore passivo senza sospensione <em>deve</em> ridursi a un bass-reflex; con la membrana
+                bloccata, a una cassa chiusa. Entrambi i controlli tornano entro tre centomillesimi di decibel.
+              </p>
+              <p className="mt-4 font-mono text-2xl text-marker">0,00003 dB</p>
+            </Tavola>
+
+            <Tavola className="p-7">
+              <Annot tone="blueprint">Fonti pubblicate</Annot>
+              <p className="mt-4 text-paper leading-relaxed text-[15px]">
+                I valori delle perdite di cassa sono quelli misurati da Small nel 1973, non stime: cassa nuda
+                oltre 100, rivestita 30–80, riempita 7–10. Ogni scheda del glossario dice da dove vengono i
+                suoi numeri.
+              </p>
+              <p className="mt-4 font-mono text-2xl text-marker">JAES 1971–76</p>
+            </Tavola>
+
+            <Tavola className="p-7">
+              <Annot tone="blueprint">Dati verificati</Annot>
+              <p className="mt-4 text-paper leading-relaxed text-[15px]">
+                I driver in libreria vengono uno per uno dalle schede tecniche ufficiali dei costruttori, con
+                il link alla pagina di origine. Dove i dati del costruttore non chiudono fra loro, la scheda
+                lo dice.
+              </p>
+              <p className="mt-4 font-mono text-2xl text-marker">{nDriver} driver</p>
+            </Tavola>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ TAVOLA 03 — glossario ══════════════════════════════════════ */}
+      <section className="relative border-b border-paper/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <div>
+              <IntestazioneSezione
+                numero="Tav. 03"
+                occhiello="Glossario"
+                titolo={<>Se un campo non ti <span className="text-marker">dice niente</span></>}
+                sottotitolo={`${nVoci} schede, una per parametro. Nessuna presuppone che tu sappia già cos’è: si parte da cosa significa, si arriva a cosa cambia nel progetto.`}
+                className="mb-8"
+              />
+              <button onClick={() => onNavigate('glossary')} className="btn-tratto">
+                Sfoglia il glossario <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tighter mb-6 uppercase">
-              Non è la solita <span className="text-brand-orange">attrezzatura audio</span>.
-            </h2>
-            <p className="text-zinc-500 text-lg md:text-xl max-w-3xl mx-auto font-medium">
-              Ogni consiglio nasce da esperienza diretta sul campo. <strong className="text-white">Ti aiutiamo a scegliere bene, senza fretta e senza fregature.</strong>
-            </p>
-          </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Hero Image — Amerigo al mixer (foto originale animata) */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 30 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 1.2, ease: [0.19, 1, 0.22, 1] }}
-              className="relative flex justify-center"
-            >
-              <div className="relative group">
-                {/* Glow animato dietro l'immagine */}
-                <motion.div
-                  className="absolute -inset-4 bg-brand-orange/15 blur-[60px] rounded-3xl"
-                  animate={{
-                    opacity: [0.4, 0.7, 0.4],
-                    scale: [0.9, 1.05, 0.9],
-                  }}
-                  transition={{ duration: 4, ease: "easeInOut", repeat: Infinity }}
-                />
-                {/* Container con bordo e overflow hidden */}
-                <div className="relative z-10 rounded-3xl overflow-hidden border border-white/10 shadow-[0_30px_80px_rgba(0,0,0,0.6)]">
-                  {/* Gradient overlay leggero per blend con sfondo scuro */}
-                  <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-                  {/* Bordo luminoso animato */}
-                  <motion.div
-                    className="absolute inset-0 z-30 rounded-3xl pointer-events-none"
-                    style={{ boxShadow: 'inset 0 0 30px rgba(255,95,0,0.1)' }}
-                    animate={{
-                      boxShadow: [
-                        'inset 0 0 30px rgba(255,95,0,0.05)',
-                        'inset 0 0 50px rgba(255,95,0,0.15)',
-                        'inset 0 0 30px rgba(255,95,0,0.05)',
-                      ],
-                    }}
-                    transition={{ duration: 3, ease: "easeInOut", repeat: Infinity }}
-                  />
-                  {/* Immagine con slow zoom continuo */}
-                  <motion.img
-                    src="/amerigo_hero.png"
-                    alt="Amerigo De Cristofaro al mixer"
-                    className="relative w-full max-w-lg mx-auto block"
-                    animate={{
-                      scale: [1, 1.05, 1],
-                    }}
-                    transition={{ duration: 8, ease: "easeInOut", repeat: Infinity }}
-                  />
-                </div>
-                {/* Badge MAT Academy sovrapposto */}
-                <motion.div
-                  className="absolute -bottom-3 -right-3 z-30 bg-black/90 border border-brand-orange/40 rounded-xl px-3 py-2 flex items-center gap-2 backdrop-blur-md badge-shine"
-                  initial={{ opacity: 0, scale: 0, rotate: -10 }}
-                  whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: 0.8, ease: "backOut" }}
+            <div className="grid sm:grid-cols-2 gap-px bg-paper/10 border border-paper/10">
+              {GLOSSARY.slice(0, 6).map(v => (
+                <a
+                  key={v.id}
+                  href={`/glossario/${v.id}`}
+                  className="bg-ink p-5 hover:bg-paper/[0.03] transition-colors group"
                 >
-                  <Award className="w-4 h-4 text-brand-orange" />
-                  <span className="text-xs font-black text-brand-orange uppercase tracking-wider">MAT Certified</span>
-                </motion.div>
-              </div>
-            </motion.div>
-
-            {/* Competitive Advantages */}
-            <div className="space-y-6">
-              {DIFFERENTIATORS.map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: 30 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, delay: i * 0.15, ease: [0.19, 1, 0.22, 1] }}
-                >
-                  <div className="flex gap-5 p-5 rounded-2xl bg-black/40 border border-white/5 hover:border-brand-orange/30 transition-all duration-300 group card-hover-glow">
-                    <div className="w-12 h-12 rounded-xl bg-brand-orange/10 flex items-center justify-center shrink-0 group-hover:bg-brand-orange/20 transition-colors">
-                      <item.icon className="w-6 h-6 text-brand-orange" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-black mb-1 uppercase tracking-tight">{item.title}</h3>
-                      <p className="text-zinc-400 text-sm leading-relaxed mb-2">{item.body}</p>
-                      <span className="inline-flex items-center gap-1.5 text-brand-orange text-xs font-bold">
-                        <CheckCircle className="w-3.5 h-3.5" />
-                        {item.highlight}
-                      </span>
-                    </div>
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="titolo text-xl text-marker">{v.symbol}</span>
+                    {v.unit && <Annot>{v.unit}</Annot>}
                   </div>
-                </motion.div>
+                  <p className="text-sm text-paper/90 group-hover:text-paper transition-colors leading-snug">
+                    {v.title}
+                  </p>
+                </a>
               ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Consulenza Gratuita CTA */}
-      <section className="py-20 md:py-28 bg-zinc-950 border-t border-white/5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(34,197,94,0.05),transparent_50%)]" />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="w-20 h-20 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center mx-auto mb-8">
-              <MessageCircle className="w-10 h-10 text-green-500" />
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter mb-6 uppercase">
-              Consulenza <span className="text-green-500">Gratuita</span>
-            </h2>
-            <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-4 leading-relaxed">
-              Non sai cosa scegliere? Scrivimi su WhatsApp e in <strong className="text-white">15 minuti</strong> ti aiuto a trovare la soluzione giusta per le tue esigenze.
-            </p>
-            <p className="text-zinc-600 text-sm mb-10">
-              Nessun impegno. Nessun costo. Solo il consiglio di un esperto certificato.
-            </p>
+      {/* ═══ TAVOLA 04 — contatto ═══════════════════════════════════════ */}
+      <section className="relative overflow-hidden">
+        <Griglia />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+          <Quota valore={`${BUSINESS.area}`} className="mb-10 max-w-md" />
+
+          <h2 className="titolo text-4xl md:text-6xl mb-6 max-w-3xl">
+            Il progetto è pronto.<br />
+            <span className="text-marker">Serve una mano a costruirlo?</span>
+          </h2>
+          <p className="text-graphite leading-relaxed max-w-2xl mb-10">
+            Lo strumento ti porta fino alla lista di taglio. Se dopo servono un parere sul driver da scegliere,
+            una verifica del progetto o l&rsquo;attrezzatura per metterlo in funzione, si può parlarne.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-3">
             <a
-              href={waLink('Ciao! Vorrei una consulenza gratuita.')}
+              href={waLink('Ciao! Ho usato il calcolatore sul sito e avrei bisogno di un parere.')}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-premium inline-flex items-center gap-3 px-10 py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-xl transition-all shadow-[0_15px_40px_rgba(34,197,94,0.25)] hover:scale-105 active:scale-95"
+              className="btn-marker justify-center"
             >
-              <MessageCircle className="w-6 h-6" />
-              Scrivimi su WhatsApp
+              <MessageCircle className="w-4 h-4" /> Scrivimi su WhatsApp
             </a>
-          </motion.div>
+            <button onClick={() => onNavigate('contact')} className="btn-tratto justify-center">
+              Tutti i contatti
+            </button>
+          </div>
+
+          <Righello fitto className="mt-16" />
         </div>
       </section>
-
-      {/* WhatsApp Sticky Button */}
-      <a
-        href={waLink('Ciao! Vorrei una consulenza tecnica.')}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Scrivici su WhatsApp"
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white rounded-full shadow-[0_8px_30px_rgba(34,197,94,0.4)] hover:shadow-[0_8px_40px_rgba(34,197,94,0.6)] transition-all duration-300 group overflow-hidden"
-      >
-        {/* Icona sempre visibile */}
-        <span className="flex items-center justify-center w-14 h-14 shrink-0">
-          <MessageCircle className="w-7 h-7" />
-        </span>
-        {/* Label che si espande su hover (solo desktop) */}
-        <span className="hidden md:block max-w-0 group-hover:max-w-[160px] overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out pr-0 group-hover:pr-5 text-sm font-black">
-          Chiedimi consiglio
-        </span>
-      </a>
     </div>
   );
 }

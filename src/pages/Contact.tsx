@@ -20,15 +20,15 @@ const FAQS = [
 
 function FAQItem({ question, answer, isOpen, onClick }: { question: string, answer: string, isOpen: boolean, onClick: () => void }) {
   return (
-    <div className="border-b border-white/5 last:border-0">
+    <div className="border-b border-paper/[0.06] last:border-0">
       <button
         onClick={onClick}
         className="w-full py-6 flex items-center justify-between text-left group"
       >
-        <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-brand-orange' : 'text-white group-hover:text-brand-orange'}`}>
+        <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-marker' : 'text-white group-hover:text-marker'}`}>
           {question}
         </span>
-        <ChevronDown className={`w-5 h-5 text-zinc-500 transition-transform duration-300 ${isOpen ? 'rotate-180 text-brand-orange' : ''}`} />
+        <ChevronDown className={`w-5 h-5 text-graphite transition-transform duration-300 ${isOpen ? 'rotate-180 text-marker' : ''}`} />
       </button>
       <AnimatePresence>
         {isOpen && (
@@ -39,7 +39,7 @@ function FAQItem({ question, answer, isOpen, onClick }: { question: string, answ
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <p className="pb-6 text-zinc-400 leading-relaxed">
+            <p className="pb-6 text-graphite leading-relaxed">
               {answer}
             </p>
           </motion.div>
@@ -59,7 +59,7 @@ export function Contact() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white pt-24 pb-16">
+    <div className="min-h-screen bg-ink text-white pt-24 pb-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -71,51 +71,51 @@ export function Contact() {
           </h1>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
-              <h2 className="text-2xl font-bold mb-6 text-brand-orange">Dati Aziendali</h2>
+            <div className="bg-ink-2 border border-paper/10 rounded-none p-8 shadow-2xl">
+              <h2 className="text-2xl font-bold mb-6 text-marker">Dati Aziendali</h2>
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-zinc-400" />
+                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5 text-graphite" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Sede Operativa</h3>
-                    <p className="text-zinc-400">Officinadelsuono di Amerigo De Cristofaro<br />Strada provinciale 30<br />Forino (AV) 83020</p>
+                    <p className="text-graphite">Officinadelsuono di Amerigo De Cristofaro<br />Strada provinciale 30<br />Forino (AV) 83020</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
-                    <Phone className="w-5 h-5 text-zinc-400" />
+                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
+                    <Phone className="w-5 h-5 text-graphite" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">WhatsApp Business</h3>
-                    <a href="https://wa.me/393477397016" target="_blank" rel="noopener noreferrer" className="text-brand-orange hover:text-white transition-colors">
+                    <a href="https://wa.me/393477397016" target="_blank" rel="noopener noreferrer" className="text-marker hover:text-white transition-colors">
                       +39 347 7397016
                     </a>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-zinc-400" />
+                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
+                    <Mail className="w-5 h-5 text-graphite" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Email Supporto</h3>
-                    <a href="mailto:info@officina-del-suono.it" className="text-brand-orange hover:text-white transition-colors">
+                    <a href="mailto:info@officina-del-suono.it" className="text-marker hover:text-white transition-colors">
                       info@officina-del-suono.it
                     </a>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-zinc-400" />
+                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
+                    <Clock className="w-5 h-5 text-graphite" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Orari di Consulenza</h3>
-                    <p className="text-zinc-400">
+                    <p className="text-graphite">
                       Sempre attivi tramite Chat AI<br />
                       Risposta umana: Lun-Ven 09:00 - 18:00
                     </p>
@@ -124,19 +124,19 @@ export function Contact() {
               </div>
             </div>
 
-            <div className="bg-zinc-900 border border-white/10 rounded-3xl p-8 shadow-2xl flex flex-col justify-center items-center text-center">
+            <div className="bg-ink-2 border border-paper/10 rounded-none p-8 shadow-2xl flex flex-col justify-center items-center text-center">
               <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
                 <MessageCircle className="w-10 h-10 text-green-500" />
               </div>
               <h2 className="text-2xl font-bold mb-4">Hai bisogno di aiuto?</h2>
-              <p className="text-zinc-400 mb-8">
+              <p className="text-graphite mb-8">
                 Siamo qui per aiutarti a scegliere il setup perfetto per le tue esigenze. Scrivici su WhatsApp per una risposta immediata.
               </p>
               <a 
                 href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Ti%20scrivo%20dal%20sito%20Officinadelsuono." 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-xl font-bold transition-all flex items-center gap-2"
+                className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-none font-bold transition-all flex items-center gap-2"
               >
                 <MessageCircle className="w-5 h-5" />
                 Chatta su WhatsApp
@@ -153,15 +153,15 @@ export function Contact() {
           >
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-4">
-                Domande <span className="text-brand-orange">Frequenti</span>
+                Domande <span className="text-marker">Frequenti</span>
               </h2>
-              <p className="text-zinc-500 max-w-2xl mx-auto">
+              <p className="text-graphite max-w-2xl mx-auto">
                 Tutto quello che devi sapere su spedizioni, garanzia e il nostro servizio di consulenza specializzata.
               </p>
             </div>
 
-            <div className="bg-zinc-900/50 border border-white/10 rounded-[2rem] p-8 md:p-12 shadow-2xl">
-              <div className="divide-y divide-white/5">
+            <div className="bg-ink-2/70 border border-paper/10 rounded-[2rem] p-8 md:p-12 shadow-2xl">
+              <div className="divide-y divide-paper/[0.06]">
                 {FAQS.map((faq, index) => (
                   <FAQItem
                     key={index}

@@ -11,7 +11,7 @@
 
 import { PORT_TYPES, type PortGeometry } from '../../utils/audio';
 
-const ORANGE = '#F27D26';
+const ORANGE = '#FF5F00';
 const WALL = '#52525b';    // pareti della cassa
 const DIM = '#8aa0b8';     // quote
 const LABEL = '#a1a1aa';

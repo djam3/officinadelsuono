@@ -45,8 +45,8 @@ const Glossario = lazy(() => import('./pages/Glossario').then(m => ({ default: m
 
 const PageLoader = () => (
   <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
-    <div className="w-12 h-12 border-4 border-brand-orange/30 border-t-brand-orange rounded-full animate-spin" />
-    <p className="text-zinc-500 font-black uppercase tracking-[0.3em] text-[10px]">Caricamento…</p>
+    <div className="w-12 h-12 border-4 border-paper/15 border-t-marker rounded-full animate-spin" />
+    <p className="text-graphite font-black uppercase tracking-[0.3em] text-[10px]">Caricamento…</p>
   </div>
 );
 
@@ -91,10 +91,10 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans relative bg-zinc-950">
+    <div className="min-h-screen flex flex-col font-sans relative bg-ink">
       <CustomCursor />
 
-      <Navbar onNavigate={handleNavigate} />
+      <Navbar onNavigate={handleNavigate} current={currentPage} />
 
       <main className="flex-grow relative">
         <Suspense fallback={<PageLoader />}>

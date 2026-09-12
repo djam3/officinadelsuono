@@ -77,21 +77,21 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
         className="fixed bottom-0 left-0 right-0 z-[300] p-4 sm:p-6 pointer-events-none"
       >
         <div className="max-w-4xl mx-auto pointer-events-auto">
-          <div className="bg-zinc-950/95 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl overflow-hidden">
+          <div className="bg-ink/95 backdrop-blur-xl border border-paper/10 rounded-none shadow-2xl overflow-hidden">
             {!showDetails ? (
               // Banner compatto
               <div className="p-6 sm:p-8">
                 <div className="flex flex-col md:flex-row md:items-start gap-4">
-                  <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-brand-orange to-orange-600 flex items-center justify-center shadow-lg shadow-brand-orange/30">
+                  <div className="w-12 h-12 shrink-0 rounded-none bg-marker flex items-center justify-center ">
                     <Cookie className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <h3 className="text-lg font-black text-white mb-2">La tua privacy è importante</h3>
-                    <p className="text-sm text-zinc-300 leading-relaxed">
+                    <p className="text-sm text-paper/90 leading-relaxed">
                       Utilizziamo cookie tecnici necessari al funzionamento del sito e, previo tuo consenso, cookie analitici per migliorare l'esperienza utente. Puoi accettare tutti i cookie, rifiutare quelli non essenziali o personalizzare le tue preferenze.{' '}
                       <button
                         onClick={() => onNavigate?.('cookie-policy')}
-                        className="text-brand-orange hover:underline font-semibold"
+                        className="text-marker hover:underline font-semibold"
                       >
                         Leggi la Cookie Policy
                       </button>
@@ -101,19 +101,19 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={acceptAll}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-brand-orange to-orange-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-orange-500 transition-all shadow-lg shadow-brand-orange/20 text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#FF7A2B] transition-all  text-sm uppercase tracking-wider"
                   >
                     Accetta tutti
                   </button>
                   <button
                     onClick={rejectAll}
-                    className="flex-1 px-6 py-3 bg-zinc-900 border border-white/10 text-white rounded-xl font-bold hover:bg-zinc-800 hover:border-white/20 transition-all text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-ink-2 border border-paper/10 text-ink rounded-none font-bold hover:bg-ink-3 hover:border-paper/20 transition-all text-sm uppercase tracking-wider"
                   >
                     Solo necessari
                   </button>
                   <button
                     onClick={() => setShowDetails(true)}
-                    className="flex-1 px-6 py-3 bg-transparent border border-white/10 text-zinc-300 rounded-xl font-bold hover:bg-white/5 hover:text-white transition-all text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-transparent border border-paper/10 text-paper/90 rounded-none font-bold hover:bg-paper/5 hover:text-white transition-all text-sm uppercase tracking-wider"
                   >
                     Personalizza
                   </button>
@@ -125,11 +125,11 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h3 className="text-xl font-black text-white mb-1">Preferenze Cookie</h3>
-                    <p className="text-sm text-zinc-400">Scegli quali categorie attivare.</p>
+                    <p className="text-sm text-graphite">Scegli quali categorie attivare.</p>
                   </div>
                   <button
                     onClick={() => setShowDetails(false)}
-                    className="text-zinc-500 hover:text-white p-2 -m-2"
+                    className="text-graphite hover:text-white p-2 -m-2"
                     aria-label="Chiudi"
                   >
                     <X className="w-5 h-5" />
@@ -138,9 +138,9 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
 
                 <div className="space-y-3 mb-6 max-h-[50vh] overflow-y-auto">
                   {/* Necessari */}
-                  <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4">
+                  <div className="bg-ink-2/70 border border-paper/10 rounded-none p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                      <div className="w-10 h-10 shrink-0 rounded-none bg-emerald-500/10 flex items-center justify-center">
                         <Shield className="w-5 h-5 text-emerald-400" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -148,7 +148,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                           <h4 className="font-bold text-white text-sm">Cookie necessari</h4>
                           <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">Sempre attivi</span>
                         </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed">
+                        <p className="text-xs text-graphite leading-relaxed">
                           Indispensabili per il funzionamento del sito (login, carrello, sicurezza). Non richiedono consenso.
                         </p>
                       </div>
@@ -156,9 +156,9 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                   </div>
 
                   {/* Analytics */}
-                  <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4">
+                  <div className="bg-ink-2/70 border border-paper/10 rounded-none p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <div className="w-10 h-10 shrink-0 rounded-none bg-blue-500/10 flex items-center justify-center">
                         <BarChart3 className="w-5 h-5 text-blue-400" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -169,12 +169,12 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                             role="switch"
                             aria-checked={analytics}
                             onClick={() => setAnalytics(!analytics)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${analytics ? 'bg-brand-orange' : 'bg-zinc-700'}`}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${analytics ? 'bg-marker' : 'bg-ink-4'}`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${analytics ? 'translate-x-6' : 'translate-x-1'}`} />
                           </button>
                         </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed">
+                        <p className="text-xs text-graphite leading-relaxed">
                           Ci aiutano a capire come utilizzi il sito (Google Analytics, Firebase Analytics) per migliorarlo. Dati anonimizzati.
                         </p>
                       </div>
@@ -182,9 +182,9 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                   </div>
 
                   {/* Marketing */}
-                  <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-4">
+                  <div className="bg-ink-2/70 border border-paper/10 rounded-none p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 shrink-0 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                      <div className="w-10 h-10 shrink-0 rounded-none bg-purple-500/10 flex items-center justify-center">
                         <Target className="w-5 h-5 text-purple-400" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -195,12 +195,12 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                             role="switch"
                             aria-checked={marketing}
                             onClick={() => setMarketing(!marketing)}
-                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${marketing ? 'bg-brand-orange' : 'bg-zinc-700'}`}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${marketing ? 'bg-marker' : 'bg-ink-4'}`}
                           >
                             <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${marketing ? 'translate-x-6' : 'translate-x-1'}`} />
                           </button>
                         </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed">
+                        <p className="text-xs text-graphite leading-relaxed">
                           Utilizzati per mostrarti contenuti pubblicitari personalizzati. Attualmente non attivi.
                         </p>
                       </div>
@@ -211,14 +211,14 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={saveCustom}
-                    className="flex-1 px-6 py-3 bg-gradient-to-r from-brand-orange to-orange-600 text-white rounded-xl font-bold hover:from-orange-500 hover:to-orange-500 transition-all shadow-lg shadow-brand-orange/20 text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#FF7A2B] transition-all  text-sm uppercase tracking-wider flex items-center justify-center gap-2"
                   >
                     <Check className="w-4 h-4" />
                     Salva preferenze
                   </button>
                   <button
                     onClick={acceptAll}
-                    className="flex-1 px-6 py-3 bg-zinc-900 border border-white/10 text-white rounded-xl font-bold hover:bg-zinc-800 hover:border-white/20 transition-all text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-ink-2 border border-paper/10 text-ink rounded-none font-bold hover:bg-ink-3 hover:border-paper/20 transition-all text-sm uppercase tracking-wider"
                   >
                     Accetta tutti
                   </button>

@@ -71,38 +71,34 @@ export function CustomCursor() {
 
   if (!isDesktop) return null;
 
+  // Mirino da disegno: due tratti che si incrociano senza toccarsi al centro,
+  // come il cursore di un tavolo da disegno. Sul passaggio su un elemento
+  // attivo il mirino si apre e vira al colore del pennarello.
+  const tratto = 'fixed pointer-events-none z-[9998] bg-blueprint/70';
+
   return (
     <>
-      {/* Main tiny dot that follows mouse exactly */}
       <motion.div
-        className="fixed top-0 left-0 w-2 h-2 bg-brand-orange rounded-full pointer-events-none z-[9999]"
-        style={{
-          x: dotXSpring,
-          y: dotYSpring,
-          translateX: 11, // Center the 8px dot inside the 32px container
-          translateY: 11,
-        }}
-        animate={{
-          scale: isHidden ? 0 : (isHovering ? 0 : 1),
-          opacity: isHidden ? 0 : (isHovering ? 0 : 1),
-        }}
+        className="fixed top-0 left-0 w-1 h-1 rounded-full bg-marker pointer-events-none z-[9999]"
+        style={{ x: dotXSpring, y: dotYSpring, translateX: -2, translateY: -2 }}
+        animate={{ opacity: isHidden ? 0 : 1 }}
         transition={{ duration: 0.15 }}
       />
 
-      {/* Trailing larger circle */}
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 border-2 border-brand-orange rounded-full pointer-events-none z-[9998] flex items-center justify-center"
-        style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
-        }}
+        className="fixed top-0 left-0 pointer-events-none z-[9998]"
+        style={{ x: cursorXSpring, y: cursorYSpring }}
         animate={{
-          scale: isHidden ? 0 : (isHovering ? 1.5 : 1),
           opacity: isHidden ? 0 : 1,
-          backgroundColor: isHovering ? 'rgba(242, 125, 38, 0.1)' : 'rgba(242, 125, 38, 0)',
+          scale: isHovering ? 1.45 : 1,
         }}
-        transition={{ duration: 0.2 }}
-      />
+        transition={{ duration: 0.18 }}
+      >
+        <span className={`${tratto} -translate-x-1/2 -translate-y-1/2`} style={{ width: 1, height: 9, top: -9, left: 0 }} />
+        <span className={`${tratto} -translate-x-1/2 -translate-y-1/2`} style={{ width: 1, height: 9, top: 9, left: 0 }} />
+        <span className={`${tratto} -translate-x-1/2 -translate-y-1/2`} style={{ width: 9, height: 1, top: 0, left: -9 }} />
+        <span className={`${tratto} -translate-x-1/2 -translate-y-1/2`} style={{ width: 9, height: 1, top: 0, left: 9 }} />
+      </motion.div>
     </>
   );
 }

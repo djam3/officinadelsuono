@@ -64,7 +64,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             options={Object.entries(ROOM_PRESETS).map(([value, spec]) => ({ value, label: spec.label }))}
           />
         </div>
-        <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+        <p className="text-[11px] text-graphite mt-3 leading-relaxed">
           Il guadagno dell'ambiente somma alla risposta il rinforzo che stanza o abitacolo producono alle basse
           frequenze: in auto può valere più di 10 dB sotto i 50 Hz.
         </p>
@@ -84,7 +84,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
       </Section>
 
       {!curves && (
-        <p className="text-sm text-zinc-500 italic">Inserisci i parametri del driver per vedere le curve.</p>
+        <p className="text-sm text-graphite italic">Inserisci i parametri del driver per vedere le curve.</p>
       )}
 
       {/* Risposta in frequenza */}
@@ -163,7 +163,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             ]}
           />
           {curves!.prExcursion && (
-            <p className="text-[11px] text-zinc-500 mt-3 leading-relaxed">
+            <p className="text-[11px] text-graphite mt-3 leading-relaxed">
               La membrana passiva si muove molto più del cono all'accordo, dove il driver è quasi fermo:
               è lei a irradiare. Per questo deve avere un volume spostabile ben maggiore di quello del
               driver, altrimenti va in fondo corsa per prima e limita tutto il sistema.

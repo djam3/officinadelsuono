@@ -146,8 +146,8 @@ export function DimensionsTab({
                     placeholder={String(spec.typicalLiningMm)}
                   />
                 )}
-                <p className="text-[11px] text-zinc-500 leading-relaxed">
-                  <span className="text-zinc-400">Impiego ideale:</span> {spec.bestUse.toLowerCase()}.
+                <p className="text-[11px] text-graphite leading-relaxed">
+                  <span className="text-graphite">Impiego ideale:</span> {spec.bestUse.toLowerCase()}.
                   {spec.note ? ` ${spec.note}` : ''}
                 </p>
               </>
@@ -204,7 +204,7 @@ export function DimensionsTab({
                 <Stat label="Resistività" value={absorber.losses.sigma.toFixed(0)} unit="Pa·s/m²" />
               </div>
 
-              <p className="text-[11px] text-zinc-500 mt-4 leading-relaxed">
+              <p className="text-[11px] text-graphite mt-4 leading-relaxed">
                 L'incremento di volume apparente nasce dal passaggio della compressione da adiabatica a
                 isotermica: le fibre scambiano calore con l'aria, la velocità del suono cala e il woofer
                 «vede» una cassa più grande. Il limite non è convenzionale ma esatto e vale γ − 1 = 40,2%:
@@ -212,13 +212,13 @@ export function DimensionsTab({
               </p>
 
               <div className="mt-5">
-                <h4 className="text-[10px] uppercase tracking-wider text-zinc-500 font-bold mb-2">
+                <h4 className="text-[10px] uppercase tracking-wider text-graphite font-bold mb-2">
                   Onde stazionarie interne — f = n·c / 2d
                 </h4>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-[10px] uppercase tracking-wider text-zinc-500 border-b border-white/10">
+                      <tr className="text-[10px] uppercase tracking-wider text-graphite border-b border-paper/10">
                         <th className="text-left py-2 font-bold">Asse</th>
                         <th className="text-right py-2 font-bold">Quota</th>
                         <th className="text-right py-2 font-bold">Ordine</th>
@@ -230,25 +230,25 @@ export function DimensionsTab({
                     </thead>
                     <tbody>
                       {absorber.modes.slice(0, 6).map(m => (
-                        <tr key={`${m.axis}-${m.order}`} className="border-b border-white/5 text-zinc-300">
+                        <tr key={`${m.axis}-${m.order}`} className="border-b border-paper/[0.06] text-paper/90">
                           <td className="py-2 capitalize">{m.axis}</td>
-                          <td className="py-2 text-right text-zinc-500">{m.dimensionMm.toFixed(0)} mm</td>
-                          <td className="py-2 text-right text-zinc-500">{m.order}</td>
+                          <td className="py-2 text-right text-graphite">{m.dimensionMm.toFixed(0)} mm</td>
+                          <td className="py-2 text-right text-graphite">{m.order}</td>
                           <td className="py-2 text-right font-mono">{m.freqHz.toFixed(0)} Hz</td>
                           <td className="py-2 text-right font-mono">{m.alpha.toFixed(2)}</td>
-                          <td className="py-2 text-right font-mono text-zinc-500">
+                          <td className="py-2 text-right font-mono text-graphite">
                             {m.qEmpty.toFixed(0)} → {m.qDamped.toFixed(1)}
                           </td>
-                          <td className="py-2 text-right font-mono text-brand-orange">
+                          <td className="py-2 text-right font-mono text-marker">
                             −{m.attenuationDb.toFixed(1)} dB
-                            {!m.stillResonant && <span className="text-zinc-500 text-[10px] ml-1">non risuona</span>}
+                            {!m.stillResonant && <span className="text-graphite text-[10px] ml-1">non risuona</span>}
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <p className="text-[10px] text-zinc-600 mt-2 leading-relaxed">
+                <p className="text-[10px] text-graphite-dim mt-2 leading-relaxed">
                   Assorbimento α dal modello di Miki (1990) sulla resistività al flusso; resistività dalla
                   densità con Garai-Pompoli (2005) per il poliestere e Bies-Hansen (1980) per le lane
                   minerali. Gli abbattimenti valgono per un modo monodimensionale fra pareti rigide, quindi
@@ -272,7 +272,7 @@ export function DimensionsTab({
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-zinc-500 border-b border-white/10">
+                  <tr className="text-[10px] uppercase tracking-wider text-graphite border-b border-paper/10">
                     <th className="text-left py-2 font-bold">Pannello</th>
                     <th className="text-right py-2 font-bold">Misure (mm)</th>
                     <th className="text-right py-2 font-bold">Sp.</th>
@@ -281,14 +281,14 @@ export function DimensionsTab({
                 </thead>
                 <tbody>
                   {panels.map((p, i) => (
-                    <tr key={i} className="border-b border-white/5 last:border-0">
+                    <tr key={i} className="border-b border-paper/[0.06] last:border-0">
                       <td className="py-2.5">
-                        <span className="text-zinc-200 font-medium">{p.name}</span>
-                        {p.note && <span className="block text-[10px] text-zinc-600 leading-relaxed">{p.note}</span>}
+                        <span className="text-paper font-medium">{p.name}</span>
+                        {p.note && <span className="block text-[10px] text-graphite-dim leading-relaxed">{p.note}</span>}
                       </td>
-                      <td className="text-right text-zinc-300 tabular-nums">{p.width} × {p.height}</td>
-                      <td className="text-right text-zinc-400 tabular-nums">{p.thickness}</td>
-                      <td className="text-right text-brand-orange font-bold tabular-nums">{p.quantity}</td>
+                      <td className="text-right text-paper/90 tabular-nums">{p.width} × {p.height}</td>
+                      <td className="text-right text-graphite tabular-nums">{p.thickness}</td>
+                      <td className="text-right text-marker font-bold tabular-nums">{p.quantity}</td>
                     </tr>
                   ))}
                 </tbody>
