@@ -1,4 +1,3 @@
-import { AlertTriangle } from 'lucide-react';
 import { NumField, SelectField, Section, Plot, PLOT_COLORS, CheckField, type Series } from './ui';
 import { ROOM_PRESETS, VENT_VELOCITY_LIMIT } from '../../utils/audio';
 import type { CurvePoint, DesignResult, RoomPreset, TSParams } from '../../utils/audio';
@@ -43,7 +42,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
     onChange({ ...settings, visible: { ...settings.visible, [key]: !settings.visible[key] } });
 
   const curves = design?.curves;
-  const hasFullModel = !!curves && !design?.simplifiedModel;
+  const hasFullModel = !!curves;
 
   const ventPeak = design?.ventVelocity?.reduce((max, p) => Math.max(max, p.v), 0) ?? 0;
 
@@ -83,14 +82,6 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           ))}
         </div>
       </Section>
-
-      {design?.simplifiedModel && (
-        <p className="text-[11px] text-amber-500/90 bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2 flex items-start gap-2">
-          <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-          Per le casse bandpass viene mostrata la sola risposta stimata: escursione, impedenza e velocità in
-          porta richiedono la misura sul prototipo.
-        </p>
-      )}
 
       {!curves && (
         <p className="text-sm text-zinc-500 italic">Inserisci i parametri del driver per vedere le curve.</p>

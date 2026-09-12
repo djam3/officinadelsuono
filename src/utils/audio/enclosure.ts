@@ -310,17 +310,6 @@ export function bandpass4thOrder(ts: TSParams, params: {
   return { vrL: vr, vfL: vf, fb, portLengthMm: lv, fL, fH };
 }
 
-/**
- * Risposta bandpass 4° ordine (dB, picco 0): fianchi 12 dB/oct simmetrici,
- * Q di banda = Fb/(fH−fL).
- */
-export function bandpass4Response(fb: number, fL: number, fH: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
-  const qbp = fb / Math.max(1, fH - fL);
-  return logFreqGrid(fMin, fMax, points).map(f => {
-    const x = qbp * (f / fb - fb / f);
-    return { f, v: 20 * Math.log10(1 / (1 + x * x)) };
-  });
-}
 
 export interface Bandpass6Result {
   vrL: number;          // camera posteriore (litri)
@@ -334,10 +323,10 @@ export interface Bandpass6Result {
 }
 
 /**
- * Bandpass 6° ordine serie (entrambe le camere accordate) — PROGETTO DI
- * PARTENZA: camera posteriore da allineamento QB3, camera anteriore Vf = S·Vr
- * accordata più in alto (ratio·FbRear). Il modello è una cascata di due
- * risonatori: buono per dimensionare, da rifinire con misura (o BassBox).
+ * Bandpass 6° ordine serie (entrambe le camere accordate): camera posteriore
+ * da allineamento QB3, camera anteriore Vf = S·Vr accordata più in alto
+ * (ratio·FbRear). Qui si ricavano solo i volumi e gli accordi di partenza; la
+ * risposta la calcola il circuito equivalente in bandpassCircuit.ts.
  */
 export function bandpass6thOrder(ts: TSParams, params: {
   S?: number;        // Vf/Vr (default 0.6)
@@ -353,27 +342,9 @@ export function bandpass6thOrder(ts: TSParams, params: {
   const fbFront = fbRear * ratio;
   const portRearLenMm = portLength(dvMm, fbRear, vr, np);
   const portFrontLenMm = portLength(dvMm, fbFront, vf, np);
-  // bordi banda dalla curva stimata (-3 dB dal picco)
-  const curve = bandpass6Response(fbRear, fbFront);
-  const peak = Math.max(...curve.map(p => p.v));
-  const above = curve.filter(p => p.v >= peak - 3);
-  const fL = above.length ? above[0].f : fbRear * 0.8;
-  const fH = above.length ? above[above.length - 1].f : fbFront * 1.2;
+  // bordi banda solo indicativi: quelli veri li misura il circuito sulla curva
+  const fL = fbRear * 0.9;
+  const fH = fbFront * 1.15;
   return { vrL: vr, fbRear, portRearLenMm, vfL: vf, fbFront, portFrontLenMm, fL, fH };
 }
 
-/**
- * Risposta bandpass 6° ordine stimata (dB, picco 0): prodotto di due
- * risonatori del 2° ordine centrati sui due accordi (fianchi ±12 dB/oct,
- * banda più larga del 4°). Stima di progetto, non simulazione completa.
- */
-export function bandpass6Response(fbRear: number, fbFront: number, fMin = 10, fMax = 1000, points = 200): CurvePoint[] {
-  const q = 1.2;
-  const bp2 = (f: number, f0: number) => {
-    const x = q * (f / f0 - f0 / f);
-    return 1 / Math.sqrt(1 + x * x);
-  };
-  const raw = logFreqGrid(fMin, fMax, points).map(f => ({ f, v: bp2(f, fbRear) * bp2(f, fbFront) }));
-  const peak = Math.max(...raw.map(p => p.v), 1e-9);
-  return raw.map(p => ({ f: p.f, v: 20 * Math.log10(Math.max(p.v / peak, 1e-6)) }));
-}

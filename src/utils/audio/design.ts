@@ -5,8 +5,7 @@
 
 import {
   sealedFromQtc, sealedFromVb, ventedDesign, alignmentRatios,
-  bandpass4thOrder, bandpass4Response, bandpass6thOrder,
-  bandpass6Response, passiveRadiatorTuning,
+  bandpass4thOrder, bandpass6thOrder, passiveRadiatorTuning,
 } from './enclosure';
 import {
   PORT_TYPES, autoSizePort, describePort, equivalentDiameter, portDisplacement,
@@ -14,7 +13,8 @@ import {
   type PortGeometry, type PortPanel, type PortType,
 } from './ports';
 import { computeResponse } from './response';
-import { computePRResponse, prCircuit } from './prCircuit';
+import { computePRResponse, prCircuit } from './circuit';
+import { computeBandpassResponse } from './bandpassCircuit';
 import {
   ABSORBERS, QA_EMPTY, computeAbsorber, ventedBoxLosses,
   type AbsorberId, type AbsorberResult, type Placement,
@@ -193,7 +193,13 @@ export interface AcousticResult {
   peakingDb?: number;
   port?: PortResult;
   /** bandpass: volumi delle due camere */
-  chambers?: { rearL: number; frontL: number; fLow: number; fHigh: number; fbFront?: number };
+  chambers?: {
+    rearL: number; frontL: number; fLow: number; fHigh: number; fbFront?: number;
+    /** aree dei condotti (cm²), per il modello circuitale */
+    portFrontCm2?: number; portRearCm2?: number;
+  };
+  /** bandpass: guadagno in banda rispetto al riferimento del driver (dB) */
+  passbandGainDb?: number;
   /** radiatore passivo: massa mobile TOTALE che deve avere (zavorra inclusa) */
   prTotalMassG?: number;
   /** radiatore passivo: risonanza in aria libera della membrana = frequenza del notch */
@@ -220,8 +226,6 @@ export interface DesignResult {
   splWithRoom: CurvePoint[] | null;
   maxOutput: MaxOutputResult | null;
   ventVelocity: CurvePoint[] | null;
-  /** true se il modello completo (escursione/impedenza) non è disponibile */
-  simplifiedModel: boolean;
 }
 
 
@@ -321,18 +325,24 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
     warnings.push(...portWarnings);
     return {
       vbL: bp.vrL + bp.vfL, fbHz: actualFbHz, f3Hz: bp.fL, alpha,
-      chambers: { rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH },
+      chambers: {
+        rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH,
+        portFrontCm2: port.areaCm2,
+      },
       port, warnings,
     };
   }
 
   const bp = bandpass6thOrder(ts, { S: input.bandpassS ?? 0.6, dvMm: dv, np });
   const { port, warnings: portWarnings, actualFbHz } = designPort(input, bp.fbFront, bp.vfL);
-  warnings.push('Bandpass 6° ordine: due camere accordate, banda più larga ma taratura critica. Progetto di partenza da rifinire con misura.');
+  warnings.push('Bandpass 6° ordine: due camere accordate. Rispetto al 4° la banda è più STRETTA e il livello in banda più alto — è il baratto che si fa costruendolo — e la taratura è molto più critica.');
   warnings.push(...portWarnings);
   return {
     vbL: bp.vrL + bp.vfL, fbHz: bp.fbRear, f3Hz: bp.fL, alpha: ts.vas / bp.vrL,
-    chambers: { rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH, fbFront: bp.fbFront },
+    chambers: {
+      rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH, fbFront: bp.fbFront,
+      portFrontCm2: port.areaCm2, portRearCm2: port.areaCm2,
+    },
     port, warnings,
   };
 }
@@ -573,12 +583,58 @@ export function computeDesign(input: DesignInput): DesignResult {
       });
     }
   } else if (acoustic.chambers) {
-    // bandpass: solo curva SPL stimata
-    const spl = input.enclosure === 'bandpass4'
-      ? bandpass4Response(acoustic.fbHz!, acoustic.chambers.fLow, acoustic.chambers.fHigh, 15, 500)
-      : bandpass6Response(acoustic.fbHz!, acoustic.chambers.fbFront ?? acoustic.fbHz! * 1.6, 15, 500);
-    curves = { spl, excursion: [], impedance: [], groupDelay: [], phase: [] };
-    splWithRoom = applyRoomGain(spl, input.roomPreset);
+    // Bandpass dal circuito equivalente. Prima qui c'era una campana disegnata
+    // a mano — una forma a Q costante col Q scelto a occhio — che non poteva
+    // dire niente su escursione e impedenza, perche' quelle non si ricavano
+    // dalla curva di pressione ma dal circuito.
+    const ch = acoustic.chambers;
+    const sixth = input.enclosure === 'bandpass6';
+    const bp = computeBandpassResponse({
+      ts: input.ts,
+      vrL: ch.rearL,
+      vfL: ch.frontL,
+      fbFrontHz: sixth ? (ch.fbFront ?? acoustic.fbHz! * 1.6) : acoustic.fbHz!,
+      fbRearHz: sixth ? acoustic.fbHz! : undefined,
+      portFrontCm2: ch.portFrontCm2 ?? 80,
+      portRearCm2: ch.portRearCm2,
+      ql: qbFinal,
+      powerW: input.powerW,
+      fMin: 15,
+      fMax: 500,
+    }, sixth ? 6 : 4);
+
+    curves = {
+      spl: bp.spl, excursion: bp.excursion, impedance: bp.impedance,
+      groupDelay: bp.groupDelay, phase: bp.phase,
+    };
+    splWithRoom = applyRoomGain(bp.spl, input.roomPreset);
+    maxOutput = computeMaxOutput({
+      ts: input.ts, curves, refPowerW: input.powerW,
+      sensitivity: input.ts.sensitivity, roomPreset: input.roomPreset,
+    });
+
+    // gli estremi di banda ora sono misurati sulla curva, non stimati
+    ch.fLow = bp.fLowHz;
+    ch.fHigh = bp.fHighHz;
+    acoustic.f3Hz = bp.fLowHz;
+    acoustic.passbandGainDb = bp.passbandGainDb;
+
+    ventVelocity = bp.portFrontVelocity;
+    const vMax = Math.max(...bp.portFrontVelocity.map(p => p.v));
+    const limit = acoustic.port?.velocityLimit ?? 17;
+    if (vMax > limit) {
+      acoustic.warnings.push(
+        `Nel condotto anteriore l'aria arriva a ${vMax.toFixed(0)} m/s a ${input.powerW} W, oltre il limite di ${limit} m/s della geometria scelta: serve più sezione, altrimenti soffia.`,
+      );
+    }
+    if (bp.portRearVelocity) {
+      const vR = Math.max(...bp.portRearVelocity.map(p => p.v));
+      if (vR > limit) {
+        acoustic.warnings.push(
+          `Anche nel condotto posteriore si arriva a ${vR.toFixed(0)} m/s, oltre i ${limit} m/s ammessi.`,
+        );
+      }
+    }
   }
 
   return {
@@ -594,7 +650,6 @@ export function computeDesign(input: DesignInput): DesignResult {
     splWithRoom,
     maxOutput,
     ventVelocity,
-    simplifiedModel: !modelled,
   };
 }
 
