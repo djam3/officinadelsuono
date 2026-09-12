@@ -46,7 +46,7 @@ export function calcSensitivity(fs: number, vasL: number, qes: number, tempC = 2
   const c = speedOfSound(tempC);
   const vas = vasL / 1000; // m³
   const eta0 = ((4 * Math.PI * Math.PI) / Math.pow(c, 3)) * ((Math.pow(fs, 3) * vas) / qes);
-  const splHalfSpace = 112 + 10 * Math.log10(eta0);
+  const splHalfSpace = 112.16 + 10 * Math.log10(eta0); // costante esatta, non 112 tondo
   return { eta0, splHalfSpace };
 }
 

@@ -106,7 +106,13 @@ export function computeResponse(input: ResponseInput): ResponseCurves {
   const power = input.powerW ?? 100;
   const xmax = ts.xmax ?? 6;
   const znom = ts.impedance ?? 8;
-  const vrms = Math.sqrt(power * znom);
+  // La tensione si ricava da Re, non dall'impedenza nominale: l'efficienza η0
+  // — e quindi la sensibilità da cui nasce la curva SPL — è definita come
+  // potenza acustica su potenza ELETTRICA, cioè V²/Re. Usando √(P·Znom) si
+  // immettevano in realtà P·Znom/Re watt (il 43% in più su un 8Ω con Re 5.6),
+  // e le due curve, calcolate per strade indipendenti, non tornavano.
+  const reForDrive = ts.re ?? znom * 0.85;
+  const vrms = Math.sqrt(power * reForDrive);
   const bl = ts.bl ?? 0;
   const mmsKg = (ts.mms ?? 0) / 1000;
   const reOhm = ts.re ?? 0;

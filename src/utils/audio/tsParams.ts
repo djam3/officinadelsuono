@@ -112,8 +112,15 @@ export function eta0From(fs: number, vasL: number, qes: number, tempC = 20): num
   return ((4 * Math.PI * Math.PI) / Math.pow(c, 3)) * ((Math.pow(fs, 3) * vas) / qes) * 100;
 }
 
-/** Sensibilità 1W/1m (dB, mezzo spazio) = 112 + 10·log10(η0) */
-export const sensitivityFrom = (eta0Percent: number) => 112 + 10 * Math.log10(eta0Percent / 100);
+/**
+ * Sensibilità 1W/1m in mezzo spazio = K + 10·log10(η0).
+ *
+ * K non è 112 tondo: viene da 20·log10(√(ρ·c/2π)/20µPa) = 112.16 dB. I 0.16 dB
+ * di differenza sembrano nulla, ma rompevano l'accordo fra la curva SPL e
+ * quella di escursione, che sono calcolate per strade indipendenti.
+ */
+export const SPL_HALF_SPACE_K = 112.16;
+export const sensitivityFrom = (eta0Percent: number) => SPL_HALF_SPACE_K + 10 * Math.log10(eta0Percent / 100);
 
 /** SPL a 2.83 V = SPL 1W/1m + 10·log10(8/Z) — a 8Ω i due valori coincidono */
 export const spl283From = (sens1W: number, zNom: number) => sens1W + 10 * Math.log10(8 / zNom);

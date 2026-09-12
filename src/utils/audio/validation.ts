@@ -129,7 +129,7 @@ const RELATIONS: Relation[] = [
     },
   },
   {
-    label: 'Sensibilità = 112 + 10·log10(η0)',
+    label: 'Sensibilità = 112.16 + 10·log10(η0)',
     keys: ['sensitivity', 'eta0'],
     tolerance: 0.02, // ≈ ±1.8 dB su 90 dB
     solve: (p, t) => {

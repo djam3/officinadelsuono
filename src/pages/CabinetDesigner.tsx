@@ -13,11 +13,16 @@ import {
 
 type TabId = 'driver' | 'enclosure' | 'dimensions' | 'response';
 
-/** woofer 12" realistico: la pagina mostra un progetto sensato già al primo accesso */
+/**
+ * Woofer 12" di esempio, con parametri COERENTI FRA LORO: Vas discende da Fs,
+ * Mms e Sd, e BL da Qes. I valori precedenti erano inventati e si
+ * contraddicevano (Vas 60 L contro gli 86 implicati da Fs e Mms), quindi la
+ * pagina partiva da un driver fisicamente impossibile.
+ */
 const DEFAULT_DRIVER: TSInput = {
-  fs: 35, qts: 0.35, qes: 0.38, qms: 4.5, vas: 60,
+  fs: 35, qts: 0.367, qes: 0.40, qms: 4.5, vas: 86,
   re: 5.6, le: 1.2, sd: 530, xmax: 6, mms: 95, bl: 17,
-  pe: 400, impedance: 8, dia: 260,
+  pe: 400, impedance: 8,
 };
 
 const DEFAULT_ENCLOSURE: EnclosureSettings = {
