@@ -43,6 +43,8 @@ export interface LibraryDriver {
     sd?: number;
     /** mm, one-way */
     xmax?: number;
+    /** mm, one-way — fondo corsa meccanico */
+    xmech?: number;
     re?: number;
     le?: number;
     /** g */
@@ -285,6 +287,49 @@ export const DRIVER_LIBRARY: LibraryDriver[] = [
     depth: 168,
     datasheet: 'https://sundownaudio.com/products/sa-series-v-3-8-500w-car-audio-subwoofer-sub',
     note: 'Sd ricavato dal Vas: il costruttore pubblica l\'area della flangia (345 cm²), non quella effettiva del cono.',
+  },
+
+  // ─── Hertz (Elettromedia, Italia) ──────────────────────────────────────────
+  // Doppia bobina: l'impedenza indicata è quella con le bobine in PARALLELO.
+  // Sd non dichiarato in forma utilizzabile → ricavato dal Vas.
+  {
+    id: 'hertz-mp300-d2', brand: 'Hertz', model: 'Mille Pro MP 300 D2.3', size: 12, type: 'subwoofer', category: 'car',
+    impedance: 1, powerRMS: 600, sensitivity: 86,
+    thielSmall: { fs: 23, qts: 0.48, qes: 0.53, qms: 5.9, vas: 88, xmax: 16, re: 1, le: 0.63, mms: 221, bl: 7.7 },
+    datasheet: 'https://hertz-audio.com/product/car-audio-subwoofers-mille-pro-mp300_d2_3/',
+    note: 'Doppia bobina 2+2 Ω (valore in parallelo). Sd ricavato dal Vas: il costruttore pubblica il diametro nominale, non l’area effettiva del cono.',
+  },
+  {
+    id: 'hertz-mp300-d4', brand: 'Hertz', model: 'Mille Pro MP 300 D4.3', size: 12, type: 'subwoofer', category: 'car',
+    impedance: 2, powerRMS: 600, sensitivity: 86,
+    thielSmall: { fs: 24, qts: 0.42, qes: 0.45, qms: 5.9, vas: 74, xmax: 17, xmech: 27, re: 1.9, le: 1.6, mms: 235, bl: 12 },
+    datasheet: 'https://hertz-audio.com/product/car-audio-subwoofers-mille-pro-mp300_d4_3/',
+    note: 'Doppia bobina 4+4 Ω (valore in parallelo). Sd ricavato dal Vas.',
+  },
+  {
+    id: 'hertz-mp250-d2', brand: 'Hertz', model: 'Mille Pro MP 250 D2.3', size: 10, type: 'subwoofer', category: 'car',
+    impedance: 1, powerRMS: 600, sensitivity: 83.5,
+    thielSmall: { fs: 30, qts: 0.54, qes: 0.60, qms: 5.92, vas: 25, xmax: 17, re: 0.85, le: 0.65, mms: 182, bl: 7.1 },
+    datasheet: 'https://hertz-audio.com/product/car-audio-subwoofers-mille-pro-mp250_d2_3/',
+    note: 'Doppia bobina 2+2 Ω (valore in parallelo). Sd ricavato dal Vas.',
+  },
+
+  // ─── Audison (Elettromedia, Italia) ────────────────────────────────────────
+  {
+    id: 'audison-aps10d', brand: 'Audison', model: 'Prima APS 10 D', size: 10, type: 'subwoofer', category: 'car',
+    impedance: 2, powerRMS: 400, sensitivity: 84,
+    thielSmall: { fs: 27, qts: 0.52, qes: 0.58, qms: 4.7, vas: 41, xmax: 12.6, re: 2.2, le: 1.5, mms: 170, bl: 10.4 },
+    depth: 105,
+    datasheet: 'https://audison.com/product/aps-10-d/',
+    note: 'Doppia bobina 4+4 Ω (valore in parallelo). Sd ricavato dal Vas: i 250 mm dichiarati sono il diametro nominale.',
+  },
+  {
+    id: 'audison-aps8d', brand: 'Audison', model: 'Prima APS 8 D', size: 8, type: 'subwoofer', category: 'car',
+    impedance: 2, powerRMS: 250, sensitivity: 83.5,
+    thielSmall: { fs: 30, qts: 0.44, qes: 0.46, qms: 5.1, vas: 25.5, xmax: 8.8, re: 2.1, le: 1.1, mms: 85, bl: 8.8 },
+    depth: 79,
+    datasheet: 'https://audison.com/product/aps-8-d/',
+    note: 'Doppia bobina 4+4 Ω (valore in parallelo). Sd ricavato dal Vas.',
   },
 ];
 

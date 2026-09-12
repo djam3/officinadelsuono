@@ -32,7 +32,7 @@ function libraryToInput(d: LibraryDriver): TSInput {
   // non il cono. Il diametro effettivo lo ricava il motore da Sd.
   return {
     fs: t.fs, qts: t.qts, qes: t.qes, qms: t.qms, vas: t.vas,
-    xmax: t.xmax, sd: t.sd, re: t.re, mms: t.mms, bl: t.bl, le: t.le,
+    xmax: t.xmax, xmech: t.xmech, sd: t.sd, re: t.re, mms: t.mms, bl: t.bl, le: t.le,
     pe: d.powerRMS, impedance: d.impedance, sensitivity: d.sensitivity,
   };
 }
