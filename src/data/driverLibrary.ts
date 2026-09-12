@@ -260,6 +260,7 @@ export const DRIVER_LIBRARY: LibraryDriver[] = [
     thielSmall: { fs: 45, qts: 0.27, qes: 0.28, qms: 8.0, vas: 50, sd: 500, xmax: 9, re: 5.2, le: 1.0, mms: 105, bl: 26.1 },
     overallDiameter: 320, mountingDiameter: 282, depth: 134, weight: 11.37,
     datasheet: 'https://www.rcf.it/en/products/product-detail/lf12x401',
+    note: 'Dati trascritti dal datasheet RCF, che perè non chiude su se stesso e fa accendere i pallini rossi: Qes 0.28 con Mms 105 g e Re 5.2 Ω richiederebbe BL 23.5 T·m invece dei 26.1 dichiarati, e la stessa pagina dà Sd 0.050 m² ma diametro effettivo del pistone 260 mm, che vale 0.0531 m².',
   },
 
   // ─── Car audio ─────────────────────────────────────────────────────────────
@@ -270,23 +271,23 @@ export const DRIVER_LIBRARY: LibraryDriver[] = [
     thielSmall: { fs: 35, qts: 0.428, qes: 0.525, qms: 2.308, vas: 22.188, xmax: 22, re: 3.4, mms: 369.75, bl: 22.99 },
     depth: 213,
     datasheet: 'https://sundownaudio.com/products/sa-series-v-3-12-subwoofer',
-    note: 'Sd ricavato dal Vas: il costruttore pubblica l\'area della flangia (735 cm²), non quella effettiva del cono.',
+    note: 'Versione D2 (doppia bobina 2+2 Ω). Re 3.4 Ω è quello delle due bobine in SERIE, quindi il nominale del set di parametri è 4 Ω. Sd ricavato dal Vas: il costruttore pubblica come Sd la superficie della flangia (735 cm²), non quella effettiva del cono.',
   },
   {
     id: 'sundown-sa10v3', brand: 'Sundown Audio', model: 'SA-10 v.3', size: 10, type: 'subwoofer', category: 'car',
-    impedance: 2, powerRMS: 1500, sensitivity: 82.5,
+    impedance: 4, powerRMS: 1500, sensitivity: 82.5,
     thielSmall: { fs: 36, qts: 0.413, qes: 0.501, qms: 2.341, vas: 10.286, xmax: 22, re: 3.4, mms: 304.45, bl: 22.267 },
     depth: 206,
     datasheet: 'https://sundownaudio.com/products/sa-series-v-3-10-subwoofer',
-    note: 'Sd ricavato dal Vas: il costruttore pubblica l\'area della flangia (507 cm²), non quella effettiva del cono.',
+    note: 'Versione D2 (doppia bobina 2+2 Ω). Re 3.4 Ω è quello delle due bobine in SERIE, quindi il nominale del set di parametri è 4 Ω, non i 2 Ω della singola bobina. Sd ricavato dal Vas: il costruttore pubblica come Sd la superficie della flangia (507 cm²), non quella effettiva del cono.',
   },
   {
     id: 'sundown-sa8v3', brand: 'Sundown Audio', model: 'SA-8 v.3', size: 8, type: 'subwoofer', category: 'car',
-    impedance: 4, powerRMS: 600, sensitivity: 82.7,
+    impedance: 8, powerRMS: 600, sensitivity: 82.7,
     thielSmall: { fs: 40, qts: 0.36, qes: 0.392, qms: 4.31, vas: 7.17, xmax: 16, re: 6.0, mms: 126.6, bl: 22.06 },
     depth: 168,
     datasheet: 'https://sundownaudio.com/products/sa-series-v-3-8-500w-car-audio-subwoofer-sub',
-    note: 'Sd ricavato dal Vas: il costruttore pubblica l\'area della flangia (345 cm²), non quella effettiva del cono.',
+    note: 'Versione D4 (doppia bobina 4+4 Ω). Re 6.0 Ω è quello delle due bobine in SERIE, quindi il nominale del set di parametri è 8 Ω, non i 4 Ω della singola bobina. Sd ricavato dal Vas: il costruttore pubblica come Sd la superficie della flangia (345 cm²), non quella effettiva del cono.',
   },
 
   // ─── Hertz (Elettromedia, Italia) ──────────────────────────────────────────
@@ -317,19 +318,19 @@ export const DRIVER_LIBRARY: LibraryDriver[] = [
   // ─── Audison (Elettromedia, Italia) ────────────────────────────────────────
   {
     id: 'audison-aps10d', brand: 'Audison', model: 'Prima APS 10 D', size: 10, type: 'subwoofer', category: 'car',
-    impedance: 2, powerRMS: 400, sensitivity: 84,
+    impedance: 4, powerRMS: 400, sensitivity: 84,
     thielSmall: { fs: 27, qts: 0.52, qes: 0.58, qms: 4.7, vas: 41, xmax: 12.6, re: 2.2, le: 1.5, mms: 170, bl: 10.4 },
     depth: 105,
     datasheet: 'https://audison.com/product/aps-10-d/',
-    note: 'Doppia bobina 4+4 Ω (valore in parallelo). Sd ricavato dal Vas: i 250 mm dichiarati sono il diametro nominale.',
+    note: 'Doppia bobina 4+4 Ω. Il costruttore non dichiara il collegamento, ma Re 2.2 Ω con BL 10.4 T·m e Mms 170 g restituisce Qes 0.586 contro lo 0.58 pubblicato: il set è quello di UNA bobina, nominale 4 Ω. Collegando le due bobine in parallelo Re e Qes si dimezzano. Sd ricavato dal Vas: i 250 mm dichiarati sono il diametro nominale.',
   },
   {
     id: 'audison-aps8d', brand: 'Audison', model: 'Prima APS 8 D', size: 8, type: 'subwoofer', category: 'car',
-    impedance: 2, powerRMS: 250, sensitivity: 83.5,
+    impedance: 4, powerRMS: 250, sensitivity: 83.5,
     thielSmall: { fs: 30, qts: 0.44, qes: 0.46, qms: 5.1, vas: 25.5, xmax: 8.8, re: 2.1, le: 1.1, mms: 85, bl: 8.8 },
     depth: 79,
     datasheet: 'https://audison.com/product/aps-8-d/',
-    note: 'Doppia bobina 4+4 Ω (valore in parallelo). Sd ricavato dal Vas.',
+    note: 'Doppia bobina 4+4 Ω. Il costruttore non dichiara il collegamento, ma Re 2.1 Ω con BL 8.8 T·m e Mms 85 g restituisce Qes 0.435 contro lo 0.46 pubblicato: il set è quello di UNA bobina, nominale 4 Ω. Collegando le due bobine in parallelo Re e Qes si dimezzano. Sd ricavato dal Vas.',
   },
 ];
 
