@@ -160,25 +160,42 @@ function computeImpedance(input: ResponseInput, grid: number[]): CurvePoint[] {
   const le = (ts.le ?? 0.5) / 1000; // H
   const qms = ts.qms, qes = ts.qes;
 
-  const lorentz = (f: number, f0: number, q: number) => 1 / Math.sqrt(1 + q * q * Math.pow(f / f0 - f0 / f, 2));
-
   if (type === 'sealed') {
+    // Risonanza singola: Z = Re·(1 + (Qmc/Qec)/(1 + jQmc(Ω − 1/Ω))).
+    // Al picco (Ω = 1) vale Re·(1 + Qmc/Qec), che è il valore di manuale.
     const fc = input.fc!;
-    const qtc = input.qtc!;
-    // Qmc/Qec scalano con fc/fs
     const qmc = qms * (fc / ts.fs);
     const qec = qes * (fc / ts.fs);
-    const zpeak = re * (1 + qmc / qec);
-    return grid.map(f => ({ f, v: re + (zpeak - re) * lorentz(f, fc, qtc * 1.6) + TWO_PI * f * le }));
-  } else {
-    // vented: due picchi attorno a Fb
-    const fb = input.fb!;
-    const fL = fb * 0.72;
-    const fH = fb * 1.4;
-    const zpeak = re * (1 + (qms / qes) * 0.6);
     return grid.map(f => {
-      const peak = Math.max(lorentz(f, fL, 14), lorentz(f, fH, 14));
-      return { f, v: re + (zpeak - re) * peak + TWO_PI * f * le };
+      const O = f / fc;
+      const den = Math.hypot(1, qmc * (O - 1 / O));
+      return { f, v: re * (1 + (qmc / qec) / den) + TWO_PI * f * le };
     });
   }
+
+  // Vented: l'impedenza si ricava dallo STESSO modello della risposta invece
+  // che da picchi sovrapposti a mano.
+  //
+  //   Z(Ω)/Re = 1 + (1/Qes)·Ω·|N(Ω)| / |D(Ω)|
+  //
+  // N è il numeratore del risonatore, che si annulla all'accordo lasciando
+  // solo 1/QL: da lì nasce la valle a Fb, che il modello precedente non
+  // produceva affatto. I due picchi cadono sugli zeri di D, cioè sui poli
+  // veri del sistema, invece che a rapporti fissi 0.72·Fb e 1.4·Fb.
+  const fb = input.fb!;
+  const alpha = input.alpha!;
+  const ql = input.ql ?? 7;
+  const h = fb / ts.fs;
+  const f0 = Math.sqrt(fb * ts.fs);
+  const a1 = 1 / (ql * Math.sqrt(h)) + Math.sqrt(h) / ts.qts;
+  const a2 = (alpha + 1) / h + h + 1 / (ql * ts.qts);
+  const a3 = 1 / (ts.qts * Math.sqrt(h)) + Math.sqrt(h) / ql;
+
+  return grid.map(f => {
+    const O = f / f0;
+    const numMag = Math.hypot(1 - (O * O) / h, O / (Math.sqrt(h) * ql));
+    const denMag = Math.hypot(Math.pow(O, 4) - a2 * O * O + 1, -a1 * Math.pow(O, 3) + a3 * O);
+    const motional = (O / qes) * (numMag / Math.max(denMag, 1e-9));
+    return { f, v: re * (1 + motional) + TWO_PI * f * le };
+  });
 }
