@@ -220,7 +220,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                 <Stat label="Area totale" value={acoustic.port.areaCm2.toFixed(0)} unit="cm²" />
                 <Stat label="Ø equivalente" value={acoustic.port.equivalentDiameterMm.toFixed(0)} unit="mm" />
                 <Stat
-                  label={`Velocità (limite ${acoustic.port.velocityLimit})`}
+                  label={`Velocità a Xmax (max ${acoustic.port.velocityLimit})`}
                   value={acoustic.port.velocity.toFixed(1)}
                   unit="m/s"
                   accent={!acoustic.port.velocityOk}

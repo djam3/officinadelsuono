@@ -311,13 +311,25 @@ export function DriverTab({
           <NumField
             label="Numero di altoparlanti"
             value={config.count}
-            onChange={v => onConfigChange({ ...config, count: v === '' ? 1 : Math.max(1, Math.round(v)) })}
+            onChange={v => {
+              const count = v === '' ? 1 : Math.max(1, Math.round(v));
+              // "singolo" con più driver è una contraddizione: passa al parallelo
+              const wiring = count > 1 && config.wiring === 'single' ? 'parallel' : config.wiring;
+              onConfigChange({ ...config, count, wiring });
+            }}
             min={1}
           />
           <SelectField
             label="Collegamento"
             value={config.wiring}
-            onChange={v => onConfigChange({ ...config, wiring: v as DriverWiring })}
+            onChange={v => {
+              const wiring = v as DriverWiring;
+              // il singolo vuole un driver solo; l'isobarico ne vuole almeno due
+              const count = wiring === 'single' ? 1
+                : wiring === 'isobaric' ? Math.max(2, config.count)
+                : config.count;
+              onConfigChange({ ...config, wiring, count });
+            }}
             options={Object.entries(WIRING_LABELS).map(([value, label]) => ({ value, label }))}
           />
         </div>

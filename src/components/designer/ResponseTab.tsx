@@ -174,8 +174,8 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           title="Velocità dell'aria nel condotto"
           subtitle={
             ventPeak > VENT_VELOCITY_LIMIT
-              ? `Picco ${ventPeak.toFixed(1)} m/s: oltre la soglia di turbolenza, il condotto soffia.`
-              : `Picco ${ventPeak.toFixed(1)} m/s: sotto la soglia di turbolenza.`
+              ? `Picco ${ventPeak.toFixed(1)} m/s ai ${settings.powerW || 0} W simulati: oltre la soglia di turbolenza, il condotto soffia.`
+              : `Picco ${ventPeak.toFixed(1)} m/s ai ${settings.powerW || 0} W simulati, sotto la soglia di turbolenza. Nella scheda Cassa trovi il valore nel caso peggiore, a Xmax.`
           }
         >
           <Plot

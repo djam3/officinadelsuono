@@ -103,15 +103,37 @@ function resolvePortGeometry(input: DesignInput, fbHz: number, sdCm2: number, xm
   return autoSizePort(input.portType, count, fbHz, sdCm2, xmaxMm);
 }
 
-/** Progetto del condotto: misure, accordo e verifica della velocità */
-function designPort(input: DesignInput, fbHz: number, vbL: number): { port: PortResult; warnings: string[] } {
+/**
+ * Progetto del condotto: misure, accordo e verifica della velocità.
+ *
+ * Restituisce anche `actualFbHz`, che coincide con quello richiesto tranne
+ * quando la sezione scelta è troppo grande per accordare così in alto: in quel
+ * caso il condotto dovrebbe essere più corto del minimo costruttivo, e la
+ * cassa accorderà davvero più in basso. Meglio dichiararlo che mostrare un
+ * numero che il mobile non rispetterà.
+ */
+function designPort(
+  input: DesignInput,
+  fbHz: number,
+  vbL: number,
+): { port: PortResult; warnings: string[]; actualFbHz: number } {
   const warnings: string[] = [];
   const sd = input.ts.sd ?? 500;
   const xmax = input.ts.xmax ?? 6;
 
   const geometry = resolvePortGeometry(input, fbHz, sd, xmax);
-  const lengthMm = portLengthFor(geometry, fbHz, vbL);
-  const vc = velocityCheck(geometry, fbHz, sd, xmax);
+  const len = portLengthFor(geometry, fbHz, vbL);
+  const lengthMm = len.lengthMm;
+
+  // con la lunghezza minima l'accordo reale non è più quello chiesto
+  const actualFbHz = len.unreachable ? tuningOf(geometry, lengthMm, vbL) : fbHz;
+  if (len.unreachable) {
+    warnings.push(
+      `Con questa sezione l'accordo di ${Math.round(fbHz)} Hz non è raggiungibile: servirebbe un condotto di ${Math.round(len.rawMm)} mm, sotto il minimo costruibile. Al minimo di ${lengthMm} mm la cassa accorda a ${actualFbHz.toFixed(1)} Hz — i calcoli che seguono usano questo valore. Per salire serve una sezione più piccola.`,
+    );
+  }
+
+  const vc = velocityCheck(geometry, actualFbHz, sd, xmax);
   const areaCm2 = totalPortArea(geometry);
   const spec = PORT_TYPES[geometry.type];
 
@@ -142,6 +164,7 @@ function designPort(input: DesignInput, fbHz: number, vbL: number): { port: Port
       description: describePort(geometry, lengthMm),
     },
     warnings,
+    actualFbHz,
   };
 }
 
@@ -212,9 +235,10 @@ function designVented(input: DesignInput): AcousticResult {
   }
 
   const f3 = 0.26 * ts.fs * Math.pow(ts.qts, -1.4); // stima di Keele
-  const { port, warnings } = designPort(input, fb, vb);
+  const { port, warnings, actualFbHz } = designPort(input, fb, vb);
 
-  return { vbL: vb, fbHz: fb, f3Hz: f3, alpha, port, warnings };
+  // se la sezione non consente l'accordo chiesto, vale quello reale
+  return { vbL: vb, fbHz: actualFbHz, f3Hz: f3, alpha, port, warnings };
 }
 
 function designPassiveRadiator(input: DesignInput): AcousticResult {
@@ -247,18 +271,18 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
     const alpha = ts.vas / (input.customVbL ?? sealedFromQtc(ts, 0.707).vb);
     const bp = bandpass4thOrder(ts, { S, alpha, dvMm: dv, np });
     // il condotto appartiene alla camera anteriore: si dimensiona sul suo volume
-    const { port, warnings: portWarnings } = designPort(input, bp.fb, bp.vfL);
+    const { port, warnings: portWarnings, actualFbHz } = designPort(input, bp.fb, bp.vfL);
     warnings.push('Bandpass 4° ordine: il driver è nascosto e tutta l’emissione passa dal condotto, quindi la velocità dell’aria va controllata con particolare attenzione.');
     warnings.push(...portWarnings);
     return {
-      vbL: bp.vrL + bp.vfL, fbHz: bp.fb, f3Hz: bp.fL, alpha,
+      vbL: bp.vrL + bp.vfL, fbHz: actualFbHz, f3Hz: bp.fL, alpha,
       chambers: { rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH },
       port, warnings,
     };
   }
 
   const bp = bandpass6thOrder(ts, { S: input.bandpassS ?? 0.6, dvMm: dv, np });
-  const { port, warnings: portWarnings } = designPort(input, bp.fbFront, bp.vfL);
+  const { port, warnings: portWarnings, actualFbHz } = designPort(input, bp.fbFront, bp.vfL);
   warnings.push('Bandpass 6° ordine: due camere accordate, banda più larga ma taratura critica. Progetto di partenza da rifinire con misura.');
   warnings.push(...portWarnings);
   return {
@@ -323,6 +347,7 @@ export function computeDesign(input: DesignInput): DesignResult {
   if (acoustic.port && portBuild) {
     const t = input.wallThicknessMm;
     const fit = portFit(acoustic.port.geometry, acoustic.port.lengthMm, {
+      internalWidthMm: dimensions.width - 2 * t,
       internalHeightMm: dimensions.height - 2 * t,
       internalDepthMm: dimensions.depth - 2 * t,
     });

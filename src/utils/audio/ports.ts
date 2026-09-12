@@ -160,7 +160,23 @@ export function aspectRatio(g: PortGeometry): number | null {
  * Per i condotti ripiegati la lunghezza è quella SVILUPPATA sull'asse: è la
  * misura che conta per l'accordo e quella che serve per tagliare i pezzi.
  */
-export function portLengthFor(g: PortGeometry, fbHz: number, vbLiters: number, tempC = 20): number {
+/** lunghezza minima sotto la quale un condotto non è più costruibile */
+export const MIN_PORT_LENGTH_MM = 20;
+
+export interface PortLengthResult {
+  /** lunghezza utilizzabile (mm), mai sotto il minimo costruttivo */
+  lengthMm: number;
+  /** lunghezza teorica richiesta: può essere negativa se la sezione è troppo grande */
+  rawMm: number;
+  /**
+   * true quando l'accordo richiesto NON è ottenibile con questa sezione: il
+   * condotto dovrebbe essere più corto del minimo costruttivo, quindi quello
+   * reale accorderà più in basso di quanto chiesto.
+   */
+  unreachable: boolean;
+}
+
+export function portLengthFor(g: PortGeometry, fbHz: number, vbLiters: number, tempC = 20): PortLengthResult {
   const spec = PORT_TYPES[g.type];
   const cCm = speedOfSound(tempC) * 100;           // cm/s
   const k = (cCm * cCm) / (4 * Math.PI * Math.PI); // costante di accordo
@@ -173,8 +189,13 @@ export function portLengthFor(g: PortGeometry, fbHz: number, vbLiters: number, t
   // le pieghe accorciano leggermente il percorso utile: il flusso taglia
   // l'angolo interno invece di seguirlo
   const bendGain = spec.bends * 0.3 * dvCm;
+  const rawMm = (lengthCm + bendGain) * 10;
 
-  return Math.max(20, (lengthCm + bendGain) * 10);
+  return {
+    lengthMm: Math.max(MIN_PORT_LENGTH_MM, rawMm),
+    rawMm,
+    unreachable: rawMm < MIN_PORT_LENGTH_MM,
+  };
 }
 
 /** Accordo (Hz) di un condotto già costruito — verifica a posteriori */
@@ -285,12 +306,27 @@ export interface PortFit {
 export function portFit(
   g: PortGeometry,
   lengthMm: number,
-  box: { internalHeightMm: number; internalDepthMm: number },
+  box: { internalWidthMm: number; internalHeightMm: number; internalDepthMm: number },
 ): PortFit {
   const spec = PORT_TYPES[g.type];
   const warnings: string[] = [];
   const segments: PortFit['segments'] = [];
   let fits = true;
+
+  // ── la sezione deve stare nel frontale ─────────────────────────────────────
+  // (controllo trascurato finora: un auto-dimensionamento può proporre uno slot
+  //  più largo della cassa stessa)
+  const sectionWidth = spec.section === 'rectangular'
+    ? (g.widthMm ?? 0)
+    : spec.section === 'triangular'
+      ? (g.legAMm ?? 0)
+      : (g.diameterMm ?? 0) * Math.max(1, g.count); // più tubi affiancati
+  if (sectionWidth > box.internalWidthMm) {
+    fits = false;
+    warnings.push(
+      `La sezione è larga ${Math.round(sectionWidth)} mm ma nella cassa ce ne stanno ${Math.round(box.internalWidthMm)}: riduci la larghezza e aumenta l'altezza della luce, oppure distribuisci l'area su più condotti.`,
+    );
+  }
 
   const clearance = Math.max(60, equivalentDiameter(g)); // aria dietro la bocca interna
 
