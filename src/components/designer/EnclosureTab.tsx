@@ -1,5 +1,6 @@
 import { Lightbulb, Wind } from 'lucide-react';
 import { NumField, SelectField, Section, ActionButton, Stat, Warnings } from './ui';
+import { PortDrawing } from './PortDrawing';
 import { ALIGNMENTS, ENCLOSURE_LABELS, PORT_TYPES } from '../../utils/audio';
 import type {
   AlignmentType, AcousticResult, EnclosureSuggestion, EnclosureType, PortType,
@@ -205,6 +206,14 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
 
           {acoustic?.port && (
             <>
+              <div className="bg-zinc-950/60 border border-white/5 rounded-xl p-3 mb-4">
+                <PortDrawing
+                  geometry={acoustic.port.geometry}
+                  lengthMm={acoustic.port.lengthMm}
+                  segments={acoustic.port.segments}
+                />
+              </div>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Stat label="Sezione" value={acoustic.port.description.split(' × ')[0]} />
                 <Stat label="Lunghezza sviluppata" value={acoustic.port.lengthMm} unit="mm" accent />
