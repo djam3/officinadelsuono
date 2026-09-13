@@ -34,7 +34,16 @@ export type DriverWiring = 'single' | 'parallel' | 'series' | 'isobaric' | 'push
 
 export interface DriverConfig {
   count: number;         // numero di altoparlanti
+  /** disposizione acustica: come i coni sono montati fra loro */
   wiring: DriverWiring;
+  /**
+   * Connessione elettrica, quando la disposizione non la implica gia.
+   * Un isobarico o un push-pull si possono cablare in serie oppure in
+   * parallelo, e la scelta cambia impedenza, BL equivalente e potenza:
+   * tenerla insieme alla disposizione rendeva "isobarico in serie"
+   * inesprimibile, che e una configurazione del tutto normale.
+   */
+  electrical?: 'series' | 'parallel';
 }
 
 // ─── Tipologie di cassa ───────────────────────────────────────────────────────

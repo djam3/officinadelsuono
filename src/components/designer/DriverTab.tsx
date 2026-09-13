@@ -339,6 +339,19 @@ export function DriverTab({
             }}
             options={Object.entries(WIRING_LABELS).map(([value, label]) => ({ value, label }))}
           />
+
+          {(config.wiring === 'isobaric' || config.wiring === 'push-pull') && (
+            <SelectField
+              label="Connessione elettrica"
+              infoId="wiring"
+              value={config.electrical ?? 'parallel'}
+              onChange={v => onConfigChange({ ...config, electrical: v as 'series' | 'parallel' })}
+              options={[
+                { value: 'parallel', label: 'Parallelo' },
+                { value: 'series', label: 'Serie' },
+              ]}
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">

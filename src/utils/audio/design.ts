@@ -102,7 +102,10 @@ export interface PortResult {
 
 /** Costruisce la geometria dai dati inseriti, o la dimensiona se mancano */
 function resolvePortGeometry(input: DesignInput, fbHz: number, sdCm2: number, xmaxMm: number): PortGeometry {
-  const spec = PORT_TYPES[input.portType];
+  // Una geometria sconosciuta — un progetto salvato con una voce poi rimossa,
+  // o un parametro arrivato dall'indirizzo — non deve far cadere l'intera
+  // pagina: si torna al tubo a filo del pannello, che e il caso piu comune.
+  const spec = PORT_TYPES[input.portType] ?? PORT_TYPES['circular-flanged'];
   const count = Math.max(1, input.portCount);
 
   const given: PortGeometry = { type: input.portType, count };

@@ -12,6 +12,11 @@
  *    è metà di quella del singolo: stessa risposta in METÀ del volume.
  *  - Sensibilità a 1 W: +10·log10(N) per accoppiamento mutuo (isobarico −3 dB,
  *    perché servono due motori per muovere un solo cono).
+ *
+ * La connessione elettrica è indipendente dalla disposizione acustica: si
+ * sceglie con `electrical` per isobarico e push-pull, mentre serie e parallelo
+ * la dichiarano già nel nome. Cambia impedenza, potenza e BL equivalente, ma
+ * non la risposta acustica: Fs, Qts e Vas restano gli stessi.
  */
 
 import type { DriverConfig, TSParams } from './types';
@@ -67,15 +72,20 @@ export function combineDrivers(ts: TSParams, config: DriverConfig): EffectiveDri
     }
   }
 
-  // Carico elettrico
+  // ── Carico elettrico ──────────────────────────────────────────────────────
+  // La disposizione acustica non impone il cablaggio: un isobarico o un
+  // push-pull si fanno sia in serie sia in parallelo. Dove la disposizione non
+  // lo dice, si usa `electrical` (parallelo per compatibilita con i progetti
+  // salvati prima che il campo esistesse).
+  const inSerie = wiring === 'series'
+    || ((wiring === 'isobaric' || wiring === 'push-pull') && config.electrical === 'series');
   let totalImpedance = zSingle;
   let totalRe = reSingle;
   if (n > 1) {
-    if (wiring === 'series') {
+    if (inSerie) {
       totalImpedance = zSingle * n;
       totalRe = reSingle * n;
     } else {
-      // parallelo, push-pull e isobarico si cablano tipicamente in parallelo
       totalImpedance = zSingle / n;
       totalRe = reSingle / n;
     }
@@ -84,8 +94,23 @@ export function combineDrivers(ts: TSParams, config: DriverConfig): EffectiveDri
     warnings.push(`Carico risultante ${totalImpedance.toFixed(1)}Ω: verifica che l'amplificatore lo supporti.`);
   }
 
+  // Il BL equivalente segue il cablaggio, e va scalato con esso.
+  //
+  // Con n driver in SERIE la stessa corrente attraversa tutti i motori, quindi
+  // la forza sul cono equivalente e n volte quella di uno solo: BL_eq = n*BL.
+  // In parallelo la corrente totale si divide fra i motori e il BL equivalente
+  // resta quello del singolo.
+  //
+  // Senza questa scala il Qes del driver equivalente non tornava piu con BL,
+  // Mms e Re: su una coppia in serie risultava 1.76 invece di 0.44, e
+  // l'escursione calcolata veniva la meta di quella del parallelo, quando le
+  // due devono coincidere — a parita di potenza totale ciascun driver riceve
+  // P/n in entrambi i casi.
+  const blFactor = inSerie && n > 1 ? n : 1;
+
   const effective: TSParams = {
     ...ts,
+    bl: ts.bl !== undefined ? ts.bl * blFactor : undefined,
     vas: ts.vas * vasFactor,
     sd: ts.sd !== undefined ? ts.sd * sdFactor : undefined,
     vd: ts.vd !== undefined ? ts.vd * sdFactor : undefined,
