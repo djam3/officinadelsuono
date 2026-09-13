@@ -20,6 +20,7 @@ export interface EnclosureSettings {
   triLegAMm: number | '';
   triLegBMm: number | '';
   bandpassS: number | '';
+  bandpassGainDb: number | '';
   prVasL: number | '';
   prSdCm2: number | '';
   prQms: number | '';
@@ -114,7 +115,16 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                 value={settings.bandpassS}
                 onChange={v => set('bandpassS', v)}
                 step={0.05}
-                hint="0.7 risposta centrata · valori bassi = banda stretta e più efficiente"
+                hint="A parità di guadagno: valori alti = cassa piccola e banda larga, valori bassi = cassa grande e banda stretta"
+              />
+            )}
+            {settings.enclosure === 'bandpass4' && (
+              <NumField
+                label="Guadagno in banda voluto" unit="dB" infoId="bandpass"
+                value={settings.bandpassGainDb}
+                onChange={v => set('bandpassGainDb', v)}
+                step={0.5}
+                hint="Sulla sensibilità del driver. 0 dB = stesso livello in banda · ogni dB in più si paga in larghezza di banda"
               />
             )}
           </div>

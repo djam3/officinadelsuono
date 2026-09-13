@@ -1076,7 +1076,8 @@ export const GLOSSARY: GlossaryEntry[] = [
     blocks: [
       {
         paragraphs: [
-          'In un bandpass il driver è chiuso fra due camere e tutto quello che si sente esce dai condotti. Il rapporto fra il volume della camera anteriore e quello della posteriore governa la larghezza della banda: camera anteriore piccola significa banda stretta e livello alto, camera grande significa banda larga e livello normale.',
+          'In un bandpass il driver è chiuso fra due camere e tutto quello che si sente esce dai condotti. È la camera ANTERIORE a comandare il baratto, e va nel verso che sorprende: a parità di camera posteriore, un’anteriore GRANDE dà banda stretta e livello alto, una PICCOLA dà banda larga e livello basso. Sul driver di prova, passando da 9 a 145 litri di camera anteriore il livello in banda va da −11 a +12 dB e la banda si stringe da 2,9 a 0,2 ottave: sono gli stessi decibel che si perdono in larghezza, scambiati di posto.',
+          'Il conto è esatto e vale la pena saperlo: il guadagno al centro è 1/γ, dove γ = (Vas/Vf)/(1+Vas/Vr), e la larghezza di banda va come √γ. Raddoppiare il guadagno costa metà della banda, sempre.',
           'È un baratto quasi a somma costante. Sullo stesso driver, un bandpass di quarto ordine può coprire 33–94 Hz senza guadagno, mentre uno di sesto ordine copre 35–54 Hz con più di 3 dB in più: più stretto e più forte.',
         ],
       },
@@ -1097,6 +1098,7 @@ export const GLOSSARY: GlossaryEntry[] = [
     ],
     sources: [
       'Le pendenze sono derivate dal circuito equivalente e verificate sul motore: 12,10 dB/ott per il quarto ordine, 24 per il fianco basso del sesto',
+      'Guadagno = 1/γ e banda = √γ ricavati dal circuito equivalente (Beranek, analogia delle impedenze acustiche) e ricontrollati sul motore: scarto 0,00 dB su cinque volumi di camera anteriore',
       'Bloccando il condotto posteriore il sesto ordine si riduce al quarto entro 0,00000 dB',
     ],
     related: ['fb', 'ventvelocity', 'vb'],

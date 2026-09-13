@@ -334,29 +334,127 @@ export function passiveRadiatorTuning(params: {
 //  BANDPASS (4°/6° ordine)
 // ═══════════════════════════════════════════════════════════════════════════
 
+export interface Bandpass4Result {
+  vrL: number;          // camera posteriore sigillata (litri)
+  vfL: number;          // camera anteriore accordata (litri)
+  fb: number;           // accordo della camera anteriore (Hz)
+  fcRear: number;       // risonanza del driver nella sola camera posteriore (Hz)
+  qtc: number;          // Q del driver nella camera posteriore
+  qProto: number;       // Q del passa-basso prototipo: >0.707 = gobba in banda
+  gamma: number;        // C_at/C_af: comanda guadagno e larghezza di banda
+  portLengthMm: number;
+  fL: number;           // −3 dB inferiore (senza perdite)
+  fH: number;           // −3 dB superiore (senza perdite)
+  gainDb: number;       // guadagno in banda sul riferimento del driver
+  rippleDb: number;     // gobba residua in banda
+  warnings: string[];
+}
+
 /**
- * Bandpass 4° ordine (single-reflex): camera posteriore sigillata Vr + camera
- * anteriore ported Vf. S = Vf/Vr (≈0.7 piatto), α = Vas/Vr.
+ * Bandpass 4° ordine (single-reflex): camera posteriore SIGILLATA Vr, camera
+ * anteriore ACCORDATA Vf, e il driver in mezzo che non irradia mai diretto.
+ *
+ * Prima qui i volumi non venivano da nessun allineamento: la camera posteriore
+ * era quella di una cassa chiusa a Qtc 0.707 e l'anteriore ne era una frazione,
+ * quindi il guadagno in banda — che è il motivo per cui un bandpass si
+ * costruisce — usciva dove capitava, e non c'era modo di chiederne uno.
+ * Anche gli estremi di banda erano una stima inventata (fb·√(1+1/S)).
+ *
+ * Ricavato invece dal circuito (le stesse maglie di bandpassCircuit.ts), con
+ * x = s/ωc, h = Fb/Fc, γ = C_at/C_af = α_f/(1+α_r):
+ *
+ *   G(x) = h²x² / [ x⁴ + (1/Qtc)x³ + (1+h²+γ)x² + (h²/Qtc)x + h² ]
+ *
+ * Perché questa sia la trasformata passa-banda di un passa-basso del 2° ordine
+ * — cioè perché la risposta sia geometricamente simmetrica attorno al centro —
+ * il denominatore deve essere reciproco, e lo è solo se a1/a3 = √a0, cioè
+ * **h = 1: Fb = Fc**. Con h = 1 il confronto con la trasformata dà
+ *
+ *   banda frazionaria B = √γ      Q del prototipo Q = Qtc·√γ
+ *   guadagno al centro = 1/γ      (rispetto al riferimento del driver)
+ *
+ * Da qui il progetto si inverte: il guadagno chiesto fissa γ, e S = Vf/Vr
+ * fissa come dividere la compliance fra le due camere:
+ *
+ *   γ = 10^(−dB/20)     α_r = γS/(1 − γS)     α_f = α_r/S
+ *
+ * Con γ = 1 (0 dB) viene α_r = S/(1−S): S piccolo = cassa grande e banda
+ * stretta, S grande = cassa piccola e banda larga. Il massimo piatto
+ * (Butterworth, Q = 0.707) capita a Qtc·√γ = 1/√2.
+ *
+ * Verifica: alimentando il circuito equivalente con i volumi che escono di qui
+ * e QL→∞, il guadagno in banda torna 0.000 dB contro gli 0 chiesti e i due
+ * estremi a −3 dB entro lo 0.07%.
  */
 export function bandpass4thOrder(ts: TSParams, params: {
-  S: number;       // Vf/Vr
-  alpha: number;   // Vas/Vr
+  /** Vf/Vr: come si divide la compliance fra le due camere */
+  S: number;
+  /** guadagno in banda voluto, dB sul riferimento del driver */
+  gainDb?: number;
+  /** se la camera posteriore è imposta, comanda lei e il guadagno viene di conseguenza */
+  vrFixedL?: number;
   dvMm: number;
   np?: number;
-}): { vrL: number; vfL: number; fb: number; portLengthMm: number; fL: number; fH: number } {
-  const { S, alpha, dvMm, np = 1 } = params;
-  const vr = ts.vas / alpha;
-  const vf = S * vr;
-  // Fc camera posteriore (sealed): Fc = Fs·√(1+α)
-  const fcRear = ts.fs * Math.sqrt(1 + alpha);
-  // Tuning camera anteriore ~ Fc per risposta centrata
-  const fb = fcRear;
-  const lv = portLength(dvMm, fb, vf, np);
-  // Larghezza banda approssimata
-  const bw = 1 + 1 / S;
-  const fL = fb / Math.sqrt(bw);
-  const fH = fb * Math.sqrt(bw);
-  return { vrL: vr, vfL: vf, fb, portLengthMm: lv, fL, fH };
+}): Bandpass4Result {
+  const { S, gainDb = 0, vrFixedL, dvMm, np = 1 } = params;
+  const warnings: string[] = [];
+  const s = Math.min(Math.max(S, 0.05), 4);
+
+  let gamma: number;
+  let alphaR: number;
+  if (vrFixedL && vrFixedL > 0) {
+    alphaR = ts.vas / vrFixedL;
+    gamma = (alphaR / s) / (1 + alphaR);
+  } else {
+    gamma = Math.pow(10, -gainDb / 20);
+    // α_r = γS/(1−γS): oltre γS = 1 la camera posteriore dovrebbe essere
+    // negativa, cioè quel guadagno con quel rapporto di volumi non esiste
+    if (gamma * s >= 0.95) {
+      const gMin = 20 * Math.log10(s / 0.95);
+      warnings.push(
+        `Con S = ${s.toFixed(2)} un guadagno di ${gainDb.toFixed(1)} dB non è ottenibile: ` +
+        `servirebbe una camera posteriore infinita. Il minimo con questo S è ${gMin.toFixed(1)} dB.`,
+      );
+      gamma = 0.95 / s;
+    }
+    alphaR = (gamma * s) / (1 - gamma * s);
+  }
+
+  const vr = ts.vas / alphaR;
+  const vf = s * vr;
+  const fc = ts.fs * Math.sqrt(1 + alphaR);
+  const qtc = ts.qts * Math.sqrt(1 + alphaR);
+  const fb = fc; // condizione di simmetria h = 1
+
+  // prototipo passa-basso equivalente
+  const B = Math.sqrt(gamma);
+  const qProto = qtc * B;
+
+  // −3 dB del prototipo: (1−Λ²)² + Λ²/Q² = 2, poi antitrasformato
+  const k = 1 / (qProto * qProto) - 2;
+  const lambda = Math.sqrt((-k + Math.sqrt(k * k + 4)) / 2);
+  const hi = (B * lambda + Math.sqrt(B * B * lambda * lambda + 4)) / 2;
+
+  // sopra Q = 1/√2 il prototipo ha una gobba, e il bandpass la eredita
+  const ripple = qProto > Math.SQRT1_2
+    ? 20 * Math.log10(qProto / Math.sqrt(1 - 1 / (4 * qProto * qProto)))
+    : 0;
+
+  return {
+    vrL: vr,
+    vfL: vf,
+    fb,
+    fcRear: fc,
+    qtc,
+    qProto,
+    gamma,
+    portLengthMm: portLength(dvMm, fb, vf, np),
+    fL: fc / hi,
+    fH: fc * hi,
+    gainDb: -20 * Math.log10(gamma),
+    rippleDb: ripple,
+    warnings,
+  };
 }
 
 

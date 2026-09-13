@@ -30,7 +30,7 @@ export const roomGainOnsetHz = (longestDimMeters: number) => 565 / (longestDimMe
 
 /** Curva di guadagno ambiente (dB) sulla stessa griglia della risposta */
 export function roomGainCurve(grid: number[], preset: RoomPreset): CurvePoint[] {
-  const spec = ROOM_PRESETS[preset];
+  const spec = ROOM_PRESETS[preset] ?? ROOM_PRESETS.none;
   if (spec.maxGainDb === 0 || spec.onsetHz === 0) return grid.map(f => ({ f, v: 0 }));
   return grid.map(f => ({
     f,

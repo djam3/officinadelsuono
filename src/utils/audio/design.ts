@@ -50,6 +50,8 @@ export interface DesignInput {
 
   /** bandpass: rapporto volumi camera anteriore/posteriore */
   bandpassS?: number;
+  /** bandpass 4°: guadagno in banda voluto (dB sul riferimento del driver) */
+  bandpassGainDb?: number;
 
   /** radiatore passivo */
   prVasL?: number;
@@ -312,6 +314,17 @@ function designPassiveRadiator(input: DesignInput, qb = 7): AcousticResult {
   };
 }
 
+/**
+ * S che porta il prototipo a Q = 1/√2 (massimo piatto) a parità di guadagno.
+ * Da Qtc·√γ = 1/√2 con Qtc = Qts·√(1+α_r) si ricava α_r, e da α_r = γS/(1−γS)
+ * si torna a S.
+ */
+function flatS(qts: number, gamma: number): number {
+  const alphaR = 1 / (2 * gamma * qts * qts) - 1;
+  if (alphaR <= 0) return 0;
+  return alphaR / (gamma * (1 + alphaR));
+}
+
 function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
   const { ts } = input;
   const warnings: string[] = [];
@@ -320,14 +333,33 @@ function designBandpass(input: DesignInput, order: 4 | 6): AcousticResult {
 
   if (order === 4) {
     const S = input.bandpassS ?? 0.7;
-    const alpha = ts.vas / (input.customVbL ?? sealedFromQtc(ts, 0.707).vb);
-    const bp = bandpass4thOrder(ts, { S, alpha, dvMm: dv, np });
+    const bp = bandpass4thOrder(ts, {
+      S,
+      gainDb: input.bandpassGainDb ?? 0,
+      vrFixedL: input.customVbL,
+      dvMm: dv,
+      np,
+    });
     // il condotto appartiene alla camera anteriore: si dimensiona sul suo volume
     const { port, warnings: portWarnings, actualFbHz } = designPort(input, bp.fb, bp.vfL);
     warnings.push('Bandpass 4° ordine: il driver è nascosto e tutta l’emissione passa dal condotto, quindi la velocità dell’aria va controllata con particolare attenzione.');
+    warnings.push(
+      `Allineamento: camera posteriore ${bp.vrL.toFixed(1)} L (Qtc ${bp.qtc.toFixed(2)}), ` +
+      `camera anteriore ${bp.vfL.toFixed(1)} L accordata sulla stessa frequenza — è la condizione ` +
+      `che rende la banda simmetrica. Guadagno nominale ${bp.gainDb >= 0 ? '+' : ''}${bp.gainDb.toFixed(1)} dB ` +
+      `sul riferimento del driver; le perdite reali della camera anteriore ne tolgono una parte.`,
+    );
+    if (bp.rippleDb > 0.1) {
+      warnings.push(
+        `Il prototipo ha Q ${bp.qProto.toFixed(2)}, sopra 0.707: in banda resta una gobba di ` +
+        `${bp.rippleDb.toFixed(1)} dB. Per il massimo piatto serve S ≈ ${flatS(ts.qts, bp.gamma).toFixed(2)}.`,
+      );
+    }
+    warnings.push(...bp.warnings);
     warnings.push(...portWarnings);
     return {
-      vbL: bp.vrL + bp.vfL, fbHz: actualFbHz, f3Hz: bp.fL, alpha,
+      vbL: bp.vrL + bp.vfL, fbHz: actualFbHz, f3Hz: bp.fL, alpha: ts.vas / bp.vrL,
+      qtc: bp.qtc, passbandGainDb: bp.gainDb,
       chambers: {
         rearL: bp.vrL, frontL: bp.vfL, fLow: bp.fL, fHigh: bp.fH,
         portFrontCm2: port.areaCm2,
@@ -405,7 +437,9 @@ const DAMPING_AS_ABSORBER: Record<DampingLevel, { material: AbsorberId; placemen
 };
 
 export function computeDesign(input: DesignInput): DesignResult {
-  const preset = DAMPING_AS_ABSORBER[input.damping];
+  // stessa rete di sicurezza messa sulle geometrie dei condotti: un valore non
+  // previsto qui non deve far cadere l'intera pagina, ma tornare al default
+  const preset = DAMPING_AS_ABSORBER[input.damping] ?? DAMPING_AS_ABSORBER.normal;
   const material = input.absorber ?? preset.material;
   const placement = input.placement ?? preset.placement;
   const density = input.absorberDensityKgM3
