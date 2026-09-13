@@ -245,9 +245,13 @@ export function computePRResponse(input: PRCircuitInput): PRResponse {
     excursion.push({ f, v: xd });
     prExcursion.push({ f, v: xp });
 
-    // impedenza elettrica: Re + jωLe + Bl²/(Sd²·Z_acustica senza smorzamento elettrico)
-    const zMot = k.bl > 0 ? (k.bl * k.bl) / (k.sd * k.sd * abs(n.zMech)) : 0;
-    impedance.push({ f, v: k.re + zMot + w * le });
+    // Z = Re + jwLe + Bl^2/(Sd^2 * Z_mech), tutto COMPLESSO.
+    // Sommare il modulo della parte motional a Re come se fossero scalari
+    // gonfia la curva sopra la risonanza, dove quella parte e quasi tutta
+    // reattiva: incrociando con la formula del reflex lo scarto arrivava al
+    // 23% anche annullando l'induttanza.
+    const zMot = k.bl > 0 ? div(c(k.bl * k.bl / (k.sd * k.sd)), n.zMech) : c(0);
+    impedance.push({ f, v: abs(add(c(k.re, w * le), zMot)) });
   }
 
   // ritardo di gruppo dalla fase della pressione

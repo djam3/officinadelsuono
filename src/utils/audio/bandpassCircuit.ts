@@ -168,7 +168,12 @@ export function computeBandpassResponse(input: BandpassInput, order: 4 | 6): Ban
   const raw = grid.map(f => {
     const w = TWO_PI * f;
     const n = bpNode(f, k, order);
-    const zMot = k.bl > 0 ? (k.bl * k.bl) / (k.sd * k.sd * abs(n.zMech)) : 0;
+    // Z = Re + jwLe + Bl^2/(Sd^2 * Z_mech), tutto COMPLESSO.
+    // Sommare il modulo della parte motional a Re come se fossero scalari
+    // gonfia la curva sopra la risonanza, dove quella parte e quasi tutta
+    // reattiva: incrociando con la formula del reflex lo scarto arrivava al
+    // 23% anche annullando l'induttanza.
+    const zMot = k.bl > 0 ? div(c(k.bl * k.bl / (k.sd * k.sd)), n.zMech) : c(0);
     return {
       f,
       mag: abs(n.p) / reference,
@@ -176,7 +181,7 @@ export function computeBandpassResponse(input: BandpassInput, order: 4 | 6): Ban
       xd: k.bl > 0 ? (abs(n.ud) / (w * k.sd)) * 1000 * Math.SQRT2 : 0,
       vF: (abs(n.upF) / spF) * Math.SQRT2,
       vR: (abs(n.upR) / spR) * Math.SQRT2,
-      z: k.re + zMot + w * le,
+      z: abs(add(c(k.re, w * le), zMot)),
     };
   });
 

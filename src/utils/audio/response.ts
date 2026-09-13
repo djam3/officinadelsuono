@@ -179,29 +179,56 @@ function computeImpedance(input: ResponseInput, grid: number[]): CurvePoint[] {
     });
   }
 
-  // Vented: l'impedenza si ricava dallo STESSO modello della risposta invece
-  // che da picchi sovrapposti a mano.
+  // ── Vented ──────────────────────────────────────────────────────────────
   //
-  //   Z(Ω)/Re = 1 + (1/Qes)·Ω·|N(Ω)| / |D(Ω)|
+  // L'impedenza motional si ricava dall'impedenza ACUSTICA del sistema vista
+  // dal diaframma, e in quella non deve comparire lo smorzamento elettrico:
+  // e proprio quello che l'impedenza sta misurando, metterlo anche nel
+  // denominatore lo conta due volte. La versione precedente usava il
+  // denominatore D(O) della funzione di trasferimento, che porta dentro 1/Qts,
+  // e i picchi uscivano sei volte piu bassi del vero — 10 ohm invece di 63 su
+  // un 18" da 8 ohm, dove il riferimento di manuale per la cassa chiusa e
+  // Re(1 + Qms/Qes) = 98 ohm. Una curva cosi non serve a verificare un
+  // montaggio, che e il motivo per cui la si guarda.
   //
-  // N è il numeratore del risonatore, che si annulla all'accordo lasciando
-  // solo 1/QL: da lì nasce la valle a Fb, che il modello precedente non
-  // produceva affatto. I due picchi cadono sugli zeri di D, cioè sui poli
-  // veri del sistema, invece che a rapporti fissi 0.72·Fb e 1.4·Fb.
+  // Forma ricavata dal circuito, normalizzata alla risonanza del driver
+  // (sigma = j*f/Fs, beta = Fb/Fs):
+  //
+  //   Z_A/z_s   = 1/Qms + sigma + 1/sigma + alpha*sigma/(sigma^2 + sigma*beta/QL + beta^2)
+  //   Z(s)      = Re * [ 1 + (1/Qes) / (Z_A/z_s) ] + j*w*Le
+  //
+  // Con il condotto tappato (beta -> 0) si riduce a Re(1 + Qms/Qes) alla
+  // risonanza in cassa, cioe esattamente il valore della cassa chiusa.
   const fb = input.fb!;
   const alpha = input.alpha!;
   const ql = input.ql ?? 7;
-  const h = fb / ts.fs;
-  const f0 = Math.sqrt(fb * ts.fs);
-  const a1 = 1 / (ql * Math.sqrt(h)) + Math.sqrt(h) / ts.qts;
-  const a2 = (alpha + 1) / h + h + 1 / (ql * ts.qts);
-  const a3 = 1 / (ts.qts * Math.sqrt(h)) + Math.sqrt(h) / ql;
+  const beta = fb / ts.fs;
+  const qmsD = ts.qms ?? ts.qts * 10;
 
   return grid.map(f => {
-    const O = f / f0;
-    const numMag = Math.hypot(1 - (O * O) / h, O / (Math.sqrt(h) * ql));
-    const denMag = Math.hypot(Math.pow(O, 4) - a2 * O * O + 1, -a1 * Math.pow(O, 3) + a3 * O);
-    const motional = (O / qes) * (numMag / Math.max(denMag, 1e-9));
-    return { f, v: re * (1 + motional) + TWO_PI * f * le };
+    // sigma = j·u  ⇒  1/sigma = −j/u ,  sigma² = −u²
+    const u = f / ts.fs;
+
+    // carico della cassa: alpha·sigma / (sigma² + sigma·beta/QL + beta²)
+    const denRe = beta * beta - u * u;
+    const denIm = (u * beta) / ql;
+    const den2 = Math.max(denRe * denRe + denIm * denIm, 1e-12);
+    const boxRe = (alpha * u * denIm) / den2;
+    const boxIm = (alpha * u * denRe) / den2;
+
+    // impedenza acustica normalizzata vista dal diaframma, SENZA la parte
+    // elettrica: quella è l'incognita che stiamo misurando
+    const zaRe = 1 / qmsD + boxRe;
+    const zaIm = u - 1 / u + boxIm;
+    const za2 = Math.max(zaRe * zaRe + zaIm * zaIm, 1e-12);
+
+    // parte motional = (1/Qes)/Z_A, complessa
+    const motRe = zaRe / (za2 * qes);
+    const motIm = -zaIm / (za2 * qes);
+
+    return {
+      f,
+      v: Math.hypot(re * (1 + motRe), re * motIm + TWO_PI * f * le),
+    };
   });
 }
