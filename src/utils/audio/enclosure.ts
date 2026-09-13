@@ -118,6 +118,30 @@ export function sealedFromVb(ts: TSParams, vbL: number, qa?: number): SealedResu
 //  CASSA BASS-REFLEX (VENTED)
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Rapporti esatti delle famiglie QB3 e C4.
+ *
+ * Entrambe discendono dalle stesse due condizioni sul denominatore, e
+ * differiscono solo per quale coefficiente si lascia libero. Passano tutte e
+ * due esattamente per il Butterworth a Qts = cos(3*pi/8) = 0.38268, che e
+ * l'unico punto in cui il risultato e noto in forma chiusa e quindi l'unico
+ * controllo che non ammette opinioni.
+ *
+ * Sono gli allineamenti SENZA perdite, come sono pubblicate le tabelle
+ * classiche: le perdite reali della cassa entrano dopo, quando il motore
+ * calcola la risposta con il QL effettivo.
+ */
+function qb3c4Ratios(qts: number): { alpha: number; h: number } {
+  const q = Math.min(Math.max(qts, 0.05), 0.95);
+  const a2 = (Math.SQRT2 * Math.sqrt(1 - q * q)) / q;
+  const h = 2 * Math.SQRT2 * q * Math.sqrt(1 - q * q);
+  const alpha = h * (a2 - h) - 1;
+  // sotto questa soglia la cassa diventa assurdamente grande (alpha piccolo
+  // significa Vb = Vas/alpha): meglio fermarsi che restituire un numero che
+  // nessuno costruira mai
+  return { alpha: Math.max(alpha, 0.05), h };
+}
+
 /** Allineamenti classici → (alpha = Vas/Vb, h = Fb/Fs) per QL dato (≈7) */
 export function alignmentRatios(ts: TSParams, alignment: AlignmentType, ql = 7): { alpha: number; h: number } {
   const q = ts.qts;
@@ -130,16 +154,41 @@ export function alignmentRatios(ts: TSParams, alignment: AlignmentType, ql = 7):
       return { alpha: Math.SQRT2, h: 1 };
     }
     case 'QB3': {
-      // box più piccola, F3 più basso (Qts < 0.4 tipico)
-      const vb = 20 * ts.vas * Math.pow(q, 3.3);
-      const fb = 0.42 * ts.fs * Math.pow(q, -0.96);
-      return { alpha: ts.vas / vb, h: fb / ts.fs };
+      // Forma ESATTA, non un curve-fit. Le famiglie di allineamento nascono
+      // dalle condizioni di massima piattezza sul denominatore normalizzato
+      // D(s) = s^4 + a1*s^3 + a2*s^2 + a3*s + 1:
+      //
+      //   |D(jO)|^2 = O^8 + (a1^2 - 2a2)O^6 + (a2^2 + 2 - 2a1a3)O^4
+      //                   + (a3^2 - 2a2)O^2 + 1
+      //
+      // Il QB3 annulla i termini in O^4 e O^2 e lascia positivo quello in O^6:
+      // niente ondulazione, discesa di tipo terzo ordine. Da a2^2 + 2 = 2/Qts^2
+      // e a3^2 = 2a2 discendono in chiuso
+      //
+      //   a2 = sqrt(2)*sqrt(1 - Qts^2)/Qts       h = 2*sqrt(2)*Qts*sqrt(1 - Qts^2)
+      //   alpha = h*(a2 - h) - 1
+      //
+      // Le condizioni ammettono due rami, h e 1/h, ma uno solo e utilizzabile:
+      // a Qts 0.25 il ramo scartato darebbe F3 = 164 Hz su un driver con Fs 38,
+      // cioe un allineamento che nessuno userebbe mai. Quello tenuto da 48 Hz.
+      //
+      // Il fit precedente sbagliava del 15.8% su alpha proprio a Qts 0.3827,
+      // dove QB3 e B4 devono coincidere: dava alpha 1.19 invece di 1.414, e la
+      // risposta che ne usciva aveva la F3 quasi doppia del dovuto.
+      return qb3c4Ratios(q);
     }
     case 'C4': {
-      // Chebyshev: box più grande, bassi estesi (Qts > 0.4)
-      const vb = 18 * ts.vas * Math.pow(q, 2.6);
-      const fb = 0.40 * ts.fs * Math.pow(q, -0.9);
-      return { alpha: ts.vas / vb, h: fb / ts.fs };
+      // Stessa costruzione del QB3 ma si annullano i termini in O^6 e O^4,
+      // lasciando negativo quello in O^2: nasce l'ondulazione in banda che
+      // caratterizza il Chebyshev, in cambio di piu estensione. Il risultato
+      // La forma e la stessa del QB3: QB3, B4 e C4 non sono tre famiglie
+      // separate ma un unico continuo, ed e il Qts a decidere il carattere
+      // della risposta. Sotto 0.3827 il termine in O^2 resta positivo e non
+      // c'e ondulazione (quasi-Butterworth); sopra diventa negativo e nasce
+      // l'ondulazione in banda del Chebyshev, in cambio di piu estensione.
+      // Il fit precedente dava alpha 0.675 invece di 1.414 all'ancora,
+      // sbagliando del 52%.
+      return qb3c4Ratios(q);
     }
     case 'SBB4': {
       // Forma ESATTA della famiglia SBB4: nasce da due sezioni del 2° ordine

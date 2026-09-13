@@ -370,6 +370,27 @@ function measuredF3(spl: CurvePoint[], fallback: number): number {
 }
 
 /**
+ * Un allineamento spinto fuori dal suo campo produce una gobba in banda, e
+ * conviene dirlo. La famiglia QB3/B4/C4 e un continuo, e sopra Qts 0.383
+ * l'ondulazione del Chebyshev cresce in fretta: a Qts 0.5 vale gia 6 dB e
+ * serve una cassa di due volte il Vas, a 0.6 supera i 20 dB. Sono numeri che
+ * la formula restituisce senza protestare, ma casse che nessuno costruisce.
+ */
+function avvisaSeOndula(acoustic: AcousticResult, spl: CurvePoint[]): void {
+  const picco = Math.max(...spl.map(p => p.v));
+  if (picco > 1.5) {
+    acoustic.warnings.push(
+      `La risposta ha una gobba di ${picco.toFixed(1)} dB in banda: l'allineamento scelto sta fuori dal campo di Qts per cui è pensato. Con un Qts alto conviene la cassa chiusa, oppure un accordo più basso accettando meno estensione.`,
+    );
+  }
+  if (acoustic.alpha !== undefined && acoustic.alpha > 0 && acoustic.alpha < 0.35) {
+    acoustic.warnings.push(
+      `Il volume richiesto è ${(1 / acoustic.alpha).toFixed(1)} volte il Vas del driver: l'allineamento è al limite della praticabilità.`,
+    );
+  }
+}
+
+/**
  * Livelli storici di smorzamento tradotti nel materiale corrispondente, cosi i
  * progetti salvati prima del modulo fonoassorbente continuano a funzionare.
  */
@@ -526,6 +547,7 @@ export function computeDesign(input: DesignInput): DesignResult {
     });
     splWithRoom = applyRoomGain(curves.spl, input.roomPreset);
     acoustic.f3Hz = measuredF3(curves.spl, acoustic.f3Hz);
+    avvisaSeOndula(acoustic, curves.spl);
 
     // Quanto deve muoversi la membrana quando il driver e' al suo limite. La
     // regola del pollice dice "volume spostabile almeno doppio"; qui il numero
@@ -571,6 +593,7 @@ export function computeDesign(input: DesignInput): DesignResult {
     splWithRoom = applyRoomGain(curves.spl, input.roomPreset);
 
     acoustic.f3Hz = measuredF3(curves.spl, acoustic.f3Hz);
+    avvisaSeOndula(acoustic, curves.spl);
 
     if (acoustic.port && acoustic.fbHz) {
       const peakExcursion = Math.max(...curves.excursion.map(p => p.v));
