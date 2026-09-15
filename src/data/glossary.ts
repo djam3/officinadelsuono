@@ -9,12 +9,13 @@
  * la ⓘ accanto a ogni campo trova la sua scheda senza tabelle di conversione.
  */
 
-export type GlossaryCategory = 'driver' | 'cassa' | 'condotto' | 'materiali' | 'costruzione';
+export type GlossaryCategory = 'driver' | 'cassa' | 'condotto' | 'reti' | 'materiali' | 'costruzione';
 
 export const CATEGORY_LABELS: Record<GlossaryCategory, string> = {
   driver: 'Parametri dell’altoparlante',
   cassa: 'Progetto della cassa',
   condotto: 'Condotto reflex',
+  reti: 'Reti di compensazione',
   materiali: 'Materiali fonoassorbenti',
   costruzione: 'Costruzione',
 };
@@ -23,6 +24,7 @@ export const CATEGORY_INTRO: Record<GlossaryCategory, string> = {
   driver: 'I parametri Thiele-Small descrivono l’altoparlante come un sistema massa-molla-smorzatore. Sono sovradeterminati: fra loro valgono identità esatte, e se due valori non tornano uno dei due è sbagliato.',
   cassa: 'Dal volume all’accordo: le grandezze che decidono come la cassa carica il cono e dove finisce la risposta in basso.',
   condotto: 'Il condotto non è un buco: è una massa d’aria che risuona con la cedevolezza della cassa. Forma, sezione e lunghezza cambiano l’accordo e il rumore.',
+  reti: 'Quello che la cassa non può risolvere da sola, e che si risolve con due o tre componenti prima del driver. Sono conti esatti, non ritocchi a orecchio.',
   materiali: 'Il materiale assorbente fa tre cose diverse contemporaneamente, e solo una si vede nel volume.',
   costruzione: 'Spessori, rinforzi e proporzioni: quello che separa un progetto sulla carta da una cassa che suona come previsto.',
 };
@@ -677,12 +679,34 @@ export const GLOSSARY: GlossaryEntry[] = [
           'Un bass-reflex ha due gradi di libertà — quanto grande e quanto accordato — e ogni combinazione dà una forma diversa. Gli allineamenti sono le combinazioni che producono forme note e utili, tabulate in funzione del Qts del driver.',
         ],
         list: [
-          'B4 (Butterworth): risposta massimamente piatta, la più citata. Esiste a un solo valore di Qts, circa 0,383: con un driver diverso non è realizzabile.',
-          'QB3 (quasi-Butterworth): per driver con Qts più basso. Cassa più piccola del B4 a parità di driver, discesa un filo più dolce.',
-          'C4 (Chebyshev): accetta una piccola ondulazione in banda in cambio di più estensione. Per Qts più alti.',
-          'SBB4 (Super Boom Box): cassa più grande, accordo più basso, risposta molto smorzata.',
+          'QB3 (quasi-Butterworth): il ramo della famiglia sotto Qts 0,383. Nessuna ondulazione, cassa più piccola, discesa un filo più dolce.',
+          'B4 (Butterworth): risposta massimamente piatta. Non è una famiglia ma un punto: esiste a un solo valore di Qts, e con un driver diverso non è realizzabile.',
+          'C4 (Chebyshev): il ramo sopra 0,383. Accetta una piccola ondulazione in banda in cambio di più estensione.',
+          'SBB4 (Super Boom Box): cassa più grande, accordo più basso, risposta molto smorzata. Una scelta deliberata, non un punto della famiglia.',
           'Bessel: fase più lineare e ritardo di gruppo migliore, a costo di estensione.',
         ],
+      },
+      {
+        heading: 'QB3, B4 e C4 sono la stessa cosa',
+        paragraphs: [
+          'Non sono tre famiglie ma un unico continuo, e il punto che le separa si conosce in forma chiusa: il Butterworth esiste esattamente a Qts = cos(3π/8) = 0,38268. Sotto quel valore si sta sul ramo senza ondulazione, sopra su quello con. Non c\u2019è niente da scegliere a occhio, e nemmeno da interpolare su una tabella: è il Qts del driver a dire su quale ramo ci si trova.',
+          'Le due condizioni da cui nasce tutto sono le stesse per entrambi i rami — si annullano due coefficienti del denominatore normalizzato — e cambia solo quale si lascia libero. Da lì escono le forme chiuse di α e h senza passare da nessun curve-fit.',
+        ],
+        formula: {
+          expr: 'a₂ = √2·√(1−Qts²)/Qts     h = 2√2·Qts·√(1−Qts²)     α = h·(a₂ − h) − 1',
+          caption: 'α = Vas/Vb e h = Fb/Fs, esatti. A Qts 0,38268 danno α = √2 e h = 1, cioè il B4.',
+        },
+      },
+      {
+        heading: 'Sopra un certo Qts il reflex non esiste',
+        paragraphs: [
+          'Sostituendo le due forme chiuse dentro α i termini si semplificano fino a un\u2019espressione nel solo Qts, e si scopre che α diventa negativo oltre una soglia precisa. Un volume negativo non è una cassa grande: è una cassa che non c\u2019è.',
+          'Sopra quel Qts il driver è già poco smorzato di suo, e il condotto aggiungerebbe un secondo risonatore altrettanto poco smorzato: ne esce una gobba attorno all\u2019accordo e una discesa a 24 dB per ottava subito sotto. La strada, lì, è la cassa chiusa grande — oppure, se Vas e Sd sono generosi, il pannello aperto.',
+        ],
+        formula: {
+          expr: 'α = 4(1 − Qts²)(1 − 2Qts²) − 1 > 0   ⟺   Qts < √((3 − √3)/4) = 0,56302',
+          caption: 'verificato: a Qts 0,563 il volume richiesto vale α = 0,0001, cioè zero',
+        },
       },
       {
         heading: 'Nota',
@@ -692,9 +716,10 @@ export const GLOSSARY: GlossaryEntry[] = [
         },
       },
     ],
-    related: ['qts', 'fb', 'vb', 'ql'],
+    related: ['qts', 'fb', 'vb', 'ql', 'dipole'],
     sources: [
       'Thiele 1971 (tabelle originali), Small 1973, Keele 1973, Bullock 1981',
+      'Le forme chiuse di α e h e la soglia 0,56302 sono ricavate dalle condizioni di massima piattezza e verificate sull\u2019ancora nota: a Qts 0,38268 devono dare esattamente α = √2 e h = 1',
     ],
   },
   {
@@ -991,7 +1016,7 @@ export const GLOSSARY: GlossaryEntry[] = [
         ],
       },
     ],
-    related: ['bracing', 'weight'],
+    related: ['bracing', 'ratio'],
     sources: [
       'La rigidezza flessionale di una piastra cresce con il cubo dello spessore',
     ],
@@ -1127,8 +1152,11 @@ export const GLOSSARY: GlossaryEntry[] = [
         },
       },
     ],
-    sources: ['Relazioni elementari di combinazione dei parametri Thiele-Small'],
-    related: ['impedance', 'vb', 'sensitivity'],
+    sources: [
+      'Relazioni elementari di combinazione dei parametri Thiele-Small',
+      'Il fattore di forza segue il cablaggio: con n driver in SERIE la stessa corrente attraversa tutti i motori, quindi BL_eq = n·BL. Controllo che lo dimostra: a parità di potenza totale l\u2019escursione deve essere identica in serie e in parallelo, perché ciascun driver riceve comunque P/n',
+    ],
+    related: ['impedance', 'vb', 'sensitivity', 'bl'],
   },
   {
     id: 'roomgain', symbol: 'Ambiente', category: 'cassa',
@@ -1151,6 +1179,404 @@ export const GLOSSARY: GlossaryEntry[] = [
     ],
     sources: ['Il rinforzo di pressione sotto la frequenza di transizione della stanza è comportamento noto degli ambienti chiusi; i preset dello strumento sono valori indicativi'],
     related: ['f3', 'fb'],
+  },
+  // ─── RETI E FENOMENI DI SISTEMA ──────────────────────────────────────────
+  {
+    id: 'baffle', symbol: 'Baffle step', unit: 'Hz', category: 'reti',
+    title: 'Effetto pannello (baffle step)',
+    summary: 'Sotto una certa frequenza il suono gira attorno alla cassa e si perdono 6 dB. Dipende solo dalla larghezza del frontale.',
+    typical: [
+      { label: 'Frontale 20 cm', value: '575 Hz' },
+      { label: 'Frontale 26 cm', value: '442 Hz' },
+      { label: 'Frontale 38 cm', value: '303 Hz' },
+      { label: 'Frontale 60 cm', value: '192 Hz' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Alle frequenze alte, quando la lunghezza d’onda è piccola rispetto al pannello frontale, l’altoparlante irradia in mezzo spazio: il pannello gli fa da schermo e tutta l’energia va avanti. Alle frequenze basse, quando la lunghezza d’onda è molto più grande del pannello, il suono gli gira attorno e si irradia in tutto lo spazio.',
+          'La stessa potenza distribuita sul doppio dell’angolo solido fa 6 dB in meno. Non è un difetto della cassa: è geometria, e capita a qualunque diffusore che non sia incassato in una parete.',
+        ],
+        formula: {
+          expr: 'f₋₃dB = 115 / W        (W in metri)',
+          caption: 'centro del gradino: sopra si irradia in 2π, sotto in 4π',
+        },
+      },
+      {
+        heading: 'Dove cade davvero',
+        paragraphs: [
+          'Il numero da tenere a mente non è la formula ma la sua lettura: al centro del gradino la lunghezza d’onda vale circa TRE volte la larghezza del pannello, non una. Il suono comincia a scavalcare il frontale molto prima che λ lo eguagli, ed è il motivo per cui una cassa stretta perde efficienza molto più in alto di quanto suggerisca l’intuito.',
+          'Con un frontale da 26 cm il gradino cade a 442 Hz, cioè in piena gamma media, dove c’è la voce. La transizione si consuma su circa tre ottave attorno a quel punto.',
+        ],
+      },
+      {
+        heading: 'Quanti decibel davvero',
+        list: [
+          'I 6,02 dB sono il valore teorico del passaggio 4π → 2π. Un frontale reale e finito ne dà 4,5–5,5, con un’ondulazione di circa 1 dB sopra il gradino dovuta alla diffrazione dei bordi.',
+          'Un driver centrato concentra quell’ondulazione in un punto solo; spostarlo dall’asse la spalma su più frequenze e la attenua.',
+          'In ambiente le pareti restituiscono parte di quei decibel sotto i 200 Hz circa: la compensazione che si mette davvero nel filtro è in genere 3–4 dB, non 6.',
+        ],
+      },
+      {
+        heading: 'Si risolve nel filtro',
+        callout: {
+          kind: 'nota',
+          text: 'Allargare la cassa sposta il gradino più in basso ma non lo toglie. La compensazione si fa nel crossover: un’induttanza in serie al woofer affiancata da una resistenza in parallelo, con L ≈ Re/(π·f₋₃dB) e la resistenza a fissare quanti dB si recuperano.',
+        },
+      },
+    ],
+    related: ['zobel', 'sensitivity', 'ratio'],
+    sources: [
+      'H. F. Olson, misure di diffrazione su sagome di mobile diverse (forma della curva e ondulazione dei bordi)',
+      'La relazione f = 115/W (equivalente ai 4560/W in pollici) è la forma classica della letteratura di progettazione',
+    ],
+  },
+  {
+    id: 'zobel', symbol: 'Zobel', category: 'reti',
+    title: 'Rete Zobel: linearizzare l’impedenza',
+    summary: 'Due componenti che riportano l’impedenza a Re a ogni frequenza. Serve al filtro passivo, non all’orecchio.',
+    typical: [
+      { label: 'Re 4 Ω, Le 0,3 mH', value: '4,0 Ω + 18,8 µF' },
+      { label: 'Re 5,6 Ω, Le 0,75 mH', value: '5,6 Ω + 23,9 µF' },
+      { label: 'Re 6,2 Ω, Le 0,48 mH', value: '6,2 Ω + 12,5 µF' },
+      { label: 'Re 8 Ω, Le 1,2 mH', value: '8,0 Ω + 18,8 µF' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'La bobina mobile non è una resistenza pura: è Re in serie a Le, quindi l’impedenza sale di 6 dB per ottava sopra la frequenza in cui la reattanza eguaglia Re. Un filtro passivo progettato su un carico costante si trova davanti un carico che non lo è, e la frequenza di incrocio si sposta da dove era stata messa.',
+          'La rete Zobel è una R-C in parallelo ai morsetti del driver che riporta il modulo a Re. Non cambia niente di quello che si sente dal driver da solo: serve a chi viene dopo.',
+        ],
+        formula: {
+          expr: 'R_z = Re        C_z = Le / Re²',
+          caption: 'la frequenza in cui la bobina inizia a pesare è Re/(2π·Le): lì |Z| vale Re·√2',
+        },
+      },
+      {
+        heading: 'Non è un’approssimazione',
+        paragraphs: [
+          'I due valori si ricavano imponendo che la parte immaginaria dell’ammettenza totale si annulli, e separando i termini costanti da quelli in ω². Il risultato non vale attorno a un punto: vale a ogni frequenza.',
+          'Verifica sul motore, con Re 6,2 Ω e Le 0,48 mH: il driver nudo passa da 6,2 a 60,6 Ω fra 20 Hz e 20 kHz, mentre con la rete il modulo resta 6,200000 Ω e la fase 0,000000° su tutto l’arco.',
+        ],
+        formula: {
+          expr: 'Im(Y_driver + Y_zobel) = 0   ⟹   Le = C_z·Re²   e   C_z·R_z² = Le',
+          caption: 'due equazioni, due incognite, nessun grado di libertà rimasto',
+        },
+      },
+      {
+        heading: 'In pratica',
+        list: [
+          'La resistenza deve essere NON induttiva: una wirewound classica aggiungerebbe proprio l’induttanza che si sta cercando di togliere.',
+          'Alle alte frequenze è la Zobel a prendersi la corrente, ma un woofer lavora dietro un passa-basso e lassù non gli arriva quasi niente: 10–20 W sono abbondanti.',
+          'La Zobel linearizza solo la salita induttiva. Il picco di impedenza alla Fs resta intatto, e per quello serve una rete RLC separata — che quasi mai conviene mettere.',
+        ],
+      },
+      {
+        heading: 'Il limite del modello',
+        callout: {
+          kind: 'attenzione',
+          text: 'Il modello Re + jωLe è una semplificazione. Una bobina reale su nucleo ferromagnetico ha semi-induttanza: Z ≈ Re + K·(jω)ⁿ con n fra 0,6 e 0,8 invece di 1. L’impedenza vera sale più lentamente, quindi una Zobel calcolata sul solo Le sovracompensa sopra i 5 kHz. Per un woofer incrociato basso è irrilevante; se serve preciso, la si ritocca sulla misura.',
+        },
+      },
+    ],
+    related: ['le', 're', 'impedance', 'notch'],
+    sources: [
+      'W. M. Leach Jr., «Loudspeaker Voice-Coil Inductance Losses: Circuit Models, Parameter Estimation, and Effect on Frequency Response», JAES vol. 50, 2002 — per la semi-induttanza',
+      'I valori R_z = Re e C_z = Le/Re² sono ricavati dalla condizione Im(Y) = 0 e verificati sul motore: 6,200000 Ω e 0,000000° da 20 Hz a 20 kHz',
+    ],
+  },
+  {
+    id: 'notch', symbol: 'Notch', category: 'reti',
+    title: 'Filtro notch per una risonanza',
+    summary: 'Spegne una risonanza stretta. La topologia giusta dipende da cosa c’è a monte, e qui il libro di testo inganna.',
+    blocks: [
+      {
+        paragraphs: [
+          'Un notch serve quando una risonanza precisa — la cavità di un pannello aperto, la canna d’organo di un condotto, un modo del cono — produce una gobba stretta che non si può correggere allargando la mano.',
+          'La forma classica che si trova nei libri di crossover è una L-C in serie messa IN PARALLELO al driver: a risonanza la coppia diventa un cortocircuito e devia la corrente. Funziona, ma solo se davanti c’è già un’impedenza in serie.',
+        ],
+      },
+      {
+        heading: 'Perché davanti a un amplificatore non funziona',
+        paragraphs: [
+          'Un amplificatore moderno è un generatore di tensione con impedenza d’uscita quasi nulla: qualunque cosa si metta in parallelo ai morsetti, la tensione resta quella che l’amplificatore impone. La rete assorbe corrente e scalda, ma il driver riceve lo stesso segnale di prima.',
+          'Su un woofer attaccato diretto serve la topologia opposta: un circuito risonante parallelo L‖C‖R messo IN SERIE. Alla risonanza il parallelo diventa alta impedenza e fa partitore con Re, attenuando; fuori risonanza è un cortocircuito e non si sente.',
+        ],
+        formula: {
+          expr: 'R = Re·(10^(−dB/20) − 1)      L = R/(2π·f₀·Q)      C = Q/(2π·f₀·R)',
+          caption: 'f₀ è la frequenza da spegnere, dB l’attenuazione voluta (negativa), Q la larghezza',
+        },
+      },
+      {
+        heading: 'Quanto è stretto',
+        paragraphs: [
+          'Con Q = 4 la banda a metà profondità vale f₀/4. Verifica sul partitore completo per un notch a 343 Hz su un driver da 5,8 Ω: −8,00 dB al centro, −0,58 dB a un’ottava di distanza, −0,10 dB a due ottave. Fuori dalla sua zona il notch non si sente.',
+        ],
+      },
+      {
+        heading: 'Prima del filtro vengono due rimedi migliori',
+        callout: {
+          kind: 'nota',
+          text: 'Incrociare sotto la risonanza la toglie dal problema senza toccare niente. E un velo di assorbente dentro la cavità la smorza dove nasce, invece di abbassarla nel segnale: un notch elettrico riduce il livello ma la cavità continua a risuonare, e quello che resta si sente nella coda temporale.',
+        },
+      },
+    ],
+    related: ['dipole', 'pipe', 'zobel'],
+    sources: [
+      'Valori dei componenti ricavati dal partitore R_notch/Re e verificati sul motore: −8,00 dB al centro, −0,58 a un’ottava, −0,10 a due, Q 4,000 e risonanza a 343,20 Hz sui 343,2 chiesti',
+    ],
+  },
+  {
+    id: 'dipole', symbol: 'Dipolo', category: 'cassa',
+    title: 'Pannello aperto: percorso e pieghe',
+    summary: 'L’unica carica senza volume da calcolare: il progetto sta nel percorso fronte-retro e nella profondità delle alette.',
+    typical: [
+      { label: 'Percorso 40 cm', value: 'primo massimo 429 Hz' },
+      { label: 'Percorso 60 cm', value: '286 Hz' },
+      { label: 'Percorso 80 cm', value: '214 Hz' },
+      { label: 'Percorso 172 cm', value: '100 Hz' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Senza cassa, il retro del cono irradia in opposizione di fase rispetto al fronte. Finché la lunghezza d’onda è grande rispetto al pannello le due facce si annullano: è il cortocircuito acustico.',
+          'Sull’asse, in campo lontano, il rapporto fra un dipolo e lo STESSO driver su pannello infinito vale esattamente il seno di mezzo percorso in lunghezze d’onda. Il primo massimo è dove il percorso vale mezza lunghezza d’onda, e lì il dipolo vale quanto il pannello infinito — non meno. Sotto, si perdono 6 dB per ottava.',
+        ],
+        formula: {
+          expr: '|p_dipolo / p_infinito| = |sin(k·D/2)|      f_massimo = c / (2·D)',
+          caption: 'si ricava sommando due monopoli opposti a ±D/2: i termini di mezzo spazio e spazio intero si semplificano e resta il seno',
+        },
+      },
+      {
+        heading: 'Il percorso secondo la piega',
+        list: [
+          'Pannello piatto: D = la dimensione PIÙ CORTA del pannello. Il suono prende la via più breve per girare dall’altra parte, quindi se il pannello è più largo che alto scavalca dal sopra e dal sotto.',
+          'U-frame (alette all’indietro): D = dimensione più corta + profondità totale. La bocca posteriore arretra di tutta la profondità.',
+          'H-frame (alette avanti e dietro): stesso percorso dell’U a parità di profondità totale, perché le due bocche stanno a ±metà profondità e la distanza fra loro è sempre quella.',
+        ],
+        callout: {
+          kind: 'nota',
+          text: 'Fare il pannello più alto che largo non serve a scendere: serve a spalmare le ondulazioni di diffrazione su più frequenze invece di concentrarle in una.',
+        },
+      },
+      {
+        heading: 'La cavità: l’unica differenza fra U e H',
+        paragraphs: [
+          'Le alette formano un condotto chiuso dal cono e aperto alla bocca, cioè un risonatore a quarto d’onda. Lì il pannello smette di comportarsi da dipolo e diventa una canna d’organo, con una gobba stretta e un buco subito sopra.',
+          'L’U-frame ha una sola cavità lunga quanto tutta la profondità. L’H-frame ne ha DUE, lunghe la metà, perché il pannello del driver divide il condotto a metà. Esattamente un’ottava di differenza, a parità di ingombro e di percorso: è tutto il vantaggio della geometria a H, ed è il motivo per cui i woofer dipolari si fanno così.',
+        ],
+        formula: {
+          expr: 'U-frame:  f_cavità = c / (4·D)          H-frame:  f_cavità = c / (2·D)',
+          caption: 'verificato: stessa profondità, 100,0 Hz contro 200,0 Hz — rapporto 2,000',
+        },
+      },
+      {
+        heading: 'Serve un driver con Qts alto',
+        paragraphs: [
+          'La discesa di 6 dB per ottava del dipolo va compensata, e il modo elegante è che sia il driver stesso a farlo: un Qts alto produce una gobba appena sopra la Fs che si oppone esattamente a quella pendenza.',
+          'Numeri da una verifica: un driver con Qts 1,25 ha +2,40 dB a 55 Hz su pannello infinito, e su un dipolo da 172 cm diventano +0,02 dB, con tutta la banda 55–150 Hz dentro 0,73 dB. Lo stesso pannello con un driver da Qts 0,34 dà F3 a 243 Hz: non c’è nessuna gobba da spendere, e il dipolo aggiunge 6 dB per ottava ai 12 che il driver già perde.',
+        ],
+      },
+      {
+        heading: 'Il prezzo è l’escursione',
+        callout: {
+          kind: 'attenzione',
+          text: 'Con la correzione inserita l’escursione cresce di 18 dB per ottava sotto il primo massimo, non 12: i 6 dB del dipolo si sommano ai 12 che servono già per tenere il livello. Un pannello aperto non si progetta sul volume, si progetta sul volume d’aria spostabile. E il lobo posteriore è forte quanto quello anteriore: lontano dalla parete di fondo, o la riflessione torna in controfase.',
+        },
+      },
+    ],
+    related: ['qts', 'notch', 'vd', 'baffle'],
+    sources: [
+      'Il fattore |sin(kD/2)| si ricava dalla somma di due monopoli in opposizione; il rapporto verso mezzo spazio è esatto, non empirico',
+      'Rapporto fra le cavità di U e H verificato sul motore: 100,0 e 200,0 Hz a pari profondità',
+      'Compensazione della gobba verificata su driver Qts 1,25: da +2,40 dB a +0,02 dB a 55 Hz',
+    ],
+  },
+  {
+    id: 'subsonic', symbol: 'Subsonico', unit: 'Hz', category: 'cassa',
+    title: 'Filtro subsonico e limite di corsa',
+    summary: 'Sotto l’accordo il condotto smette di caricare il cono. Il filtro non è un accessorio, e non è gratis.',
+    blocks: [
+      {
+        paragraphs: [
+          'In un bass-reflex lo spostamento del cono ha un minimo profondo all’accordo — lì è il condotto a muovere l’aria e il cono quasi si ferma — e subito sotto risale, perché il risonatore smette di caricarlo e resta solo la molla della sospensione.',
+          'Il risultato è che sotto l’accordo il cono fa quasi tutta la sua corsa senza produrre suono. Una cassa chiusa non ha questo problema: la molla d’aria carica il cono fino a zero hertz, ed è il motivo per cui il subsonico serve alla reflex e non a lei.',
+        ],
+      },
+      {
+        heading: 'Dove tagliare',
+        paragraphs: [
+          'Il taglio non si sceglie a occhio. Il criterio è che il filtro riporti la salita sotto banda AL LIVELLO del picco che il cono fa già dentro la banda utile: più in alto si perde estensione senza guadagnare niente, perché a comandare torna la banda; più in basso il sotto-accordo resta il punto debole.',
+          'Legarlo invece direttamente a Xmax e alla potenza è un errore, e si vede subito: a potenza alta il taglio finisce sopra la F3, cioè il conto propone di buttare via la banda invece di abbassare il volume. Filtro e potenza sono due limiti diversi e vanno detti separatamente.',
+        ],
+      },
+      {
+        heading: 'La potenza meccanica non è la potenza termica',
+        paragraphs: [
+          'La Pe dichiarata dal costruttore è un limite termico: quanto scalda la bobina. Il limite di corsa è un’altra cosa, e spesso arriva prima. Si calcola dal picco di escursione dentro la banda utile, che cresce con la radice della potenza.',
+        ],
+        formula: {
+          expr: 'P_max,mech = P_rif · (Xmax / x_picco)²',
+          caption: 'se viene sotto la Pe, il limite del sistema è meccanico e la potenza dell’amplificatore non serve a niente',
+        },
+      },
+      {
+        heading: 'Quanto costa nel tempo',
+        paragraphs: [
+          'Il filtro subsonico aggiunge ritardo di gruppo, e su una reflex accordata in basso arriva a pesare più della cassa. Il numeratore viene dai Q dei poli di Butterworth, e al taglio vale 3,6955 per il quarto ordine e 1,414 per il secondo.',
+          'Esempio da una verifica: reflex accordata a 31 Hz, cassa 13,9 ms all’accordo. Il passa-alto a 24 dB/ottava a 23 Hz ne aggiunge 13,4, quasi raddoppiando il totale. A 12 dB/ottava ne aggiungerebbe 6,1, ma controlla molto meno l’escursione.',
+        ],
+        formula: {
+          expr: 'τ_filtro(f_taglio) = 3,6955 / (2π·f_c)   [24 dB/ott]      1,414 / (2π·f_c)   [12 dB/ott]',
+          caption: 'verificato: 25,374 ms e 9,710 ms su un taglio a 23,18 Hz',
+        },
+      },
+      {
+        heading: 'Il baratto, in chiaro',
+        callout: {
+          kind: 'attenzione',
+          text: 'Il 24 dB/ottava protegge il cono e costa il doppio del ritardo; il 12 dB/ottava è più gentile nel tempo e lascia salire la corsa. La scelta si fa guardando quanto margine meccanico resta in banda: se è poco, il quarto ordine non è negoziabile.',
+        },
+      },
+    ],
+    related: ['xmax', 'fb', 'pe', 'groupdelay'],
+    sources: [
+      'La funzione di spostamento del reflex ha uno zero doppio all’accordo e tende alla cedevolezza della sola sospensione a frequenza zero: comportamento del circuito equivalente, non una regola pratica',
+      'Ritardo di gruppo del Butterworth calcolato dai Q dei poli e verificato: 25,374 ms al taglio per il quarto ordine contro 3,6955/ω_c attesi',
+    ],
+  },
+  {
+    id: 'groupdelay', symbol: 'Ritardo di gruppo', unit: 'ms', category: 'cassa',
+    title: 'Ritardo di gruppo',
+    summary: 'Quanto il grave arriva dopo il resto della musica. Conta il totale, filtro subsonico compreso.',
+    typical: [
+      { label: 'Cassa chiusa Qtc 0,7', value: '5–8 ms alla Fc' },
+      { label: 'Reflex 4° ordine', value: '10–20 ms attorno a Fb' },
+      { label: 'Bandpass 6° ordine', value: 'molto più alto' },
+      { label: 'Filtro subsonico 24 dB/ott', value: '3,7/(2π·f_c) al taglio' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Il ritardo di gruppo misura quanto tempo impiega l’inviluppo di un segnale ad attraversare il sistema, frequenza per frequenza. Se le basse escono più tardi delle medie, un colpo di grancassa si allarga: l’attacco arriva prima del corpo.',
+          'Ogni ordine in più nella discesa lo fa crescere. Una cassa chiusa è del secondo ordine e ne produce poco; una reflex è del quarto e ne produce il doppio; un bandpass del sesto ancora di più. È uno dei prezzi che si pagano per l’estensione.',
+        ],
+      },
+      {
+        heading: 'Il filtro conta quanto la cassa',
+        paragraphs: [
+          'L’errore più comune è guardare il ritardo del solo mobile. Su una reflex accordata in basso il passa-alto subsonico — che serve, non è opzionale — aggiunge all’accordo un ritardo confrontabile con quello della cassa, e a volte maggiore. Il numero da giudicare è la somma.',
+        ],
+      },
+      {
+        heading: 'Da che punto in poi si sente',
+        paragraphs: [
+          'Qui va detto con onestà quanto si sa e quanto no. Le misure di audibilità più citate (Blauert e Laws, 1978) trovano soglie dell’ordine di pochi millisecondi, e crescenti al scendere della frequenza — circa 3,2 ms a 500 Hz — ma non scendono sotto quella frequenza.',
+          'Le cifre che circolano per il basso, dai 20 ai 25 ms, sono estrapolazioni entrate nell’uso comune della progettazione, non misure. Un limite di 15 ms a 30 Hz è quindi una regola prudente, non una soglia dimostrata: un progetto che la supera va guardato, non necessariamente scartato.',
+        ],
+        callout: {
+          kind: 'nota',
+          text: 'Il ritardo di gruppo cresce dove la risposta scende ripida. Se un progetto ne ha troppo, la cura non è un filtro in più: è un ordine in meno, cioè meno estensione o un accordo diverso.',
+        },
+      },
+    ],
+    related: ['subsonic', 'fb', 'alignment'],
+    sources: [
+      'J. Blauert e P. Laws, «Group Delay Distortions in Electroacoustical Systems», JASA 1978 — soglie misurate da 500 Hz in su',
+      'Contributo del filtro calcolato dai Q dei poli di Butterworth e verificato contro le forme note 3,6955/ω_c e √2/ω_c',
+    ],
+  },
+  {
+    id: 'pipe', symbol: 'f_pipe', unit: 'Hz', category: 'condotto',
+    title: 'Risonanza del condotto (canna d’organo)',
+    summary: 'Il condotto è anche un tubo, e come tubo risuona in gamma media. Da lì esce il suono di dentro la cassa.',
+    typical: [
+      { label: 'Condotto 15 cm', value: '≈ 900 Hz' },
+      { label: 'Condotto 30 cm', value: '≈ 470 Hz' },
+      { label: 'Condotto 50 cm', value: '≈ 300 Hz' },
+      { label: 'Condotto 80 cm', value: '≈ 200 Hz' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Il condotto non è solo la massa d’aria del risonatore di Helmholtz: è un tubo, e come ogni tubo ha le sue onde stazionarie. Entrambe le bocche sono acusticamente aperte — quella interna dà su un volume grande, che a queste frequenze si comporta da terminazione aperta — quindi la prima risonanza cade a mezza lunghezza d’onda.',
+          'Si conta sulla lunghezza EFFICACE, quella che comprende la correzione terminale, non sulla lunghezza del tubo tagliato.',
+        ],
+        formula: {
+          expr: 'f_pipe = c / (2 · L_eff)        L_eff = L_condotto + k · D_equivalente',
+          caption: 'stessa lunghezza efficace usata per l’accordo: la correzione dipende da come terminano le bocche',
+        },
+      },
+      {
+        heading: 'Perché è un problema',
+        paragraphs: [
+          'Cade tipicamente fra 300 e 800 Hz, cioè in piena gamma media. A quella frequenza il condotto smette di essere un risonatore accordato e diventa una finestra aperta sull’interno della cassa: quello che si sente uscire dalla bocca è il retro del cono, con tutte le riflessioni interne che si porta dietro.',
+          'Più il condotto è lungo, più la risonanza scende e più diventa fastidiosa, perché si avvicina alla banda in cui il woofer lavora ancora.',
+        ],
+      },
+      {
+        heading: 'Cosa fare',
+        list: [
+          'Imbottire la cassa attorno alla bocca interna del condotto, non dentro il condotto: dentro cambierebbe l’accordo.',
+          'Tenere la bocca esterna lontana dall’asse del cono, per esempio sul retro, così quello che esce non si somma direttamente all’emissione diretta.',
+          'Accorciare il condotto allargando la sezione: raddoppiare l’area allunga il tubo, quindi va nella direzione sbagliata — ma un condotto più corto a parità di accordo si ottiene solo con una cassa più grande.',
+          'Ripiegare il condotto non sposta la risonanza (conta la lunghezza sviluppata), ma permette di allontanare la bocca.',
+        ],
+      },
+    ],
+    related: ['portlength', 'porttype', 'ventvelocity'],
+    sources: [
+      'Risonanza a mezza onda di un tubo con entrambe le terminazioni aperte; la lunghezza efficace è la stessa usata per il calcolo dell’accordo',
+    ],
+  },
+  {
+    id: 'bandpassgain', symbol: 'Guadagno in banda', unit: 'dB', category: 'cassa',
+    title: 'Guadagno del bandpass',
+    summary: 'Quanti decibel in più della sensibilità del driver, e quanto costano in larghezza di banda. Il conto è esatto.',
+    typical: [
+      { label: '0 dB', value: 'banda più larga possibile' },
+      { label: '+3 dB', value: 'banda ridotta di un terzo circa' },
+      { label: '+6 dB', value: 'banda dimezzata' },
+      { label: '+12 dB', value: 'un quarto della banda' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Un bandpass del quarto ordine si costruisce per due motivi: il filtro passa-basso acustico incorporato, e il guadagno in banda. Il secondo non è un effetto collaterale ma una grandezza che si sceglie, e che si paga in larghezza di banda con un cambio fisso.',
+          'Il guadagno è riferito alla sensibilità del driver: 0 dB significa che in banda la cassa suona esattamente come suonerebbe quel driver in gamma media. Ogni decibel in più è banda in meno.',
+        ],
+        formula: {
+          expr: 'guadagno al centro = 1/γ        banda frazionaria = √γ        γ = (Vas/Vf) / (1 + Vas/Vr)',
+          caption: 'Vr camera posteriore sigillata, Vf camera anteriore accordata',
+        },
+      },
+      {
+        heading: 'Il baratto va nel verso che sorprende',
+        paragraphs: [
+          'A parità di camera posteriore, è la camera anteriore GRANDE a dare banda stretta e livello alto, non il contrario. Su un driver di prova, passando da 9 a 145 litri di camera anteriore il livello in banda va da −11 a +12 dB e la banda si stringe da 2,9 a 0,2 ottave: sono gli stessi decibel, scambiati di posto.',
+          'Raddoppiare il guadagno costa metà della banda, sempre. Non è una regola pratica: è il rapporto fra 1/γ e √γ.',
+        ],
+      },
+      {
+        heading: 'L’accordo deve stare sulla risonanza della camera posteriore',
+        paragraphs: [
+          'La camera anteriore va accordata esattamente sulla frequenza a cui il driver risuona dentro la sola camera posteriore. È la condizione che rende la banda geometricamente simmetrica, e non è una scelta di comodo: è l’unico caso in cui la risposta del bandpass è la trasformata passa-banda di un passa-basso del secondo ordine.',
+          'Verifica: solo con quel rapporto il picco cade esattamente al centro geometrico della banda, con scarto 0,0%; portandolo a 0,85 lo scarto diventa 4,7% e la banda si sbilancia.',
+        ],
+      },
+      {
+        heading: 'Dove sta il massimo piatto',
+        callout: {
+          kind: 'nota',
+          text: 'Il prototipo equivalente ha Q = Qtc·√γ. Sotto 0,707 la risposta è monotòna, sopra compare una gobba in banda. A parità di guadagno esiste quindi un solo rapporto di camere che dà il massimo piatto, e spesso è anche quello con la cassa più piccola: allontanarsene può costare volume E banda insieme.',
+        },
+      },
+    ],
+    related: ['bandpass', 'vb', 'fb'],
+    sources: [
+      'Ricavato dal circuito equivalente acustico (analogia delle impedenze, Beranek) e verificato contro il motore: guadagno 0,000 dB su 0 chiesti e i due estremi a −3 dB entro lo 0,07%',
+      'Condizione di simmetria verificata per confronto: scarto del picco dal centro geometrico 0,0% con accordo pari alla risonanza posteriore, 4,7% con rapporto 0,85',
+    ],
   },
 ];
 

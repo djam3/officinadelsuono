@@ -16,7 +16,7 @@ import {
 } from '../data/glossary';
 import { Annot, Griglia, Righello } from '../components/blueprint';
 
-const ORDER: GlossaryCategory[] = ['driver', 'cassa', 'condotto', 'materiali', 'costruzione'];
+const ORDER: GlossaryCategory[] = ['driver', 'cassa', 'condotto', 'reti', 'materiali', 'costruzione'];
 
 export type Naviga = (page: string, param?: string) => void;
 
@@ -203,7 +203,8 @@ function Indice({ naviga }: { naviga?: Naviga }) {
           Una scheda per ogni campo del calcolatore. Ognuna risponde alle stesse quattro domande: che cos&rsquo;è,
           a cosa serve nel progetto, quali valori aspettarsi e dove si sbaglia di solito. I numeri citati vengono
           dalla letteratura tecnica pubblicata o da verifiche fatte sul motore di calcolo, e ogni scheda dice
-          quali.
+          quali. Dove un conto è stato ricavato invece che copiato, la scheda riporta anche il controllo che lo
+          conferma: il valore atteso, quello ottenuto e lo scarto.
         </p>
       </div>
 
@@ -250,7 +251,10 @@ function Indice({ naviga }: { naviga?: Naviga }) {
           <li>— Garai &amp; Pompoli, «A simple empirical model of polyester fibre materials», Applied Acoustics 2005</li>
           <li>— Bies &amp; Hansen, resistività al flusso delle lane minerali, 1980</li>
           <li>— Miki, revisione del modello di Delany-Bazley, 1990</li>
-          <li>— L. L. Beranek, «Acoustics»</li>
+          <li>— L. L. Beranek, «Acoustics» — analogia delle impedenze acustiche, da cui vengono i circuiti equivalenti</li>
+          <li>— H. F. Olson, misure di diffrazione sulle sagome di mobile (effetto pannello)</li>
+          <li>— W. M. Leach Jr., «Loudspeaker Voice-Coil Inductance Losses», JAES 2002</li>
+          <li>— J. Blauert e P. Laws, «Group Delay Distortions in Electroacoustical Systems», JASA 1978</li>
         </ul>
       </div>
     </div>

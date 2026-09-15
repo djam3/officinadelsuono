@@ -1,4 +1,4 @@
-import { NumField, SelectField, Section, Plot, PLOT_COLORS, CheckField, type Series } from './ui';
+import { NumField, SelectField, Section, Plot, PLOT_COLORS, CheckField, InfoLink, type Series } from './ui';
 import { ROOM_PRESETS, VENT_VELOCITY_LIMIT } from '../../utils/audio';
 import type { CurvePoint, DesignResult, RoomPreset, TSParams } from '../../utils/audio';
 
@@ -227,6 +227,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
         <Section
           title="Pannello aperto: percorso, cavità ed escursione"
           subtitle="Senza volume da calcolare, il progetto sta tutto nel percorso fronte-retro e nella profondità delle alette."
+          right={<InfoLink id="dipole" />}
         >
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
             <Riga k="Percorso efficace" v={`${(design.openBaffle.dEffMm / 10).toFixed(1)} cm`} />
@@ -240,7 +241,8 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           {design.openBaffle.notch && (
             <div className="mb-5 bg-ink-2/80 border border-amber-500/25 rounded-none p-4">
               <p className="annot annot-marker block mb-3">
-                Notch per la risonanza di cavità — {design.openBaffle.notch.fHz.toFixed(0)} Hz
+                Notch per la risonanza di cavità — {design.openBaffle.notch.fHz.toFixed(0)} Hz{' '}
+                <InfoLink id="notch" />
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Riga k="Induttanza L" v={`${design.openBaffle.notch.lMh.toFixed(2)} mH`} />
@@ -296,6 +298,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
       <Section
         title="Effetto pannello e carico elettrico"
         subtitle="Due cose che si risolvono nel filtro, non nella cassa — ma si progettano qui."
+        right={<InfoLink id="baffle" />}
       >
         <div className="grid sm:grid-cols-2 gap-4 text-sm">
           <div className="tavola p-4">
@@ -312,7 +315,9 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             </p>
           </div>
           <div className="tavola p-4">
-            <p className="annot annot-blue block mb-3">Rete Zobel</p>
+            <p className="annot annot-blue block mb-3">
+              Rete Zobel <InfoLink id="zobel" />
+            </p>
             {design.zobel ? (
               <>
                 <dl className="space-y-2">

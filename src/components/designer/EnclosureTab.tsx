@@ -93,7 +93,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             {isDipole && (
               <>
                 <SelectField
-                  label="Come è piegato il pannello" infoId="vb"
+                  label="Come è piegato il pannello" infoId="dipole"
                   value={settings.dipoleFrame}
                   onChange={v => set('dipoleFrame', v as DipoleFrame)}
                   options={Object.entries(DIPOLE_FRAMES).map(([value, f]) => ({ value, label: f.label }))}
@@ -102,14 +102,14 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
                   {DIPOLE_FRAMES[settings.dipoleFrame].description}
                 </p>
                 <NumField
-                  label="Primo massimo del dipolo voluto" unit="Hz" infoId="fb"
+                  label="Primo massimo del dipolo voluto" unit="Hz" infoId="dipole"
                   value={settings.dipoleTargetHz}
                   onChange={v => set('dipoleTargetHz', v)}
                   hint="Lascia vuoto per usare le misure imposte. Il percorso necessario è c/(2·f): metà larghezza e metà alette, se non fissi la larghezza."
                 />
                 {settings.dipoleFrame !== 'flat' && (
                   <NumField
-                    label="Profondità delle alette" unit="mm" infoId="vb"
+                    label="Profondità delle alette" unit="mm" infoId="dipole"
                     value={settings.wingDepthMm}
                     onChange={v => set('wingDepthMm', v)}
                     hint="Allunga il percorso senza allargare il frontale, ma crea la cavità che risuona a quarto d’onda."
@@ -153,7 +153,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
             )}
             {settings.enclosure === 'bandpass4' && (
               <NumField
-                label="Guadagno in banda voluto" unit="dB" infoId="bandpass"
+                label="Guadagno in banda voluto" unit="dB" infoId="bandpassgain"
                 value={settings.bandpassGainDb}
                 onChange={v => set('bandpassGainDb', v)}
                 step={0.5}
