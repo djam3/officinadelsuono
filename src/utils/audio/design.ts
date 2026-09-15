@@ -13,6 +13,7 @@ import {
   type PortGeometry, type PortPanel, type PortType,
 } from './ports';
 import { computeResponse } from './response';
+import { baffleStep, zobelNetwork, type BaffleStepResult, type ZobelResult } from './baffle';
 import { computePRResponse, prCircuit } from './circuit';
 import { computeBandpassResponse } from './bandpassCircuit';
 import {
@@ -233,6 +234,10 @@ export interface DesignResult {
   panelAreaM2: number;
   weightKg: number;
   curves: ResponseCurves | null;
+  /** effetto pannello: sotto il gradino si perdono 6 dB, e dipende dalla larghezza */
+  baffle: BaffleStepResult;
+  /** rete di compensazione dell'induttanza della bobina (null se Le non e' noto) */
+  zobel: ZobelResult | null;
   splWithRoom: CurvePoint[] | null;
   maxOutput: MaxOutputResult | null;
   ventVelocity: CurvePoint[] | null;
@@ -727,9 +732,24 @@ export function computeDesign(input: DesignInput): DesignResult {
     }
   }
 
+  // ── Effetto pannello e compensazione della bobina ────────────────────
+  // Il gradino dipende da una misura che questo programma già conosce — la
+  // larghezza del frontale — ed è grande quanto un errore di volume del 50%:
+  // vale la pena dirlo invece di lasciarlo scoprire all'ascolto.
+  const baffle = baffleStep(dimensions.width);
+  const zobel = zobelNetwork(input.ts.re ?? 0, input.ts.le ?? 0);
+  acoustic.warnings.push(
+    `Il frontale largo ${(dimensions.width / 10).toFixed(1)} cm fa girare il suono attorno alla cassa sotto i ` +
+    `${baffle.f3Hz.toFixed(0)} Hz: sotto quella zona si irradia in tutto lo spazio invece che in mezzo, e si perdono ` +
+    `${baffle.lossDb.toFixed(0)} dB rispetto alla gamma media. La transizione si consuma fra ${baffle.fStartHz.toFixed(0)} ` +
+    `e ${baffle.fEndHz.toFixed(0)} Hz e va compensata nel filtro, non nella cassa.`,
+  );
+
   return {
     acoustic,
     absorber,
+    baffle,
+    zobel,
     boxLossQ: qbFinal,
     volumes,
     dimensions,

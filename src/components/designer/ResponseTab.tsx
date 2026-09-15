@@ -222,6 +222,58 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           />
         </Section>
       )}
+      {/* Effetto pannello e Zobel: due conti che non dipendono dalla curva ma
+          decidono quanto la cassa suonerà magra e che carico vedrà il filtro */}
+      <Section
+        title="Effetto pannello e carico elettrico"
+        subtitle="Due cose che si risolvono nel filtro, non nella cassa — ma si progettano qui."
+      >
+        <div className="grid sm:grid-cols-2 gap-4 text-sm">
+          <div className="tavola p-4">
+            <p className="annot annot-blue block mb-3">Baffle step</p>
+            <dl className="space-y-2">
+              <Riga k="Centro del gradino" v={`${design.baffle.f3Hz.toFixed(0)} Hz`} />
+              <Riga k="Perdita sotto il gradino" v={`−${design.baffle.lossDb.toFixed(0)} dB`} />
+              <Riga k="Transizione" v={`${design.baffle.fStartHz.toFixed(0)} – ${design.baffle.fEndHz.toFixed(0)} Hz`} />
+            </dl>
+            <p className="text-[11px] text-graphite mt-3 leading-relaxed">
+              Sotto il gradino il suono gira attorno alla cassa e si irradia in tutto lo spazio invece che
+              in mezzo: la stessa potenza su un angolo doppio fa 6 dB in meno. Si compensa nel filtro con
+              una induttanza in serie affiancata da una resistenza.
+            </p>
+          </div>
+          <div className="tavola p-4">
+            <p className="annot annot-blue block mb-3">Rete Zobel</p>
+            {design.zobel ? (
+              <>
+                <dl className="space-y-2">
+                  <Riga k="Resistenza Rz" v={`${design.zobel.rOhm.toFixed(1)} Ω`} />
+                  <Riga k="Capacità Cz" v={`${design.zobel.cUf.toFixed(1)} µF`} />
+                  <Riga k="La bobina pesa da" v={`${design.zobel.fRiseHz.toFixed(0)} Hz`} />
+                  <Riga k="|Z| nudo a 10 kHz" v={`${design.zobel.zAt10kOhm.toFixed(1)} Ω`} />
+                </dl>
+                <p className="text-[11px] text-graphite mt-3 leading-relaxed">
+                  R-C in parallelo ai morsetti: Rz = Re e Cz = Le/Re² riportano il modulo a Re esatto a
+                  ogni frequenza. Serve al filtro passivo, che altrimenti incrocia su un carico che sale.
+                </p>
+              </>
+            ) : (
+              <p className="text-[11px] text-graphite leading-relaxed">
+                Servono Re e Le del driver: inseriscili nella scheda Driver.
+              </p>
+            )}
+          </div>
+        </div>
+      </Section>
+    </div>
+  );
+}
+
+function Riga({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-paper/[0.06] pb-1.5">
+      <dt className="text-[12px] text-graphite">{k}</dt>
+      <dd className="font-mono text-white shrink-0">{v}</dd>
     </div>
   );
 }
