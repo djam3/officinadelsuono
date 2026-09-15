@@ -152,6 +152,34 @@ export function ventVelocityCurve(input: VentVelocityInput): CurvePoint[] {
 
 // ─── Filtro subsonico e limite di escursione ──────────────────────────────────
 
+/**
+ * Ritardo di gruppo di un passa-alto Butterworth di ordine pari.
+ *
+ * Il numeratore s^n non ritarda niente, quindi il ritardo e' quello del
+ * passa-basso corrispondente: la somma delle sezioni del secondo ordine, con i
+ * Q dei poli di Butterworth, Q_k = 1/(2·cos((2k+1)π/(2n))).
+ *
+ *   GD(Ω) = (1/Q)·(Ω²+1) / ((1−Ω²)² + (Ω/Q)²)     normalizzato su ωc
+ *
+ * Serve saperlo perche' il filtro subsonico non e' gratis: su una reflex
+ * accordata in basso il passa-alto a 24 dB/ott aggiunge al proprio taglio piu'
+ * ritardo di quanto ne produca la cassa, e chi guarda solo il group delay del
+ * box si ritrova un sistema molto piu' lento di quello che ha simulato.
+ */
+export function butterworthGroupDelayMs(fcHz: number, order: number, fHz: number): number {
+  if (!(fcHz > 0) || !(fHz > 0) || order < 2) return 0;
+  const n = Math.round(order / 2);
+  const O = fHz / fcHz;
+  const o2 = O * O;
+  let gd = 0;
+  for (let k = 0; k < n; k++) {
+    const q = 1 / (2 * Math.cos(((2 * k + 1) * Math.PI) / (4 * n)));
+    const invQ = 1 / q;
+    gd += (invQ * (o2 + 1)) / (Math.pow(1 - o2, 2) + Math.pow(O * invQ, 2));
+  }
+  return (gd / (2 * Math.PI * fcHz)) * 1000;
+}
+
 export interface SubsonicResult {
   /** escursione massima DENTRO la banda utile, e dove avviene */
   peakInBandMm: number;
@@ -165,6 +193,10 @@ export interface SubsonicResult {
   hpfHz: number;
   /** quanto quel filtro toglie all'accordo (dB) */
   lossAtFbDb: number;
+  /** ritardo di gruppo che il filtro AGGIUNGE all'accordo (ms) */
+  groupDelayAtFbMs: number;
+  /** lo stesso filtro a 12 dB/ott: meno controllo sull'escursione, meta' del ritardo */
+  groupDelay12dBMs: number;
 }
 
 /**
@@ -217,5 +249,7 @@ export function subsonicFilter(
     powerAtXmaxW: refPowerW * Math.pow(xmaxMm / Math.max(pk.v, 1e-9), 2),
     hpfHz: hi,
     lossAtFbDb: 20 * Math.log10(gain(hi, fbHz)),
+    groupDelayAtFbMs: butterworthGroupDelayMs(hi, 4, fbHz),
+    groupDelay12dBMs: butterworthGroupDelayMs(hi, 2, fbHz),
   };
 }

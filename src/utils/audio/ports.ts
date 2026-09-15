@@ -442,3 +442,29 @@ export function describePort(g: PortGeometry, lengthMm: number): string {
   if (spec.section === 'triangular') return `${prefix}${g.legAMm}×${g.legBMm} mm (triangolare) × ${Math.round(lengthMm)} mm`;
   return `${prefix}${g.widthMm}×${g.heightMm} mm × ${Math.round(lengthMm)} mm`;
 }
+
+/**
+ * Prima risonanza a canna d'organo del condotto.
+ *
+ * Il condotto non è solo la massa d'aria del risonatore di Helmholtz: è anche
+ * un tubo, e come tubo ha le sue onde stazionarie. Entrambe le bocche sono
+ * acusticamente APERTE — quella interna dà su un volume grande, che a queste
+ * frequenze si comporta da terminazione aperta — quindi la prima risonanza è a
+ * mezza lunghezza d'onda:
+ *
+ *   f_pipe = c / (2 · L_eff)
+ *
+ * e si conta sulla lunghezza EFFICACE, quella che comprende la correzione
+ * terminale, non sulla lunghezza del tubo.
+ *
+ * Non è un dettaglio accademico: cade tipicamente fra 300 e 800 Hz, cioè in
+ * piena gamma media, e un condotto che risuona lì lascia uscire dalla bocca il
+ * suono di dentro la cassa. È il motivo per cui un condotto lungo va imbottito
+ * attorno, o ripiegato, o spostato dietro.
+ */
+export function pipeResonance(
+  lengthMm: number, equivalentDiameterMm: number, endCorrection: number, tempC = 20,
+): number {
+  const leff = (lengthMm + endCorrection * equivalentDiameterMm) / 1000;
+  return leff > 0 ? speedOfSound(tempC) / (2 * leff) : 0;
+}

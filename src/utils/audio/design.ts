@@ -8,7 +8,7 @@ import {
   bandpass4thOrder, bandpass6thOrder, passiveRadiatorTuning, QTS_MAX_VENTED,
 } from './enclosure';
 import {
-  PORT_TYPES, autoSizePort, describePort, equivalentDiameter, portDisplacement,
+  PORT_TYPES, autoSizePort, describePort, equivalentDiameter, pipeResonance, portDisplacement,
   portFit, portLengthFor, totalPortArea, tuningOf, velocityCheck,
   type PortGeometry, type PortPanel, type PortType,
 } from './ports';
@@ -109,6 +109,8 @@ export interface PortResult {
   velocityLimit: number;   // soglia di questa geometria
   velocityOk: boolean;
   minAreaCm2: number;      // criterio di Small
+  /** prima risonanza a canna d’organo del condotto (Hz) */
+  pipeResonanceHz: number;
   description: string;
   /** tratti di sviluppo, noti solo dopo aver dimensionato la cassa */
   segments?: { name: string; lengthMm: number }[];
@@ -180,6 +182,15 @@ function designPort(
   if (areaCm2 < vc.minAreaCm2 * 0.98) {
     warnings.push(`Area ${areaCm2.toFixed(0)} cm² sotto il minimo di Small (${vc.minAreaCm2.toFixed(0)} cm²) per questo accordo.`);
   }
+  // il condotto e' anche un tubo, e come tubo risuona a mezza lunghezza d'onda
+  const fPipe = pipeResonance(lengthMm, equivalentDiameter(geometry), spec.endCorrection);
+  if (fPipe > 0 && fPipe < 900) {
+    warnings.push(
+      `Il condotto risuona come una canna d'organo a ${fPipe.toFixed(0)} Hz (mezza onda sulla lunghezza ` +
+      `efficace): li' dalla bocca esce il suono di dentro la cassa. Imbottisci la cassa attorno al condotto, ` +
+      `e se possibile tienilo lontano dalla zona dove il woofer lavora ancora.`,
+    );
+  }
   if (spec.sharedWalls > 0) {
     warnings.push(`${spec.label}: ${spec.sharedWalls === 1 ? 'una parete della cassa fa' : 'due pareti della cassa fanno'} da lato del condotto, quindi il volume sottratto è minore di uno slot indipendente.`);
   }
@@ -195,6 +206,7 @@ function designPort(
       velocityLimit: vc.limit,
       velocityOk: vc.ok,
       minAreaCm2: vc.minAreaCm2,
+      pipeResonanceHz: pipeResonance(lengthMm, equivalentDiameter(geometry), spec.endCorrection),
       description: describePort(geometry, lengthMm),
     },
     warnings,
@@ -838,6 +850,13 @@ export function computeDesign(input: DesignInput): DesignResult {
         `Sotto l'accordo il condotto non carica più il cono: a ${input.powerW} W l'escursione risale a ` +
         `${sub.peakBelowMm.toFixed(1)} mm verso ${sub.peakBelowHz.toFixed(0)} Hz. Serve un passa-alto subsonico ` +
         `Butterworth 24 dB/ott a ${sub.hpfHz.toFixed(0)} Hz, che costa ${Math.abs(sub.lossAtFbDb).toFixed(1)} dB all'accordo.`,
+      );
+      // il filtro non e' gratis nel tempo, e su una reflex accordata in basso
+      // arriva a pesare piu' della cassa
+      acoustic.warnings.push(
+        `Quel filtro aggiunge ${sub.groupDelayAtFbMs.toFixed(1)} ms di ritardo di gruppo all'accordo, da sommare ` +
+        `a quelli della cassa. A 12 dB/ottava ne aggiungerebbe ${sub.groupDelay12dBMs.toFixed(1)}, ma controlla ` +
+        `molto meno l'escursione: è il baratto vero del subsonico, e va fatto sapendo i due numeri.`,
       );
     }
   }
