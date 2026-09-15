@@ -9,6 +9,7 @@
 
 import { ebpFrom } from './tsParams';
 import type { AlignmentType, EnclosureType, TSParams } from './types';
+import { QTS_MAX_VENTED } from './enclosure';
 
 export interface AlignmentInfo {
   value: AlignmentType;
@@ -48,13 +49,18 @@ export function suggestEnclosure(ts: TSParams): EnclosureSuggestion {
   // negativo) e la cassa chiusa parte già sopra il Butterworth, perché il box
   // può solo ALZARE il Q. Con Vas e Sd generosi resta il pannello aperto, dove
   // la pendenza del dipolo raddrizza proprio la gobba del driver.
-  if (q > 0.56 && ts.vas >= 40 && (ts.sd ?? 0) >= 200) {
+  if (q > 0.50 && ts.vas >= 40 && (ts.sd ?? 0) >= 200) {
     type = 'open-baffle';
-    reason = `Qts ${q.toFixed(2)}: sopra 0.56 un allineamento reflex non esiste, e la cassa chiusa può solo `
-      + `alzare ancora il Q (Qtc ≥ ${q.toFixed(2)} qualunque sia il volume). Con Vas ${ts.vas.toFixed(0)} L e `
-      + `Sd ${(ts.sd ?? 0).toFixed(0)} cm² il driver è fatto per il pannello aperto: la discesa di 6 dB/ottava `
-      + `del dipolo compensa proprio la gobba che rovina le altre due cariche.`;
+    const impossibile = q >= QTS_MAX_VENTED;
+    reason = `Qts ${q.toFixed(2)}: `
+      + (impossibile
+        ? `sopra ${QTS_MAX_VENTED.toFixed(2)} un allineamento reflex non esiste — la massima piattezza chiede un volume negativo — `
+        : `un reflex esisterebbe ancora (il limite è ${QTS_MAX_VENTED.toFixed(2)}) ma sarebbe già molto smorzato e poco esteso, `)
+      + `e la cassa chiusa può solo alzare ancora il Q, perché Qtc ≥ ${q.toFixed(2)} qualunque sia il volume. `
+      + `Con Vas ${ts.vas.toFixed(0)} L e Sd ${(ts.sd ?? 0).toFixed(0)} cm² il driver ha di che lavorare su pannello aperto: `
+      + `la discesa di 6 dB/ottava del dipolo compensa proprio la gobba che rovina le altre due cariche.`;
     alternatives.push('sealed');
+    if (!impossibile) alternatives.push('vented');
   } else if (ebp < 50) {
     type = 'sealed';
     reason = `EBP ${ebp.toFixed(0)} (< 50): il driver ha una sospensione adatta alla cassa chiusa, che darà risposta più controllata e transienti migliori.`;
