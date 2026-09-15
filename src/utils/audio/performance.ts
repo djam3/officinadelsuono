@@ -149,3 +149,73 @@ export function ventVelocityCurve(input: VentVelocityInput): CurvePoint[] {
     v: peak / Math.sqrt(1 + ql * ql * Math.pow(f / fb - fb / f, 2)),
   }));
 }
+
+// ─── Filtro subsonico e limite di escursione ──────────────────────────────────
+
+export interface SubsonicResult {
+  /** escursione massima DENTRO la banda utile, e dove avviene */
+  peakInBandMm: number;
+  peakInBandHz: number;
+  /** escursione massima SOTTO l'accordo, dove il condotto non carica più il cono */
+  peakBelowMm: number;
+  peakBelowHz: number;
+  /** potenza che porta il cono esattamente a Xmax in banda (W) */
+  powerAtXmaxW: number;
+  /** taglio minimo di un Butterworth 24 dB/ott che riporta il sotto-accordo in riga */
+  hpfHz: number;
+  /** quanto quel filtro toglie all'accordo (dB) */
+  lossAtFbDb: number;
+}
+
+/**
+ * Sotto l'accordo il condotto smette di caricare il cono e l'escursione risale
+ * fino al limite di cedevolezza della sola sospensione: è per questo che una
+ * reflex vuole un passa-alto, mentre una cassa chiusa no.
+ *
+ * Il taglio non si sceglie a occhio. Il criterio usato qui è che il filtro deve
+ * riportare la gobba sotto l'accordo AL LIVELLO del picco che il cono fa già in
+ * banda: più in alto si guadagna niente (a comandare torna la banda utile) e si
+ * perde estensione, più in basso il sotto-accordo resta il punto debole. Con
+ * quel taglio la potenza applicabile è una sola su tutto lo spettro, e la dice
+ * `powerAtXmaxW`.
+ *
+ * Il filtro è un Butterworth del 4° ordine, |H| = 1/√(1 + (fc/f)^8).
+ */
+export function subsonicFilter(
+  excursion: CurvePoint[],
+  fbHz: number,
+  xmaxMm: number,
+  refPowerW: number,
+): SubsonicResult | null {
+  if (!excursion.length || !(fbHz > 0) || !(xmaxMm > 0)) return null;
+  const inBand = excursion.filter(p => p.f >= fbHz);
+  const below = excursion.filter(p => p.f < fbHz);
+  if (!inBand.length || !below.length) return null;
+
+  const pk = inBand.reduce((a, b) => (b.v > a.v ? b : a));
+  const pkLow = below.reduce((a, b) => (b.v > a.v ? b : a));
+  const gain = (fc: number, f: number) => 1 / Math.sqrt(1 + Math.pow(fc / f, 8));
+  const maxBelow = (fc: number) => Math.max(...below.map(p => p.v * gain(fc, p.f)));
+
+  // il taglio più basso che basta: il filtro è monotono in fc, quindi bisezione
+  let lo = Math.min(...excursion.map(p => p.f));
+  let hi = fbHz;
+  if (maxBelow(lo) <= pk.v) {
+    hi = lo; // già a posto senza filtro
+  } else {
+    for (let i = 0; i < 60; i++) {
+      const mid = (lo + hi) / 2;
+      if (maxBelow(mid) > pk.v) lo = mid; else hi = mid;
+    }
+  }
+
+  return {
+    peakInBandMm: pk.v,
+    peakInBandHz: pk.f,
+    peakBelowMm: pkLow.v,
+    peakBelowHz: pkLow.f,
+    powerAtXmaxW: refPowerW * Math.pow(xmaxMm / Math.max(pk.v, 1e-9), 2),
+    hpfHz: hi,
+    lossAtFbDb: 20 * Math.log10(gain(hi, fbHz)),
+  };
+}

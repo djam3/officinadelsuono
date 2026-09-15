@@ -19,7 +19,10 @@ import {
   ABSORBERS, QA_EMPTY, computeAbsorber, ventedBoxLosses,
   type AbsorberId, type AbsorberResult, type Placement,
 } from './absorber';
-import { computeMaxOutput, ventVelocityCurve, applyRoomGain, type RoomPreset, type MaxOutputResult } from './performance';
+import {
+  computeMaxOutput, ventVelocityCurve, applyRoomGain, subsonicFilter,
+  type RoomPreset, type MaxOutputResult, type SubsonicResult,
+} from './performance';
 import {
   DAMPING_SPECS, GOLDEN_RATIO, cuttingList, dimensionsFromVolume, driverDisplacement,
   estimatedWeight, grossFromNet, internalVolume, totalPanelArea, volumeBreakdown,
@@ -205,6 +208,8 @@ export interface AcousticResult {
   };
   /** bandpass: guadagno in banda rispetto al riferimento del driver (dB) */
   passbandGainDb?: number;
+  /** casse con condotto: taglio del passa-alto subsonico e limite di escursione */
+  subsonic?: SubsonicResult;
   /** radiatore passivo: massa mobile TOTALE che deve avere (zavorra inclusa) */
   prTotalMassG?: number;
   /** radiatore passivo: risonanza in aria libera della membrana = frequenza del notch */
@@ -694,6 +699,31 @@ export function computeDesign(input: DesignInput): DesignResult {
           `Anche nel condotto posteriore si arriva a ${vR.toFixed(0)} m/s, oltre i ${limit} m/s ammessi.`,
         );
       }
+    }
+  }
+
+  // ── Escursione: quanta potenza regge davvero, e dove tagliare sotto ──────
+  // La curva di escursione c'era già, ma nessuno la leggeva: si poteva simulare
+  // a piena potenza con il cono al doppio di Xmax senza che il programma dicesse
+  // niente, e il taglio del subsonico non veniva proposto da nessuna parte.
+  const xmaxMm = input.ts.xmax;
+  const fbForSub = acoustic.chambers ? acoustic.chambers.fLow : acoustic.fbHz;
+  if (curves && xmaxMm && fbForSub) {
+    const sub = subsonicFilter(curves.excursion, fbForSub, xmaxMm, input.powerW);
+    if (sub) {
+      acoustic.subsonic = sub;
+      if (sub.peakInBandMm > xmaxMm * 1.02) {
+        acoustic.warnings.push(
+          `A ${input.powerW} W il cono arriva a ${sub.peakInBandMm.toFixed(1)} mm a ${sub.peakInBandHz.toFixed(0)} Hz, ` +
+          `il ${((sub.peakInBandMm / xmaxMm - 1) * 100).toFixed(0)}% oltre gli ${xmaxMm} mm di Xmax: dentro la banda utile ` +
+          `il limite non è termico ma meccanico, e si ferma a ${sub.powerAtXmaxW.toFixed(0)} W.`,
+        );
+      }
+      acoustic.warnings.push(
+        `Sotto l'accordo il condotto non carica più il cono: a ${input.powerW} W l'escursione risale a ` +
+        `${sub.peakBelowMm.toFixed(1)} mm verso ${sub.peakBelowHz.toFixed(0)} Hz. Serve un passa-alto subsonico ` +
+        `Butterworth 24 dB/ott a ${sub.hpfHz.toFixed(0)} Hz, che costa ${Math.abs(sub.lossAtFbDb).toFixed(1)} dB all'accordo.`,
+      );
     }
   }
 
