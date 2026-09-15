@@ -14,6 +14,10 @@ import {
 } from './ports';
 import { computeResponse } from './response';
 import { baffleStep, zobelNetwork, type BaffleStepResult, type ZobelResult } from './baffle';
+import {
+  computeOpenBaffle, pathForPeakHz,
+  type DipoleFrame, type OpenBaffleResult,
+} from './openBaffle';
 import { computePRResponse, prCircuit } from './circuit';
 import { computeBandpassResponse } from './bandpassCircuit';
 import {
@@ -56,6 +60,12 @@ export interface DesignInput {
   bandpassS?: number;
   /** bandpass 4°: guadagno in banda voluto (dB sul riferimento del driver) */
   bandpassGainDb?: number;
+
+  /** pannello aperto: come è piegato e quanto sono profonde le alette */
+  dipoleFrame?: DipoleFrame;
+  wingDepthMm?: number;
+  /** pannello aperto: se dato, larghezza e profondità si ricavano da qui */
+  dipoleTargetHz?: number;
 
   /** radiatore passivo */
   prVasL?: number;
@@ -238,6 +248,8 @@ export interface DesignResult {
   baffle: BaffleStepResult;
   /** rete di compensazione dell'induttanza della bobina (null se Le non e' noto) */
   zobel: ZobelResult | null;
+  /** pannello aperto: percorso, risonanza di cavita', correzione ed escursione corretta */
+  openBaffle?: OpenBaffleResult;
   splWithRoom: CurvePoint[] | null;
   maxOutput: MaxOutputResult | null;
   ventVelocity: CurvePoint[] | null;
@@ -459,7 +471,92 @@ const DAMPING_AS_ABSORBER: Record<DampingLevel, { material: AbsorberId; placemen
   heavy:   { material: 'polyester', placement: 'stuffing', density: 15 },
 };
 
+/**
+ * Il pannello aperto non passa dal giro normale, e non per pigrizia: quel giro
+ * gira attorno a un volume netto che qui non esiste. Niente volume, niente
+ * condotto, niente fonoassorbente da far lavorare su una cavita' chiusa, e una
+ * lista di taglio che deve lasciare aperto proprio il lato che tutte le altre
+ * casse chiudono. Meglio un ramo separato che una serie di if dentro il ciclo.
+ */
+function designOpenBaffle(input: DesignInput): DesignResult {
+  const frame: DipoleFrame = input.dipoleFrame ?? 'h-frame';
+  const t = input.wallThicknessMm;
+
+  // Se l'utente chiede una frequenza invece di una misura, la misura si ricava:
+  // il percorso totale e' fissato da f, e su U/H lo si divide fra larghezza e
+  // alette invece di metterlo tutto nella larghezza.
+  let width = input.fixedWidthMm ?? 0;
+  let wing = input.wingDepthMm ?? 0;
+  if (input.dipoleTargetHz) {
+    const need = pathForPeakHz(input.dipoleTargetHz);
+    if (frame === 'flat') {
+      width = need;
+      wing = 0;
+    } else if (input.fixedWidthMm) {
+      wing = Math.max(need - input.fixedWidthMm, 0);
+    } else {
+      // meta' e meta': il compromesso fra ingombro frontale e profondita'
+      width = need / 2;
+      wing = need / 2;
+    }
+  }
+  if (!width) width = Math.max(((input.ts.sd ?? 300) / 100) * 2.2 * 10, 300);
+  // L'altezza non fa scendere il dipolo: comanda la dimensione piu' corta. Deve
+  // solo superare la larghezza (cosi' e' la larghezza a decidere) ed essere
+  // abbastanza da ospitare il driver con un margine di pannello attorno.
+  const dDriver = 2 * Math.sqrt(((input.ts.sd ?? 300) / 1e4) / Math.PI) * 1000;
+  const height = input.fixedHeightMm ?? Math.round(Math.max(width * 1.15, dDriver * 1.6, 500));
+
+  const ob = computeOpenBaffle({
+    ts: input.ts, frame, widthMm: width, heightMm: height, wingDepthMm: wing,
+    wallThicknessMm: t, powerW: input.powerW,
+  });
+
+  const acoustic: AcousticResult = {
+    vbL: 0,
+    f3Hz: ob.f3Hz,
+    alpha: 0,
+    qtc: input.ts.qts,
+    fcHz: input.ts.fs,
+    warnings: [...ob.warnings],
+  };
+
+  const zeroVolumes: VolumeBreakdown = {
+    gross: 0, driverDisp: 0, portDisp: 0, bracingDisp: 0, net: 0, effective: 0, absorberSolid: 0,
+  };
+  const absorber = computeAbsorber({
+    material: 'none', placement: 'none', densityKgM3: 0, liningThicknessMm: 0,
+    dims: { widthMm: Math.max(width - 2 * t, 20), heightMm: Math.max(height - 2 * t, 20), depthMm: Math.max(wing, 20) },
+    netVolumeL: 0,
+  });
+
+  const maxOutput = computeMaxOutput({
+    ts: input.ts, curves: ob.curves, refPowerW: input.powerW,
+    sensitivity: input.ts.sensitivity, roomPreset: input.roomPreset,
+  });
+
+  return {
+    acoustic,
+    absorber,
+    baffle: baffleStep(ob.dimensions.width),
+    zobel: zobelNetwork(input.ts.re ?? 0, input.ts.le ?? 0),
+    openBaffle: ob,
+    boxLossQ: 0,
+    volumes: zeroVolumes,
+    dimensions: ob.dimensions,
+    panels: ob.panels,
+    panelAreaM2: ob.panelAreaM2,
+    weightKg: ob.weightKg,
+    curves: ob.curves,
+    splWithRoom: applyRoomGain(ob.curves.spl, input.roomPreset),
+    maxOutput,
+    ventVelocity: null,
+  };
+}
+
 export function computeDesign(input: DesignInput): DesignResult {
+  if (input.enclosure === 'open-baffle') return designOpenBaffle(input);
+
   // stessa rete di sicurezza messa sulle geometrie dei condotti: un valore non
   // previsto qui non deve far cadere l'intera pagina, ma tornare al default
   const preset = DAMPING_AS_ABSORBER[input.damping] ?? DAMPING_AS_ABSORBER.normal;

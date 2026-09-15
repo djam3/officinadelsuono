@@ -177,7 +177,9 @@ export function DimensionsTab({
             </div>
           </Section>
 
-          <Section title="Bilancio dei volumi" subtitle="Dal volume interno lordo al volume acustico effettivo.">
+          {/* un pannello aperto non ha volume: mostrare cinque zeri sarebbe
+              peggio che non mostrare niente */}
+          <Section title="Bilancio dei volumi" subtitle="Dal volume interno lordo al volume acustico effettivo." hidden={volumes.gross <= 0}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Stat label="Lordo interno" value={volumes.gross.toFixed(1)} unit="L" />
               <Stat label="− Driver" value={volumes.driverDisp.toFixed(2)} unit="L" />

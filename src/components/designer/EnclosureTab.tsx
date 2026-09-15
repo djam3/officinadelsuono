@@ -2,6 +2,7 @@ import { Lightbulb, Wind } from 'lucide-react';
 import { NumField, SelectField, Section, ActionButton, Stat, Warnings } from './ui';
 import { PortDrawing } from './PortDrawing';
 import { ALIGNMENTS, ENCLOSURE_LABELS, PORT_TYPES } from '../../utils/audio';
+import { DIPOLE_FRAMES, type DipoleFrame } from '../../utils/audio/openBaffle';
 import type {
   AlignmentType, AcousticResult, EnclosureSuggestion, EnclosureType, PortType,
 } from '../../utils/audio';
@@ -21,6 +22,9 @@ export interface EnclosureSettings {
   triLegBMm: number | '';
   bandpassS: number | '';
   bandpassGainDb: number | '';
+  dipoleFrame: DipoleFrame;
+  wingDepthMm: number | '';
+  dipoleTargetHz: number | '';
   prVasL: number | '';
   prSdCm2: number | '';
   prQms: number | '';
@@ -42,6 +46,7 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
   const isBandpass = settings.enclosure === 'bandpass4' || settings.enclosure === 'bandpass6';
   const hasPort = settings.enclosure === 'vented' || isBandpass;
   const isPR = settings.enclosure === 'passive-radiator';
+  const isDipole = settings.enclosure === 'open-baffle';
   const portSpec = PORT_TYPES[settings.portType];
 
   return (
@@ -84,6 +89,34 @@ export function EnclosureTab({ settings, onChange, suggestion, acoustic }: Props
               onChange={v => set('enclosure', v as EnclosureType)}
               options={Object.entries(ENCLOSURE_LABELS).map(([value, label]) => ({ value, label }))}
             />
+
+            {isDipole && (
+              <>
+                <SelectField
+                  label="Come è piegato il pannello" infoId="vb"
+                  value={settings.dipoleFrame}
+                  onChange={v => set('dipoleFrame', v as DipoleFrame)}
+                  options={Object.entries(DIPOLE_FRAMES).map(([value, f]) => ({ value, label: f.label }))}
+                />
+                <p className="text-[11px] text-graphite leading-relaxed">
+                  {DIPOLE_FRAMES[settings.dipoleFrame].description}
+                </p>
+                <NumField
+                  label="Primo massimo del dipolo voluto" unit="Hz" infoId="fb"
+                  value={settings.dipoleTargetHz}
+                  onChange={v => set('dipoleTargetHz', v)}
+                  hint="Lascia vuoto per usare le misure imposte. Il percorso necessario è c/(2·f): metà larghezza e metà alette, se non fissi la larghezza."
+                />
+                {settings.dipoleFrame !== 'flat' && (
+                  <NumField
+                    label="Profondità delle alette" unit="mm" infoId="vb"
+                    value={settings.wingDepthMm}
+                    onChange={v => set('wingDepthMm', v)}
+                    hint="Allunga il percorso senza allargare il frontale, ma crea la cavità che risuona a quarto d’onda."
+                  />
+                )}
+              </>
+            )}
 
             {settings.enclosure === 'sealed' && (
               <NumField

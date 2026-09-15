@@ -139,9 +139,12 @@ export function CalcShell({ title, subtitle, inputs, results }: {
 
 // ─── Primitivi aggiuntivi del progettista ────────────────────────────────────
 
-export function Section({ title, subtitle, children, right }: {
+export function Section({ title, subtitle, children, right, hidden }: {
   title: string; subtitle?: string; children: React.ReactNode; right?: React.ReactNode;
+  /** per le sezioni che non hanno senso su certe cariche (il volume su un dipolo) */
+  hidden?: boolean;
 }) {
+  if (hidden) return null;
   return (
     <div className="bg-ink-2/40 border border-paper/[0.06] rounded-none p-5">
       <div className="flex items-start justify-between gap-4 mb-4">

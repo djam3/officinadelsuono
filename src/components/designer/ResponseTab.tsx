@@ -222,6 +222,55 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           />
         </Section>
       )}
+      {/* Dipolo: percorso, cavita' e il prezzo in escursione della correzione */}
+      {design.openBaffle && (
+        <Section
+          title="Pannello aperto: percorso, cavità ed escursione"
+          subtitle="Senza volume da calcolare, il progetto sta tutto nel percorso fronte-retro e nella profondità delle alette."
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+            <Riga k="Percorso efficace" v={`${(design.openBaffle.dEffMm / 10).toFixed(1)} cm`} />
+            <Riga k="Primo massimo" v={`${design.openBaffle.fPeakHz.toFixed(0)} Hz`} />
+            <Riga
+              k="Risonanza di cavità"
+              v={design.openBaffle.fPipeHz ? `${design.openBaffle.fPipeHz.toFixed(0)} Hz` : 'nessuna'}
+            />
+            <Riga k="F3 risultante" v={`${design.openBaffle.f3Hz.toFixed(0)} Hz`} />
+          </div>
+          <Plot
+            height={200}
+            yLabel="Correzione"
+            yUnit="dB"
+            series={[{ name: 'Da applicare', color: PLOT_COLORS[3], points: design.openBaffle.eqBoostDb }]}
+          />
+          <p className="text-[11px] text-graphite mt-2 mb-5 leading-relaxed">
+            La discesa del dipolo è di 6 dB/ottava e va compensata: questa è la curva che il filtro deve avere.
+            {design.openBaffle.eqHighPassHz > 0 && (
+              <>
+                {' '}Sotto i <strong>{design.openBaffle.eqHighPassHz.toFixed(0)} Hz</strong> torna a scendere, e
+                non per prudenza: sotto quel punto il cono è già a Xmax e alzare il livello non produce più
+                suono, produce solo corsa.
+              </>
+            )}
+          </p>
+          <Plot
+            height={210}
+            yLabel="Escursione"
+            yUnit="mm"
+            series={[
+              { name: 'Con correzione', color: PLOT_COLORS[0], points: design.openBaffle.excursionEq },
+              { name: 'Senza', color: PLOT_COLORS[2], points: design.openBaffle.curves.excursion },
+              ...(ts.xmax ? [{ name: `Xmax ${ts.xmax} mm`, color: '#3f3f46', points: limitLine(design.openBaffle.excursionEq, ts.xmax) }] : []),
+            ]}
+          />
+          <p className="text-[11px] text-graphite mt-2 leading-relaxed">
+            Con la correzione inserita l&rsquo;escursione cresce di <strong>18 dB/ottava</strong> sotto il primo
+            massimo, non 12: i 6 dB del dipolo si sommano ai 12 che servono già per tenere il livello. È questa
+            curva, non il volume, a decidere fin dove arriva un pannello aperto.
+          </p>
+        </Section>
+      )}
+
       {/* Effetto pannello e Zobel: due conti che non dipendono dalla curva ma
           decidono quanto la cassa suonerà magra e che carico vedrà il filtro */}
       <Section

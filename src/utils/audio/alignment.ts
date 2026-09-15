@@ -44,7 +44,18 @@ export function suggestEnclosure(ts: TSParams): EnclosureSuggestion {
   let reason: string;
   const alternatives: EnclosureType[] = [];
 
-  if (ebp < 50) {
+  // Sopra Qts 0.56 il reflex non esiste (la massima piattezza vuole un volume
+  // negativo) e la cassa chiusa parte già sopra il Butterworth, perché il box
+  // può solo ALZARE il Q. Con Vas e Sd generosi resta il pannello aperto, dove
+  // la pendenza del dipolo raddrizza proprio la gobba del driver.
+  if (q > 0.56 && ts.vas >= 40 && (ts.sd ?? 0) >= 200) {
+    type = 'open-baffle';
+    reason = `Qts ${q.toFixed(2)}: sopra 0.56 un allineamento reflex non esiste, e la cassa chiusa può solo `
+      + `alzare ancora il Q (Qtc ≥ ${q.toFixed(2)} qualunque sia il volume). Con Vas ${ts.vas.toFixed(0)} L e `
+      + `Sd ${(ts.sd ?? 0).toFixed(0)} cm² il driver è fatto per il pannello aperto: la discesa di 6 dB/ottava `
+      + `del dipolo compensa proprio la gobba che rovina le altre due cariche.`;
+    alternatives.push('sealed');
+  } else if (ebp < 50) {
     type = 'sealed';
     reason = `EBP ${ebp.toFixed(0)} (< 50): il driver ha una sospensione adatta alla cassa chiusa, che darà risposta più controllata e transienti migliori.`;
     alternatives.push('passive-radiator');
@@ -76,4 +87,5 @@ export const ENCLOSURE_LABELS: Record<EnclosureType, string> = {
   'passive-radiator': 'Radiatore Passivo',
   bandpass4: 'Bandpass 4° ordine',
   bandpass6: 'Bandpass 6° ordine',
+  'open-baffle': 'Pannello Aperto (dipolo)',
 };

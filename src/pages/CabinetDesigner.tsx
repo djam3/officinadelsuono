@@ -41,6 +41,9 @@ const DEFAULT_ENCLOSURE: EnclosureSettings = {
   triLegBMm: '',
   bandpassS: 0.7,
   bandpassGainDb: 0,
+  dipoleFrame: 'h-frame',
+  wingDepthMm: 300,
+  dipoleTargetHz: '',
   prVasL: '',
   prSdCm2: '',
   prQms: '',
@@ -123,6 +126,9 @@ export function CabinetDesigner() {
       triLegBMm: num(enclosure.triLegBMm),
       bandpassS: num(enclosure.bandpassS),
       bandpassGainDb: num(enclosure.bandpassGainDb),
+      dipoleFrame: enclosure.dipoleFrame,
+      wingDepthMm: num(enclosure.wingDepthMm),
+      dipoleTargetHz: num(enclosure.dipoleTargetHz),
       prVasL: num(enclosure.prVasL),
       prSdCm2: num(enclosure.prSdCm2),
       prQms: num(enclosure.prQms),
@@ -184,11 +190,22 @@ export function CabinetDesigner() {
         {/* Riepilogo sempre visibile */}
         {design && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
-            <Stat label="Volume netto" value={design.acoustic.vbL.toFixed(1)} unit="L" accent />
-            {design.acoustic.fbHz !== undefined ? (
-              <Stat label="Accordo Fb" value={Math.round(design.acoustic.fbHz)} unit="Hz" />
+            {/* su un pannello aperto non c'è volume: al suo posto va il numero
+                che quel progetto ha davvero, cioè il percorso fronte-retro */}
+            {design.openBaffle ? (
+              <>
+                <Stat label="Percorso" value={(design.openBaffle.dEffMm / 10).toFixed(0)} unit="cm" accent />
+                <Stat label="Massimo dipolo" value={Math.round(design.openBaffle.fPeakHz)} unit="Hz" />
+              </>
             ) : (
-              <Stat label="Qtc" value={design.acoustic.qtc?.toFixed(2) ?? '—'} />
+              <>
+                <Stat label="Volume netto" value={design.acoustic.vbL.toFixed(1)} unit="L" accent />
+                {design.acoustic.fbHz !== undefined ? (
+                  <Stat label="Accordo Fb" value={Math.round(design.acoustic.fbHz)} unit="Hz" />
+                ) : (
+                  <Stat label="Qtc" value={design.acoustic.qtc?.toFixed(2) ?? '—'} />
+                )}
+              </>
             )}
             <Stat label="F3" value={Math.round(design.acoustic.f3Hz)} unit="Hz" />
             <Stat

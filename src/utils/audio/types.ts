@@ -48,7 +48,8 @@ export interface DriverConfig {
 
 // ─── Tipologie di cassa ───────────────────────────────────────────────────────
 
-export type EnclosureType = 'sealed' | 'vented' | 'passive-radiator' | 'bandpass4' | 'bandpass6';
+export type EnclosureType =
+  | 'sealed' | 'vented' | 'passive-radiator' | 'bandpass4' | 'bandpass6' | 'open-baffle';
 
 export type AlignmentType = 'B4' | 'QB3' | 'C4' | 'SBB4' | 'SC4' | 'BESSEL' | 'CUSTOM';
 
