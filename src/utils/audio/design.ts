@@ -5,7 +5,7 @@
 
 import {
   sealedFromQtc, sealedFromVb, ventedDesign, alignmentRatios,
-  bandpass4thOrder, bandpass6thOrder, passiveRadiatorTuning,
+  bandpass4thOrder, bandpass6thOrder, passiveRadiatorTuning, QTS_MAX_VENTED,
 } from './enclosure';
 import {
   PORT_TYPES, autoSizePort, describePort, equivalentDiameter, portDisplacement,
@@ -282,6 +282,19 @@ function designVented(input: DesignInput, qb = 7): AcousticResult {
   // F3 provvisorio: viene sostituito da quello misurato sulla curva reale
   const f3 = 0.26 * ts.fs * Math.pow(ts.qts, -1.4);
   const { port, warnings, actualFbHz } = designPort(input, fb, vb);
+
+  // Sopra QTS_MAX_VENTED la condizione di massima piattezza chiede un volume
+  // negativo: il ripiego restituito e' una cassa enorme con una gobba enorme, e
+  // va detto che non e' un allineamento ma un tappabuchi.
+  if (ts.qts > QTS_MAX_VENTED && !(input.customVbL && input.customFbHz)) {
+    warnings.push(
+      `Con Qts ${ts.qts.toFixed(2)} un allineamento reflex NON ESISTE: la condizione di massima piattezza ` +
+      `chiede un volume negativo per qualunque Qts sopra ${QTS_MAX_VENTED.toFixed(2)}. Il driver è già poco ` +
+      `smorzato di suo e il condotto aggiunge un secondo risonatore altrettanto poco smorzato: ne esce una ` +
+      `gobba attorno all'accordo e una discesa a 24 dB/ottava subito sotto. Con questo Qts la strada è la ` +
+      `cassa chiusa grande, oppure — se Vas e Sd sono generosi — il pannello aperto.`,
+    );
+  }
 
   // Il B4 esiste a un solo Qts: con un driver diverso non è realizzabile
   if (input.alignment === 'B4' && !(input.customVbL && input.customFbHz)) {

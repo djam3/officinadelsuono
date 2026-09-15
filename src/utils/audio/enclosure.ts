@@ -131,6 +131,21 @@ export function sealedFromVb(ts: TSParams, vbL: number, qa?: number): SealedResu
  * classiche: le perdite reali della cassa entrano dopo, quando il motore
  * calcola la risposta con il QL effettivo.
  */
+/**
+ * Qts oltre il quale un allineamento reflex NON ESISTE.
+ *
+ * Sostituendo le due forme chiuse in alpha = h·(a2 − h) − 1 i termini si
+ * semplificano fino a un'espressione nel solo Qts:
+ *
+ *   h·a2  = 4(1 − q²)        h² = 8q²(1 − q²)
+ *   alpha = 4(1 − q²)(1 − 2q²) − 1
+ *
+ * e alpha > 0 richiede 8y² − 12y + 3 > 0 con y = q², cioe' y < (3 − √3)/4.
+ * Sopra quel Qts la condizione di massima piattezza vorrebbe una cassa di
+ * volume NEGATIVO: non e' una cassa grande, e' una cassa che non c'e'.
+ */
+export const QTS_MAX_VENTED = Math.sqrt((3 - Math.sqrt(3)) / 4); // 0.56302
+
 function qb3c4Ratios(qts: number): { alpha: number; h: number } {
   const q = Math.min(Math.max(qts, 0.05), 0.95);
   const a2 = (Math.SQRT2 * Math.sqrt(1 - q * q)) / q;
@@ -138,7 +153,8 @@ function qb3c4Ratios(qts: number): { alpha: number; h: number } {
   const alpha = h * (a2 - h) - 1;
   // sotto questa soglia la cassa diventa assurdamente grande (alpha piccolo
   // significa Vb = Vas/alpha): meglio fermarsi che restituire un numero che
-  // nessuno costruira mai
+  // nessuno costruira mai. Chi chiama deve controllare QTS_MAX_VENTED: oltre
+  // quel Qts questo valore e' un ripiego, non un allineamento.
   return { alpha: Math.max(alpha, 0.05), h };
 }
 

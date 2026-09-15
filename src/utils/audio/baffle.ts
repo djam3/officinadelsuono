@@ -100,3 +100,53 @@ export function zobelNetwork(reOhm: number, leMh: number): ZobelResult | null {
     zAt10kOhm: Math.hypot(reOhm, 2 * Math.PI * 10000 * le),
   };
 }
+
+// ─── Pannello aperto (dipolo) ─────────────────────────────────────────────────
+
+export interface DipoleResult {
+  /** primo massimo del dipolo: sopra si irradia normalmente, sotto si perde 6 dB/ott */
+  fPeakHz: number;
+  /** perdita rispetto al massimo, a una frequenza data */
+  lossAtHz: (f: number) => number;
+  /** escursione richiesta in più rispetto a una cassa chiusa, alla stessa frequenza */
+  excursionFactorAt: (f: number) => number;
+}
+
+/**
+ * Pannello aperto: il retro del cono irradia in opposizione di fase e, finché
+ * la lunghezza d'onda è grande rispetto al pannello, le due facce si
+ * annullano. È il cortocircuito acustico.
+ *
+ * Il fronte e il retro si comportano come due sorgenti in opposizione separate
+ * da un percorso efficace pari alla larghezza del pannello: sull'asse la
+ * pressione va come |2·sin(kW/2)|, che ha il primo massimo quando kW = π, cioè
+ * quando **W = λ/2**. Da lì:
+ *
+ *   f_picco = c / (2W)        W = c / (2·f)
+ *
+ * Sotto quel massimo sin(kW/2) ≈ kW/2 e la risposta scende di **6 dB/ottava**
+ * — non 12, non 24: una pendenza dolce, ed è il motivo per cui un driver molto
+ * poco smorzato (Qts alto) ci sta bene. La sua gobba sale mentre il dipolo
+ * scende, e le due cose si compensano.
+ *
+ * Il prezzo è l'escursione: per tenere lo stesso livello mentre si perdono
+ * 6 dB/ottava, il cono deve muoversi il doppio a ogni ottava in più di quanto
+ * già non faccia in una cassa chiusa.
+ */
+export function dipole(widthMm: number, tempC = 20): DipoleResult {
+  const w = Math.max(widthMm, 1) / 1000;
+  const c = speedOfSound(tempC);
+  const fPeak = c / (2 * w);
+  // risposta normalizzata al massimo: |sin(π·f/(2·fPeak))|, valida fino al picco
+  const rel = (f: number) => Math.abs(Math.sin((Math.PI / 2) * Math.min(f / fPeak, 1)));
+  return {
+    fPeakHz: fPeak,
+    lossAtHz: (f: number) => 20 * Math.log10(Math.max(rel(f), 1e-6)),
+    excursionFactorAt: (f: number) => 1 / Math.max(rel(f), 1e-6),
+  };
+}
+
+/** Larghezza di pannello che porta il primo massimo del dipolo a una data frequenza */
+export function dipoleWidthForHz(fHz: number, tempC = 20): number {
+  return (speedOfSound(tempC) / (2 * Math.max(fHz, 1))) * 1000; // mm
+}
