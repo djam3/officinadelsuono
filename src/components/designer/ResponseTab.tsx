@@ -237,6 +237,26 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
             />
             <Riga k="F3 risultante" v={`${design.openBaffle.f3Hz.toFixed(0)} Hz`} />
           </div>
+          {design.openBaffle.notch && (
+            <div className="mb-5 bg-ink-2/80 border border-amber-500/25 rounded-none p-4">
+              <p className="annot annot-marker block mb-3">
+                Notch per la risonanza di cavità — {design.openBaffle.notch.fHz.toFixed(0)} Hz
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <Riga k="Induttanza L" v={`${design.openBaffle.notch.lMh.toFixed(2)} mH`} />
+                <Riga k="Capacità C" v={`${design.openBaffle.notch.cUf.toFixed(0)} µF`} />
+                <Riga k="Resistenza R" v={`${design.openBaffle.notch.rOhm.toFixed(1)} Ω`} />
+                <Riga k="Profondità · Q" v={`${design.openBaffle.notch.depthDb.toFixed(0)} dB · Q ${design.openBaffle.notch.q}`} />
+              </div>
+              <p className="text-[11px] text-graphite mt-3 leading-relaxed">
+                Circuito risonante parallelo L‖C‖R da mettere <strong>in serie</strong> al driver, non in
+                parallelo: il notch classico dei crossover è una L-C in parallelo ai morsetti, e davanti a un
+                amplificatore a bassa impedenza d&rsquo;uscita quella rete non fa niente. Prima del filtro vengono
+                però due rimedi migliori: incrociare sotto la risonanza, e mettere un velo di assorbente dentro
+                le alette — che la smorza dove nasce.
+              </p>
+            </div>
+          )}
           <Plot
             height={200}
             yLabel="Correzione"

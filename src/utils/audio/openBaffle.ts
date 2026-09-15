@@ -105,6 +105,8 @@ export interface OpenBaffleResult {
   eqHighPassHz: number;
   /** limite di escursione e taglio, con lo stesso conto usato per le reflex */
   subsonic: SubsonicResult | null;
+  /** rete che spegne la risonanza di cavita' (null sul pannello piatto) */
+  notch: CavityNotch | null;
   curves: ResponseCurves;
   /** correzione da applicare per raddrizzare la risposta (dB) */
   eqBoostDb: CurvePoint[];
@@ -336,6 +338,7 @@ export function computeOpenBaffle(input: OpenBaffleInput): OpenBaffleResult {
     dipoleLossAtF3Db: lossDb(f3),
     eqHighPassHz: fHp,
     subsonic: sub,
+    notch: fPipe ? cavityNotch(fPipe, ts.re ?? 8) : null,
     curves,
     eqBoostDb,
     excursionEq,
@@ -344,5 +347,58 @@ export function computeOpenBaffle(input: OpenBaffleInput): OpenBaffleResult {
     panelAreaM2: totalPanelArea(panels),
     weightKg: estimatedWeight(panels),
     warnings,
+  };
+}
+
+// ─── Notch per la risonanza di cavità ─────────────────────────────────────────
+
+export interface CavityNotch {
+  fHz: number;
+  /** attenuazione al centro (dB, negativa) */
+  depthDb: number;
+  q: number;
+  /** trappola parallela L‖C‖R da mettere IN SERIE al driver */
+  lMh: number;
+  cUf: number;
+  rOhm: number;
+  /** larghezza di banda a −3 dB dal fondo del notch (Hz) */
+  bandwidthHz: number;
+}
+
+/**
+ * Rete che spegne la risonanza di cavità di un U/H-frame.
+ *
+ * Attenzione alla topologia, perché il libro di testo qui inganna: il notch
+ * classico dei filtri passivi è una L-C in serie messa IN PARALLELO al driver,
+ * e davanti a un amplificatore moderno — che è un generatore di tensione con
+ * impedenza d'uscita quasi nulla — quella rete **non fa niente**, perché la
+ * tensione ai morsetti resta quella che l'amplificatore impone. Funziona solo
+ * se davanti c'è già un'impedenza in serie, cioè dentro un crossover.
+ *
+ * Su un woofer attaccato diretto serve l'altra: un circuito risonante parallelo
+ * L‖C‖R messo IN SERIE. Alla risonanza il parallelo diventa alta impedenza (≈R)
+ * e fa partitore con Re, attenuando; fuori risonanza è un cortocircuito e non
+ * si sente. Da lì:
+ *
+ *   R = Re·(10^(−dB/20) − 1)      L = R/(2π·f·Q)      C = Q/(2π·f·R)
+ *
+ * Con un DSP la stessa cosa si fa con un parametrico, e conviene: è regolabile
+ * sulla misura invece che sul calcolo. Ma prima del filtro vengono due rimedi
+ * migliori, e vanno nell'ordine: incrociare sotto la risonanza, e mettere un
+ * velo di assorbente dentro le alette — che la smorza dove nasce invece di
+ * toglierla dal segnale.
+ */
+export function cavityNotch(fHz: number, reOhm: number, depthDb = -8, q = 4): CavityNotch | null {
+  if (!(fHz > 0) || !(reOhm > 0) || depthDb >= 0 || !(q > 0)) return null;
+  const r = reOhm * (Math.pow(10, -depthDb / 20) - 1);
+  const w = 2 * Math.PI * fHz;
+  return {
+    fHz,
+    depthDb,
+    q,
+    rOhm: r,
+    lMh: (r / (w * q)) * 1000,
+    cUf: (q / (w * r)) * 1e6,
+    bandwidthHz: fHz / q,
   };
 }
