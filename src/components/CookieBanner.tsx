@@ -58,6 +58,9 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
       version: CONSENT_VERSION,
     };
     localStorage.setItem(CONSENT_KEY, JSON.stringify(state));
+    // il caricatore in index.html sta aspettando questo: senza, la scelta
+    // avrebbe effetto solo al ricaricamento successivo
+    window.dispatchEvent(new Event('consenso-aggiornato'));
     setVisible(false);
   };
 
@@ -86,9 +89,11 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                     <Cookie className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-black text-white mb-2">La tua privacy è importante</h3>
+                    <h3 className="text-lg font-black text-white mb-2">Questo sito non traccia nessuno</h3>
                     <p className="text-sm text-paper/90 leading-relaxed">
-                      Utilizziamo cookie tecnici necessari al funzionamento del sito e, previo tuo consenso, cookie analitici per migliorare l'esperienza utente. Puoi accettare tutti i cookie, rifiutare quelli non essenziali o personalizzare le tue preferenze.{' '}
+                      Oggi non scrive cookie e non carica niente da altri siti. È predisposto per le statistiche
+                      di visita, che partirebbero solo con il tuo consenso: se dici di no, non viene caricato
+                      nulla. Quello che scrivi nel calcolatore resta comunque nel tuo browser.{' '}
                       <button
                         onClick={() => onNavigate?.('cookie-policy')}
                         className="text-marker hover:underline font-semibold"
@@ -107,7 +112,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                   </button>
                   <button
                     onClick={rejectAll}
-                    className="flex-1 px-6 py-3 bg-ink-2 border border-paper/10 text-ink rounded-none font-bold hover:bg-ink-3 hover:border-paper/20 transition-all text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-paper/10 border border-paper/25 text-paper rounded-none font-bold hover:bg-paper/15 hover:border-paper/40 hover:text-white transition-all text-sm uppercase tracking-wider"
                   >
                     Solo necessari
                   </button>
@@ -149,7 +154,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                           <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-full">Sempre attivi</span>
                         </div>
                         <p className="text-xs text-graphite leading-relaxed">
-                          Indispensabili per il funzionamento del sito (login, carrello, sicurezza). Non richiedono consenso.
+                          L’unica cosa che il sito salva da sé è la risposta che dai qui, per non richiedertela a ogni visita. Non richiede consenso.
                         </p>
                       </div>
                     </div>
@@ -175,7 +180,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                           </button>
                         </div>
                         <p className="text-xs text-graphite leading-relaxed">
-                          Ci aiutano a capire come utilizzi il sito (Google Analytics, Firebase Analytics) per migliorarlo. Dati anonimizzati.
+                          Google Analytics, con l’indirizzo IP anonimizzato, per sapere quante persone usano il calcolatore. Oggi non è configurato: acconsentendo non si attiva niente finché non lo sarà.
                         </p>
                       </div>
                     </div>
@@ -218,7 +223,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                   </button>
                   <button
                     onClick={acceptAll}
-                    className="flex-1 px-6 py-3 bg-ink-2 border border-paper/10 text-ink rounded-none font-bold hover:bg-ink-3 hover:border-paper/20 transition-all text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-paper/10 border border-paper/25 text-paper rounded-none font-bold hover:bg-paper/15 hover:border-paper/40 hover:text-white transition-all text-sm uppercase tracking-wider"
                   >
                     Accetta tutti
                   </button>

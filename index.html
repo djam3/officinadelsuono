@@ -42,43 +42,83 @@
     <link rel="apple-touch-icon" href="/icona-180.png" />
     <meta name="theme-color" content="#0B1826" />
 
-    <!-- Google Analytics 4
-         Set VITE_GA4_MEASUREMENT_ID=G-XXXXXXXXXX in your .env file.
-         The snippet is inert (no-op) when the variable is not provided. -->
+    <!--
+      Tracciamento: NON parte prima del consenso.
+
+      Prima i due frammenti si caricavano da soli non appena l'identificativo
+      era configurato, e il pixel mandava l'evento PageView sulla prima riga:
+      il banner chiedeva il permesso per una cosa gia' successa. Ora il
+      caricamento sta dentro una funzione che guarda il consenso salvato, e la
+      funzione la richiama anche il banner appena si sceglie - cosi' chi
+      accetta non deve ricaricare la pagina perche' abbia effetto.
+
+      Gli identificativi arrivano da .env (VITE_GA4_MEASUREMENT_ID e
+      VITE_META_PIXEL_ID). Se non ci sono, il segnaposto resta letterale e qui
+      non si carica niente: e' il caso del sito cosi' com'e' pubblicato oggi.
+    -->
     <script>
       window.__GA_ID = '%VITE_GA4_MEASUREMENT_ID%';
-      if (window.__GA_ID && window.__GA_ID !== '%VITE_GA4_MEASUREMENT_ID%') {
-        (function(G){
+      window.__META_ID = '%VITE_META_PIXEL_ID%';
+
+      (function () {
+        var impostato = function (v, nome) { return !!v && v !== '%' + nome + '%'; };
+        var gaPronto = false, metaPronto = false;
+
+        function consenso() {
+          try {
+            var grezzo = localStorage.getItem('cookie-consent');
+            if (!grezzo) return { analytics: false, marketing: false };
+            var c = JSON.parse(grezzo);
+            return { analytics: c.analytics === true, marketing: c.marketing === true };
+          } catch (e) {
+            // niente memoria leggibile: si tratta come un no
+            return { analytics: false, marketing: false };
+          }
+        }
+
+        function caricaGA(G) {
+          if (gaPronto) return;
+          gaPronto = true;
           var s = document.createElement('script');
           s.async = true;
           s.src = 'https://www.googletagmanager.com/gtag/js?id=' + G;
           document.head.appendChild(s);
           window.dataLayer = window.dataLayer || [];
-          function gtag(){window.dataLayer.push(arguments);}
+          function gtag() { window.dataLayer.push(arguments); }
           window.gtag = gtag;
           gtag('js', new Date());
           gtag('config', G, { anonymize_ip: true, cookie_flags: 'SameSite=None;Secure' });
-        })(window.__GA_ID);
-      }
-    </script>
+        }
 
-    <!-- Meta Pixel Code -->
-    <script>
-      window.__META_ID = '%VITE_META_PIXEL_ID%';
-      if (window.__META_ID && window.__META_ID !== '%VITE_META_PIXEL_ID%') {
-        !function(f,b,e,v,n,t,s)
-        {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-        n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-        if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-        n.queue=[];t=b.createElement(e);t.async=!0;
-        t.src=v;s=b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t,s)}(window, document,'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-        fbq('init', window.__META_ID);
-        fbq('track', 'PageView');
-      }
+        function caricaMeta(ID) {
+          if (metaPronto) return;
+          metaPronto = true;
+          !function (f, b, e, v, n, t, s) {
+            if (f.fbq) return; n = f.fbq = function () {
+              n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+            };
+            if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+            n.queue = []; t = b.createElement(e); t.async = !0;
+            t.src = v; s = b.getElementsByTagName(e)[0];
+            s.parentNode.insertBefore(t, s);
+          }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', ID);
+          fbq('track', 'PageView');
+        }
+
+        window.__applicaConsenso = function () {
+          var c = consenso();
+          if (c.analytics && impostato(window.__GA_ID, 'VITE_GA4_MEASUREMENT_ID')) caricaGA(window.__GA_ID);
+          if (c.marketing && impostato(window.__META_ID, 'VITE_META_PIXEL_ID')) caricaMeta(window.__META_ID);
+          // un consenso ritirato non puo' scaricare uno script gia' partito:
+          // l'unico modo onesto di toglierlo di mezzo e' ricaricare
+          if ((gaPronto && !c.analytics) || (metaPronto && !c.marketing)) window.location.reload();
+        };
+
+        window.__applicaConsenso();
+        window.addEventListener('consenso-aggiornato', window.__applicaConsenso);
+      })();
     </script>
-    <!-- End Meta Pixel Code -->
 
     <!-- Structured Data: Organization -->
     <script type="application/ld+json">

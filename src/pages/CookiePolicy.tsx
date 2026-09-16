@@ -1,132 +1,165 @@
-import { motion } from 'framer-motion';
+/**
+ * Cookie.
+ *
+ * La versione precedente elencava cookie tecnici per la sessione di
+ * autenticazione, il carrello e la prevenzione frodi, e fra le terze parti
+ * Stripe, Resend e i video incorporati nel blog. Niente di tutto questo esiste:
+ * non c'è login, non c'è carrello, non c'è blog.
+ *
+ * La verità è più corta e molto più rassicurante: aprendo il sito non parte
+ * nessuna richiesta verso l'esterno e non viene scritto nessun cookie. L'unica
+ * cosa che resta sul dispositivo è la memoria locale del calcolatore, che è
+ * un'altra cosa — non viaggia con le richieste e non la vede nessun server.
+ *
+ * Il banner resta perché il sito è predisposto per le statistiche di visita, e
+ * perché se un giorno verranno accese dovranno partire dopo il consenso e non
+ * prima. Quel «dopo» ora è vero anche nel codice: il caricamento degli script
+ * di terze parti sta dietro alla scelta fatta qui.
+ */
+
+import { useSEO } from '../hooks/useSEO';
+import { Annot, Griglia, Tavola } from '../components/blueprint';
+
+const AGGIORNATO = '17 settembre 2026';
 
 export function CookiePolicy() {
-  const lastUpdated = '7 aprile 2026';
+  useSEO({
+    title: 'Cookie',
+    description:
+      'Il sito non scrive cookie e non carica script di terze parti. Cosa resta sul dispositivo, perché, e come cambiare idea.',
+    url: '/cookie-policy',
+  });
 
-  const openPreferences = () => {
+  const riapriPreferenze = () => {
     localStorage.removeItem('cookie-consent');
     window.dispatchEvent(new Event('cookie-consent-reset'));
   };
 
   return (
-    <div className="min-h-screen bg-ink text-white pt-24 pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest mb-4 text-center">
-            Cookie Policy
-          </h1>
-          <p className="text-center text-graphite text-sm mb-12">Ultimo aggiornamento: {lastUpdated}</p>
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="bg-ink-2 border border-paper/10 rounded-none p-8 md:p-12 shadow-2xl space-y-10">
-
-            <section>
-              <p className="text-paper/90 leading-relaxed">
-                La presente Cookie Policy è redatta ai sensi dell'art. 13 del Regolamento UE 2016/679 (GDPR), del Provvedimento del Garante per la Protezione dei Dati Personali del 10 giugno 2021 ("Linee guida cookie") e della Direttiva ePrivacy 2002/58/CE. Descrive cosa sono i cookie, quali tipologie utilizziamo sul sito <strong className="text-white">officinadelsuono.it</strong> e come puoi gestirli.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">1. Cosa sono i cookie</h2>
-              <p className="text-paper/90 leading-relaxed">
-                I cookie sono piccoli file di testo che i siti web visitati salvano sul dispositivo dell'utente (computer, smartphone, tablet) per memorizzare informazioni che possono essere riutilizzate durante la stessa visita ("cookie di sessione") o successivamente ("cookie persistenti"). Insieme ai cookie utilizziamo anche tecnologie simili come pixel tag, web beacon e local storage del browser.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">2. Tipologie di cookie utilizzate</h2>
-
-              <div className="space-y-6 mt-4">
-                <div className="bg-ink/50 border border-paper/10 rounded-none p-6">
-                  <h3 className="text-lg font-bold text-white mb-2">🛡️ Cookie tecnici (sempre attivi)</h3>
-                  <p className="text-paper/90 text-sm leading-relaxed mb-3">
-                    Necessari al funzionamento del sito. Non richiedono il consenso dell'utente ai sensi dell'art. 122 del Codice Privacy.
-                  </p>
-                  <ul className="text-sm text-graphite space-y-1 ml-2">
-                    <li>• Sessione di autenticazione Firebase (login utente)</li>
-                    <li>• Carrello e preferenze di acquisto</li>
-                    <li>• Stato del consenso ai cookie</li>
-                    <li>• Sicurezza e prevenzione frodi</li>
-                  </ul>
-                  <p className="text-xs text-graphite mt-3"><strong>Durata:</strong> sessione o fino a 12 mesi · <strong>Base giuridica:</strong> legittimo interesse</p>
-                </div>
-
-                <div className="bg-ink/50 border border-paper/10 rounded-none p-6">
-                  <h3 className="text-lg font-bold text-white mb-2">📊 Cookie analitici (consenso opzionale)</h3>
-                  <p className="text-paper/90 text-sm leading-relaxed mb-3">
-                    Utilizzati per raccogliere informazioni in forma aggregata sul numero di visitatori e su come utilizzano il sito. Ci aiutano a migliorare l'esperienza utente.
-                  </p>
-                  <ul className="text-sm text-graphite space-y-1 ml-2">
-                    <li>• Google Analytics 4 / Firebase Analytics</li>
-                    <li>• Statistiche di navigazione anonimizzate</li>
-                  </ul>
-                  <p className="text-xs text-graphite mt-3"><strong>Durata:</strong> fino a 24 mesi · <strong>Base giuridica:</strong> consenso (art. 6.1.a GDPR)</p>
-                </div>
-
-                <div className="bg-ink/50 border border-paper/10 rounded-none p-6">
-                  <h3 className="text-lg font-bold text-white mb-2">🎯 Cookie di profilazione e marketing (consenso opzionale)</h3>
-                  <p className="text-paper/90 text-sm leading-relaxed mb-3">
-                    Utilizzati per mostrare contenuti pubblicitari personalizzati sui nostri canali e su siti di terze parti. <strong className="text-white">Attualmente non utilizziamo questi cookie</strong>, ma li elenchiamo per trasparenza nel caso vengano introdotti in futuro.
-                  </p>
-                  <p className="text-xs text-graphite mt-3"><strong>Base giuridica:</strong> consenso (art. 6.1.a GDPR)</p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">3. Cookie di terze parti</h2>
-              <p className="text-paper/90 leading-relaxed mb-4">
-                Sul sito sono presenti i seguenti servizi forniti da terze parti, ciascuno con la propria informativa privacy:
-              </p>
-              <ul className="list-disc list-inside space-y-2 text-paper/90 ml-2">
-                <li><strong className="text-white">Google Firebase</strong> (Google Ireland Ltd) — autenticazione, database, hosting. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Privacy Policy Google</a></li>
-                <li><strong className="text-white">Stripe</strong> (Stripe Payments Europe Ltd) — pagamenti online. <a href="https://stripe.com/it/privacy" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Privacy Policy Stripe</a></li>
-                <li><strong className="text-white">Resend</strong> — email transazionali. <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Privacy Policy Resend</a></li>
-                <li><strong className="text-white">YouTube/Vimeo</strong> (eventuali video embed) — solo se incorporati in articoli del blog.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">4. Come gestire i cookie</h2>
-              <p className="text-paper/90 leading-relaxed mb-4">
-                Puoi modificare le tue preferenze in qualsiasi momento utilizzando il pulsante qui sotto, oppure direttamente dalle impostazioni del tuo browser.
-              </p>
-              <button
-                onClick={openPreferences}
-                className="px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#A5E6FA] transition-all "
-              >
-                Gestisci preferenze cookie
-              </button>
-              <p className="text-sm text-graphite leading-relaxed mt-6">
-                In alternativa, puoi disabilitare i cookie tramite le impostazioni del tuo browser:
-              </p>
-              <ul className="list-disc list-inside space-y-1 text-sm text-graphite ml-2 mt-2">
-                <li><a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Google Chrome</a></li>
-                <li><a href="https://support.mozilla.org/it/kb/Gestione%20dei%20cookie" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Mozilla Firefox</a></li>
-                <li><a href="https://support.apple.com/it-it/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Apple Safari</a></li>
-                <li><a href="https://support.microsoft.com/it-it/microsoft-edge" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Microsoft Edge</a></li>
-              </ul>
-              <p className="text-xs text-graphite mt-3">
-                Nota: la disabilitazione dei cookie tecnici potrebbe compromettere il corretto funzionamento del sito (es. impossibilità di autenticarsi o effettuare ordini).
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">5. Titolare del trattamento e contatti</h2>
-              <p className="text-paper/90 leading-relaxed">
-                <strong className="text-white">Officinadelsuono di Amerigo De Cristofaro</strong><br />
-                Strada Provinciale 30, 83020 Forino (AV), Italia<br />
-                P.IVA: 03243690645 — PEC: amerigodecristofaro@pec.it<br />
-                Per richieste relative ai cookie: <a href="mailto:info@officina-del-suono.it" className="text-marker hover:underline">info@officina-del-suono.it</a>
-              </p>
-            </section>
-
+        <div className="mb-12">
+          <div className="flex items-baseline gap-3 mb-6">
+            <Annot tone="blueprint">Tav. 94</Annot>
+            <div className="quota flex-1 max-w-[200px]" aria-hidden />
+            <Annot>Cookie</Annot>
           </div>
-        </motion.div>
+          <h1 className="titolo text-4xl md:text-6xl mb-5">
+            Cookie: <span className="text-marker">nessuno</span>
+          </h1>
+          <p className="text-lg text-graphite leading-relaxed max-w-3xl">
+            Aprendo questo sito non viene scritto nessun cookie e non parte nessuna richiesta verso
+            l’esterno: le pagine, i caratteri e le immagini arrivano tutti da qui. Il banner c’è perché il
+            sito è predisposto per le statistiche di visita, ma oggi non sono attive.
+          </p>
+          <p className="annot mt-4">Ultimo aggiornamento: {AGGIORNATO}</p>
+        </div>
+
+        <div className="space-y-10">
+
+          <Sezione numero="1" titolo="Cookie e memoria locale non sono la stessa cosa">
+            <p>
+              Un <strong className="text-paper">cookie</strong> è un dato che il browser allega
+              automaticamente a ogni richiesta verso il sito: per questo è il cookie a essere regolato, e
+              non il semplice fatto che qualcosa resti sul dispositivo.
+            </p>
+            <p>
+              La <strong className="text-paper">memoria locale</strong> che usa il calcolatore per non farti
+              perdere il progetto non viene allegata a niente: resta sul tuo dispositivo, non viaggia, e
+              nessun server la vede. Cosa contiene esattamente sta{' '}
+              <a href="/privacy" className="text-marker hover:underline">nell’informativa privacy</a>.
+            </p>
+          </Sezione>
+
+          <Sezione numero="2" titolo="Cosa c’è oggi">
+            <Tavola className="p-5">
+              <dl className="space-y-3 text-[15px]">
+                <Voce k="Cookie scritti dal sito" v="nessuno" />
+                <Voce k="Script di terze parti caricati" v="nessuno" />
+                <Voce k="Richieste verso altri domini" v="nessuna" />
+                <Voce k="Memoria locale" v="i progetti e la scelta fatta qui sotto" />
+              </dl>
+            </Tavola>
+            <p>
+              L’unica cosa che il banner salva è la tua risposta, in memoria locale sotto la
+              chiave <code className="font-mono text-[13px] text-paper">cookie-consent</code>. Serve a non
+              richiedertela a ogni visita.
+            </p>
+          </Sezione>
+
+          <Sezione numero="3" titolo="Cosa succederebbe se le statistiche venissero accese">
+            <p>
+              Il sito è predisposto per Google Analytics e per il pixel di Meta. Finché gli identificativi
+              non sono configurati, quel codice non fa niente — ed è la situazione attuale.
+            </p>
+            <p>
+              Se venissero configurati, gli script partirebbero solo dopo un consenso dato qui, distinto fra
+              statistiche e marketing: rifiutando, non viene caricato niente. Non è una promessa scritta in
+              una pagina, è come funziona il caricamento — la scelta sta prima dello script, non dopo.
+            </p>
+            <p>
+              Base giuridica: consenso, art. 6.1.a GDPR e art. 122 del Codice Privacy. Puoi revocarlo in
+              qualsiasi momento qui sotto; se qualcosa era già stato caricato, la pagina si ricarica per
+              toglierlo di mezzo.
+            </p>
+          </Sezione>
+
+          <Sezione numero="4" titolo="Cambiare idea">
+            <p>
+              Il pulsante riapre il banner e azzera la scelta precedente.
+            </p>
+            <button type="button" onClick={riapriPreferenze} className="btn-marker mt-2">
+              Rivedi le preferenze
+            </button>
+            <p>
+              In alternativa, puoi cancellare i dati di questo sito dalle impostazioni del browser —{' '}
+              <a href="https://support.google.com/chrome/answer/95647" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Chrome</a>,{' '}
+              <a href="https://support.mozilla.org/it/kb/Gestione%20dei%20cookie" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Firefox</a>,{' '}
+              <a href="https://support.apple.com/it-it/guide/safari/sfri11471/mac" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Safari</a>,{' '}
+              <a href="https://support.microsoft.com/it-it/microsoft-edge" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">Edge</a>{' '}
+              — tenendo presente che così perdi anche i progetti salvati nel calcolatore.
+            </p>
+          </Sezione>
+
+          <Sezione numero="5" titolo="Titolare del trattamento">
+            <Tavola className="p-5">
+              <p className="text-paper/90 leading-relaxed font-mono text-[13px]">
+                Officinadelsuono di Amerigo De Cristofaro — Ditta individuale<br />
+                Strada Provinciale 30, 83020 Forino (AV), Italia<br />
+                P.IVA 03243690645 — REA AV 314125<br />
+                PEC amerigodecristofaro@pec.it<br />
+                Email info@officina-del-suono.it
+              </p>
+            </Tavola>
+          </Sezione>
+
+        </div>
       </div>
     </div>
+  );
+}
+
+function Voce({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4 border-b border-paper/[0.06] pb-2">
+      <dt className="text-graphite">{k}</dt>
+      <dd className="font-mono text-marker shrink-0">{v}</dd>
+    </div>
+  );
+}
+
+function Sezione({ numero, titolo, children }: {
+  numero: string; titolo: string; children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline gap-3 mb-4">
+        <Annot tone="blueprint">{numero}</Annot>
+        <h2 className="titolo text-2xl">{titolo}</h2>
+      </div>
+      <div className="space-y-4 text-graphite leading-relaxed max-w-3xl">{children}</div>
+    </section>
   );
 }

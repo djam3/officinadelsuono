@@ -1,156 +1,210 @@
-import { motion } from 'framer-motion';
+/**
+ * Informativa privacy.
+ *
+ * La versione precedente dichiarava di raccogliere nome, cognome, password,
+ * indirizzo di fatturazione e spedizione, codice fiscale, dettagli dell'ordine
+ * e metodo di pagamento, e nominava Stripe e i corrieri espressi fra i
+ * responsabili del trattamento. Non è vero niente: non c'è registrazione, non
+ * c'è carrello, non c'è pagamento, e il sito non ha un database.
+ *
+ * Un'informativa che descrive un trattamento che non esiste è peggio di
+ * nessuna informativa: chi la legge non può farci nessuna delle cose per cui
+ * serve — sapere che dati ci sono in giro, e chiederne conto.
+ *
+ * Questa descrive quello che il sito fa davvero, che è pochissimo: tiene i
+ * progetti nella memoria del browser e non li manda a nessuno. La parte sui
+ * diritti resta, perché è legge e vale comunque.
+ */
+
+import { useSEO } from '../hooks/useSEO';
+import { Annot, Griglia, Tavola } from '../components/blueprint';
+
+const AGGIORNATO = '17 settembre 2026';
 
 export function Privacy() {
-  const lastUpdated = '7 aprile 2026';
+  useSEO({
+    title: 'Informativa privacy',
+    description:
+      'Quello che il sito fa davvero con i tuoi dati: li tiene nel tuo browser e non li manda a nessuno. Nessun account, nessun database, nessun pagamento.',
+    url: '/privacy',
+  });
 
   return (
-    <div className="min-h-screen bg-ink text-white pt-24 pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest mb-4 text-center">
-            Privacy Policy
-          </h1>
-          <p className="text-center text-graphite text-sm mb-12">Ultimo aggiornamento: {lastUpdated}</p>
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          <div className="bg-ink-2 border border-paper/10 rounded-none p-8 md:p-12 shadow-2xl space-y-10">
-
-            <section>
-              <p className="text-paper/90 leading-relaxed">
-                La presente Informativa è resa ai sensi degli artt. 13 e 14 del Regolamento (UE) 2016/679 ("GDPR") e del D.Lgs. 196/2003 e ss.mm.ii. ("Codice Privacy") e descrive le modalità con cui Officinadelsuono di Amerigo De Cristofaro raccoglie e tratta i dati personali degli utenti che visitano il sito <strong className="text-white">officinadelsuono.it</strong> e/o utilizzano i servizi offerti.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">1. Titolare del Trattamento</h2>
-              <p className="text-paper/90 leading-relaxed">
-                <strong className="text-white">Officinadelsuono di Amerigo De Cristofaro</strong><br />
-                Ditta Individuale<br />
-                Sede legale: Strada Provinciale 30, 83020 Forino (AV), Italia<br />
-                P.IVA: 03243690645 — REA: AV - 314125<br />
-                PEC: amerigodecristofaro@pec.it<br />
-                Email: info@officina-del-suono.it
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">2. Tipologie di dati raccolti</h2>
-              <p className="text-paper/90 leading-relaxed mb-3">Trattiamo le seguenti categorie di dati personali:</p>
-              <ul className="list-disc list-inside space-y-2 text-paper/90 ml-2">
-                <li><strong className="text-white">Dati di registrazione:</strong> nome, cognome, indirizzo email, password (cifrata), eventuale immagine profilo.</li>
-                <li><strong className="text-white">Dati di acquisto:</strong> indirizzo di fatturazione e spedizione, numero di telefono, codice fiscale o P.IVA, dettagli dell'ordine, metodo di pagamento (i dati della carta non sono mai trattati direttamente da noi ma dal provider di pagamento).</li>
-                <li><strong className="text-white">Dati di navigazione:</strong> indirizzo IP, tipo di browser, sistema operativo, pagine visitate, data e ora della visita, referrer (raccolti automaticamente dai server e dai servizi di analytics).</li>
-                <li><strong className="text-white">Comunicazioni:</strong> contenuto delle richieste inviate via email, modulo di contatto, WhatsApp o chatbot.</li>
-                <li><strong className="text-white">Cookie e tecnologie simili:</strong> vedi la <a href="#" onClick={(e) => { e.preventDefault(); window.history.pushState(null, '', '?page=cookie-policy'); window.dispatchEvent(new PopStateEvent('popstate')); }} className="text-marker hover:underline">Cookie Policy</a>.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">3. Finalità e base giuridica del trattamento</h2>
-              <div className="space-y-4 text-paper/90 leading-relaxed">
-                <div>
-                  <p><strong className="text-white">a) Esecuzione del contratto di vendita</strong> (art. 6, par. 1, lett. b GDPR)</p>
-                  <p>Per processare gli ordini, gestire i pagamenti, organizzare la spedizione, emettere fatture e fornire assistenza post-vendita.</p>
-                </div>
-                <div>
-                  <p><strong className="text-white">b) Adempimento di obblighi di legge</strong> (art. 6, par. 1, lett. c GDPR)</p>
-                  <p>Per obblighi fiscali, contabili e di conservazione dei documenti previsti dalla normativa italiana ed europea.</p>
-                </div>
-                <div>
-                  <p><strong className="text-white">c) Consenso dell'interessato</strong> (art. 6, par. 1, lett. a GDPR)</p>
-                  <p>Per l'invio di newsletter, comunicazioni commerciali, profilazione e cookie non tecnici. Il consenso è sempre revocabile in qualsiasi momento.</p>
-                </div>
-                <div>
-                  <p><strong className="text-white">d) Legittimo interesse</strong> (art. 6, par. 1, lett. f GDPR)</p>
-                  <p>Per garantire la sicurezza del sito, prevenire frodi, migliorare il servizio offerto e rispondere alle richieste degli utenti.</p>
-                </div>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">4. Modalità del trattamento</h2>
-              <p className="text-paper/90 leading-relaxed">
-                Il trattamento dei dati avviene mediante strumenti elettronici, automatizzati e manuali, con misure di sicurezza tecniche e organizzative idonee a garantire la riservatezza, l'integrità e la disponibilità dei dati (cifratura HTTPS, autenticazione Firebase, backup, controllo degli accessi). I dati non sono soggetti a processi decisionali automatizzati o profilazione che producano effetti giuridici significativi sull'interessato.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">5. Periodo di conservazione</h2>
-              <ul className="list-disc list-inside space-y-2 text-paper/90 ml-2">
-                <li><strong className="text-white">Dati account:</strong> finché l'account rimane attivo. In caso di cancellazione, i dati vengono eliminati entro 30 giorni, salvo obblighi di legge.</li>
-                <li><strong className="text-white">Dati di acquisto e fatturazione:</strong> 10 anni, ai sensi della normativa fiscale italiana (art. 2220 c.c.).</li>
-                <li><strong className="text-white">Dati di navigazione e log:</strong> max 12 mesi.</li>
-                <li><strong className="text-white">Newsletter:</strong> fino alla revoca del consenso.</li>
-                <li><strong className="text-white">Comunicazioni con l'assistenza:</strong> 24 mesi dalla chiusura della richiesta.</li>
-              </ul>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">6. Destinatari dei dati</h2>
-              <p className="text-paper/90 leading-relaxed mb-3">I dati possono essere comunicati a:</p>
-              <ul className="list-disc list-inside space-y-2 text-paper/90 ml-2">
-                <li><strong className="text-white">Google Ireland Ltd</strong> (Firebase Authentication, Firestore, Hosting, Cloud Functions, Storage) — fornitore di infrastruttura cloud, server in UE.</li>
-                <li><strong className="text-white">Resend, Inc.</strong> — invio di email transazionali (verifica email, benvenuto, conferme ordine).</li>
-                <li><strong className="text-white">Stripe Payments Europe Ltd</strong> e/o altri provider di pagamento — gestione delle transazioni in modalità PCI-DSS compliant.</li>
-                <li><strong className="text-white">Corrieri espressi</strong> (BRT, GLS, SDA, ecc.) — esclusivamente per la consegna degli ordini.</li>
-                <li><strong className="text-white">Consulenti contabili e fiscali</strong> — adempimenti di legge.</li>
-                <li><strong className="text-white">Autorità competenti</strong> — solo a seguito di richiesta legittima.</li>
-              </ul>
-              <p className="text-graphite text-sm mt-3">Tutti i fornitori sono stati nominati Responsabili del Trattamento ai sensi dell'art. 28 GDPR.</p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">7. Trasferimento dei dati extra-UE</h2>
-              <p className="text-paper/90 leading-relaxed">
-                Alcuni fornitori (es. Resend, Stripe) potrebbero trattare i dati in paesi extra-UE. In tali casi, il trasferimento avviene esclusivamente sulla base di adeguate garanzie previste dagli artt. 44 e ss. GDPR, in particolare le <strong className="text-white">Clausole Contrattuali Standard</strong> approvate dalla Commissione Europea o decisioni di adeguatezza.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">8. Diritti dell'interessato</h2>
-              <p className="text-paper/90 leading-relaxed mb-3">Ai sensi degli artt. 15-22 GDPR, hai il diritto di:</p>
-              <ul className="list-disc list-inside space-y-2 text-paper/90 ml-2">
-                <li><strong className="text-white">Accesso</strong> ai tuoi dati personali (art. 15);</li>
-                <li><strong className="text-white">Rettifica</strong> di dati inesatti o incompleti (art. 16);</li>
-                <li><strong className="text-white">Cancellazione</strong> ("diritto all'oblio", art. 17);</li>
-                <li><strong className="text-white">Limitazione</strong> del trattamento (art. 18);</li>
-                <li><strong className="text-white">Portabilità</strong> dei dati in formato strutturato (art. 20);</li>
-                <li><strong className="text-white">Opposizione</strong> al trattamento (art. 21);</li>
-                <li><strong className="text-white">Revoca del consenso</strong> in qualsiasi momento, senza pregiudicare la liceità del trattamento precedente;</li>
-                <li><strong className="text-white">Reclamo all'Autorità Garante</strong> (Garante per la Protezione dei Dati Personali, <a href="https://www.garanteprivacy.it" target="_blank" rel="noopener noreferrer" className="text-marker hover:underline">www.garanteprivacy.it</a>).</li>
-              </ul>
-              <p className="text-paper/90 leading-relaxed mt-4">
-                Per esercitare i tuoi diritti puoi scrivere a <a href="mailto:info@officina-del-suono.it" className="text-marker hover:underline">info@officina-del-suono.it</a>. Risponderemo entro 30 giorni dalla ricezione della richiesta.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">9. Sicurezza dei dati</h2>
-              <p className="text-paper/90 leading-relaxed">
-                Adottiamo misure di sicurezza tecniche e organizzative adeguate al rischio (cifratura HTTPS/TLS, hashing delle password, autenticazione a più fattori, backup periodici, accessi controllati, log di sistema). Pur impegnandoci a proteggere i dati, nessuna trasmissione su Internet è sicura al 100%: in caso di violazione, ti informeremo entro 72 ore ai sensi dell'art. 33 GDPR.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">10. Minori</h2>
-              <p className="text-paper/90 leading-relaxed">
-                I servizi del sito non sono destinati a minori di 16 anni. Non raccogliamo intenzionalmente dati personali di minori senza il consenso verificabile dei genitori. Se vieni a conoscenza che un minore ci ha fornito dati personali, contattaci immediatamente per la rimozione.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-2xl font-bold text-marker mb-3">11. Modifiche all'informativa</h2>
-              <p className="text-paper/90 leading-relaxed">
-                Ci riserviamo il diritto di aggiornare la presente Informativa in qualsiasi momento. Le modifiche saranno pubblicate su questa pagina con la data di ultimo aggiornamento. In caso di modifiche sostanziali, gli utenti registrati riceveranno notifica via email.
-              </p>
-            </section>
-
+        <div className="mb-12">
+          <div className="flex items-baseline gap-3 mb-6">
+            <Annot tone="blueprint">Tav. 93</Annot>
+            <div className="quota flex-1 max-w-[200px]" aria-hidden />
+            <Annot>Privacy</Annot>
           </div>
-        </motion.div>
+          <h1 className="titolo text-4xl md:text-6xl mb-5">
+            I tuoi dati <span className="text-marker">restano qui</span>
+          </h1>
+          <p className="text-lg text-graphite leading-relaxed max-w-3xl">
+            Tutto quello che scrivi nel calcolatore — parametri del driver, misure, progetti salvati — sta
+            nella memoria del browser che stai usando, su questo dispositivo. Non passa da nessun server,
+            non finisce in nessun database, e chi gestisce il sito non lo vede.
+          </p>
+          <p className="annot mt-4">Ultimo aggiornamento: {AGGIORNATO}</p>
+        </div>
+
+        <div className="space-y-10">
+
+          <Sezione numero="1" titolo="Titolare del trattamento">
+            <Tavola className="p-5">
+              <p className="text-paper/90 leading-relaxed font-mono text-[13px]">
+                Officinadelsuono di Amerigo De Cristofaro — Ditta individuale<br />
+                Strada Provinciale 30, 83020 Forino (AV), Italia<br />
+                P.IVA 03243690645 — REA AV 314125<br />
+                PEC amerigodecristofaro@pec.it<br />
+                Email info@officina-del-suono.it
+              </p>
+            </Tavola>
+            <p>
+              Informativa resa ai sensi degli artt. 13 e 14 del Regolamento (UE) 2016/679 (GDPR).
+            </p>
+          </Sezione>
+
+          <Sezione numero="2" titolo="Cosa il sito NON fa">
+            <p>
+              Vale la pena dirlo prima del resto, perché è quasi tutto:
+            </p>
+            <ul className="space-y-2">
+              <li>— Non c’è registrazione, non ci sono account e non ci sono password.</li>
+              <li>— Non c’è niente da comprare: nessun ordine, nessun pagamento, nessuna spedizione.</li>
+              <li>— Non c’è un database: il sito è fatto di sole pagine, senza un archivio dietro.</li>
+              <li>— Non c’è newsletter e non ci sono comunicazioni commerciali.</li>
+              <li>— I tuoi progetti non vengono raccolti, letti, analizzati né rivenduti.</li>
+            </ul>
+          </Sezione>
+
+          <Sezione numero="3" titolo="Quello che resta nel tuo browser">
+            <p>
+              Il calcolatore salva nella memoria locale del browser (<code className="font-mono text-[13px] text-paper">localStorage</code>)
+              i dati che inserisci, così un aggiornamento della pagina non ti fa perdere il lavoro:
+              parametri del driver e configurazione, scelte sulla cassa e sulle misure, condizioni di
+              simulazione, eventuali misure che hai fatto sul tuo esemplare, i driver che salvi con un nome
+              tuo, e la scelta fatta sul banner dei cookie.
+            </p>
+            <p>
+              È memoria del tuo dispositivo, non un servizio: quei dati non vengono trasmessi, restano solo
+              lì e li cancelli quando vuoi — dal calcolatore con «Ricomincia da capo», o svuotando i dati
+              del sito dalle impostazioni del browser.
+            </p>
+            <p>
+              Il sito legge anche i parametri <code className="font-mono text-[13px] text-paper">utm_*</code> se
+              arrivi da un collegamento che li contiene, e li tiene nella stessa memoria locale. Nemmeno
+              quelli vengono inviati da nessuna parte.
+            </p>
+          </Sezione>
+
+          <Sezione numero="4" titolo="Il collegamento condivisibile">
+            <p>
+              Il pulsante che crea un collegamento al progetto mette i dati <strong className="text-paper">dentro
+              l’indirizzo</strong>, non su un server. Il collegamento funziona senza che niente venga
+              conservato da nessuna parte, e continua a funzionare finché il sito esiste.
+            </p>
+            <p>
+              La conseguenza da tenere a mente è semplice: chi ha il collegamento ha il progetto. Se lo
+              incolli in un forum pubblico, i tuoi numeri diventano pubblici — non perché il sito li
+              pubblichi, ma perché stanno nell’indirizzo che hai incollato.
+            </p>
+          </Sezione>
+
+          <Sezione numero="5" titolo="Statistiche di visita">
+            <p>
+              Il sito prevede la possibilità di attivare statistiche di visita (Google Analytics) e un pixel
+              di Meta. <strong className="text-paper">Oggi non sono attivi</strong>: senza gli identificativi
+              configurati non viene caricato nessuno script di terze parti, e aprendo il sito non parte
+              nessuna richiesta verso l’esterno.
+            </p>
+            <p>
+              Se un giorno venissero attivati, partirebbero solo dopo il consenso dato sul banner: il
+              caricamento è subordinato a quella scelta, e rifiutando non viene caricato niente. Puoi
+              cambiare idea in qualsiasi momento dal collegamento in fondo alla pagina.
+            </p>
+          </Sezione>
+
+          <Sezione numero="6" titolo="Se mi scrivi">
+            <p>
+              Le email arrivano alla casella indicata sopra e restano lì: le leggo io, e le uso solo per
+              risponderti. Se scrivi su WhatsApp, quella conversazione è soggetta alle condizioni e
+              all’informativa di WhatsApp, su cui questo sito non ha alcun controllo.
+            </p>
+            <p>
+              Le segnalazioni di errore di calcolo le conservo finché servono a correggere il difetto;
+              se non vuoi che tenga il messaggio, dimmelo e lo cancello.
+            </p>
+          </Sezione>
+
+          <Sezione numero="7" titolo="Dove sta il sito">
+            <p>
+              Le pagine sono servite da Firebase Hosting, di Google. Come qualunque servizio
+              di hosting, i suoi server registrano i dati tecnici della richiesta — indirizzo IP, momento,
+              pagina richiesta — per servire le pagine e per sicurezza. Sono log dell’infrastruttura, non
+              una raccolta fatta da questo sito, e non vengono usati per profilare nessuno.
+            </p>
+          </Sezione>
+
+          <Sezione numero="8" titolo="I tuoi diritti">
+            <p>
+              Sui dati personali che ti riguardano hai in ogni caso i diritti previsti dagli artt. 15-22
+              GDPR: accesso, rettifica, cancellazione, limitazione, portabilità, opposizione, e revoca del
+              consenso in qualsiasi momento.
+            </p>
+            <p>
+              Nel caso di questo sito, per i dati salvati nel browser li eserciti direttamente tu: sono sul
+              tuo dispositivo e li cancelli quando vuoi. Per le email che mi hai mandato, scrivi a{' '}
+              <a href="mailto:info@officina-del-suono.it" className="text-marker hover:underline">
+                info@officina-del-suono.it
+              </a>.
+            </p>
+            <p>
+              Puoi sempre proporre reclamo al Garante per la protezione dei dati personali:{' '}
+              <a
+                href="https://www.garanteprivacy.it"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-marker hover:underline"
+              >
+                garanteprivacy.it
+              </a>.
+            </p>
+          </Sezione>
+
+          <Sezione numero="9" titolo="Minori">
+            <p>
+              Il sito non è rivolto a minori di 16 anni e non raccoglie dati di nessuno — quindi nemmeno i
+              loro.
+            </p>
+          </Sezione>
+
+          <Sezione numero="10" titolo="Modifiche">
+            <p>
+              Se il sito cambierà quello che fa, questa pagina cambierà con lui: la data in cima dice
+              quando è successo l’ultima volta.
+            </p>
+          </Sezione>
+
+        </div>
       </div>
     </div>
+  );
+}
+
+function Sezione({ numero, titolo, children }: {
+  numero: string; titolo: string; children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-baseline gap-3 mb-4">
+        <Annot tone="blueprint">{numero}</Annot>
+        <h2 className="titolo text-2xl">{titolo}</h2>
+      </div>
+      <div className="space-y-4 text-graphite leading-relaxed max-w-3xl">{children}</div>
+    </section>
   );
 }
