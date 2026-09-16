@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Speaker, Box, Ruler, LineChart } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { useProgettoSalvato } from '../hooks/useProgettoSalvato';
+import { indirizzoProgetto, leggiProgetto, scriviProgetto } from '../utils/condivisione';
 import { Annot, Griglia } from '../components/blueprint';
 import { TabBar, Stat } from '../components/designer/ui';
 import { DriverTab } from '../components/designer/DriverTab';
@@ -97,6 +98,55 @@ export function CabinetDesigner() {
   const [enclosure, setEnclosure, scordaCassa] = useProgettoSalvato<EnclosureSettings>('cassa', DEFAULT_ENCLOSURE);
   const [dimensions, setDimensions, scordaMisure] = useProgettoSalvato<DimensionSettings>('misure', DEFAULT_DIMENSIONS);
   const [response, setResponse, scordaGrafici] = useProgettoSalvato<ResponseSettings>('grafici', DEFAULT_RESPONSE);
+
+  const [avvisoLink, setAvvisoLink] = useState<string | null>(null);
+  const [copiato, setCopiato] = useState(false);
+
+  /**
+   * Un progetto arrivato da un collegamento vince su quello salvato.
+   *
+   * Si legge una volta sola, al montaggio, e subito dopo il parametro viene
+   * tolto dall'indirizzo: cosi' un aggiornamento della pagina non riapplica
+   * il collegamento sopra le modifiche fatte nel frattempo, che sarebbe il
+   * modo piu' sicuro di far perdere il lavoro a qualcuno.
+   */
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search).get('p');
+    if (!p) return;
+    const letto = leggiProgetto(
+      p,
+      DEFAULT_DRIVER as unknown as Record<string, unknown>,
+      DEFAULT_ENCLOSURE as unknown as Record<string, unknown>,
+      DEFAULT_DIMENSIONS as unknown as Record<string, unknown>,
+    );
+    window.history.replaceState(null, '', window.location.pathname);
+    if (!letto) {
+      setAvvisoLink('Questo collegamento è di una versione diversa del calcolatore e non si può aprire.');
+      return;
+    }
+    setTsInput(letto.driver as unknown as TSInput);
+    setEnclosure(letto.cassa as unknown as EnclosureSettings);
+    setDimensions(letto.misure as unknown as DimensionSettings);
+    setAvvisoLink('Progetto aperto da un collegamento.');
+  }, []);
+
+  const condividi = async () => {
+    const url = indirizzoProgetto(scriviProgetto(
+      tsInput as unknown as Record<string, unknown>,
+      enclosure as unknown as Record<string, unknown>,
+      dimensions as unknown as Record<string, unknown>,
+    ));
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiato(true);
+      setTimeout(() => setCopiato(false), 2500);
+    } catch {
+      // niente appunti (permesso negato, o pagina non sicura): l'indirizzo si
+      // mette comunque nella barra, da dove si copia a mano
+      window.history.replaceState(null, '', url.replace(window.location.origin, ''));
+      setAvvisoLink('Non sono riuscito a copiare: il collegamento è nella barra degli indirizzi.');
+    }
+  };
 
   const ricomincia = () => {
     scordaDriver(); scordaConfig(); scordaCassa(); scordaMisure(); scordaGrafici();
@@ -244,6 +294,13 @@ export function CabinetDesigner() {
               <span className="annot text-[9px]">Salvato in questo browser</span>
               <button
                 type="button"
+                onClick={condividi}
+                className="annot text-[9px] hover:text-marker transition-colors underline underline-offset-4 decoration-paper/20"
+              >
+                {copiato ? 'Collegamento copiato' : 'Copia il collegamento'}
+              </button>
+              <button
+                type="button"
                 onClick={ricomincia}
                 className="annot text-[9px] hover:text-marker transition-colors underline underline-offset-4 decoration-paper/20"
               >
@@ -251,6 +308,23 @@ export function CabinetDesigner() {
               </button>
             </div>
           </div>
+
+          {avvisoLink && (
+            <p
+              className="mx-5 mt-4 px-4 py-2.5 border border-marker/30 bg-marker/5 text-[12px] text-paper/90 flex items-center justify-between gap-4"
+              role="status"
+            >
+              <span>{avvisoLink}</span>
+              <button
+                type="button"
+                onClick={() => setAvvisoLink(null)}
+                className="annot text-[9px] hover:text-marker transition-colors shrink-0"
+                aria-label="Chiudi l&rsquo;avviso"
+              >
+                Chiudi
+              </button>
+            </p>
+          )}
 
           <div className="p-5 md:p-6">
             {tab === 'driver' && (
