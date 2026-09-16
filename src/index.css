@@ -57,12 +57,21 @@
 }
 
 /* ─── Base ──────────────────────────────────────────────────────── */
+/* `overflow-x: clip` e NON `hidden`.
+   Sono due cose diverse e la differenza qui conta: `hidden` crea un contenitore
+   di scorrimento, e un contenitore di scorrimento ANNULLA il `position: sticky`
+   di tutto quello che ha dentro. La sezione che si costruisce scorrendo non si
+   incollava per questo motivo, non per come era scritta. `clip` impedisce lo
+   scorrimento orizzontale senza creare il contenitore, che è esattamente quello
+   che serviva fin dall'inizio. La riga `hidden` resta come ripiego per i
+   browser che `clip` non lo conoscono. */
 html {
   scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -71,12 +80,14 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
 }
 
 #root {
   background-color: #0A0D11;
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 img { content-visibility: auto; }

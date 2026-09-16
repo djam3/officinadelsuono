@@ -9,6 +9,7 @@
 
 import { ArrowRight, MessageCircle, Ruler, Waves, Scissors, ScrollText } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
+import { Costruzione } from '../components/Costruzione';
 import { Annot, Cartiglio, Griglia, IntestazioneSezione, Quota, Righello, Tavola } from '../components/blueprint';
 import { GLOSSARY } from '../data/glossary';
 import { DRIVER_LIBRARY } from '../data/driverLibrary';
@@ -94,6 +95,9 @@ export function Home({ onNavigate }: HomeProps) {
               <button onClick={() => onNavigate('cabinet-designer')} className="btn-marker justify-center">
                 Apri il calcolatore <ArrowRight className="w-4 h-4" />
               </button>
+              <button onClick={() => onNavigate('amp-designer')} className="btn-tratto justify-center">
+                Configura l&rsquo;impianto
+              </button>
               <button onClick={() => onNavigate('glossary')} className="btn-tratto justify-center">
                 Glossario
               </button>
@@ -114,11 +118,14 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* ═══ TAVOLA 01 — cosa fa ════════════════════════════════════════ */}
+      {/* ═══ TAVOLA 01 — la cassa si costruisce mentre si scorre ════════ */}
+      <Costruzione />
+
+      {/* ═══ TAVOLA 02 — cosa fa ════════════════════════════════════════ */}
       <section className="relative border-b border-paper/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <IntestazioneSezione
-            numero="Tav. 01"
+            numero="Tav. 02"
             occhiello="Lavorazioni"
             titolo={<>Cosa trovi <span className="text-marker">sul banco</span></>}
             sottotitolo="Quattro cose che lo strumento fa, e che puoi verificare mentre le fa."
@@ -142,12 +149,12 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* ═══ TAVOLA 02 — il metodo ══════════════════════════════════════ */}
+      {/* ═══ TAVOLA 03 — il metodo ══════════════════════════════════════ */}
       <section className="relative border-b border-paper/10 mdf">
         <Griglia fade={false} className="opacity-40" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <IntestazioneSezione
-            numero="Tav. 02"
+            numero="Tav. 03"
             occhiello="Metodo"
             titolo={<>Come faccio a dire <span className="text-marker">che è giusto</span></>}
             sottotitolo={'Un calcolatore può sbagliare in silenzio per anni. L’unico modo per accorgersene è controllarlo contro qualcosa che non dipende da lui.'}
@@ -187,13 +194,13 @@ export function Home({ onNavigate }: HomeProps) {
         </div>
       </section>
 
-      {/* ═══ TAVOLA 03 — glossario ══════════════════════════════════════ */}
+      {/* ═══ TAVOLA 04 — glossario ══════════════════════════════════════ */}
       <section className="relative border-b border-paper/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div>
               <IntestazioneSezione
-                numero="Tav. 03"
+                numero="Tav. 04"
                 occhiello="Glossario"
                 titolo={<>Se un campo non ti <span className="text-marker">dice niente</span></>}
                 sottotitolo={`${nVoci} schede, una per parametro. Nessuna presuppone che tu sappia già cos’è: si parte da cosa significa, si arriva a cosa cambia nel progetto.`}
