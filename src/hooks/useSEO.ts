@@ -8,7 +8,7 @@ interface SEOConfig {
 }
 
 const BASE_URL = 'https://officinadelsuono-87986.web.app';
-const DEFAULT_IMAGE = `${BASE_URL}/amerigo_hero.png`;
+const DEFAULT_IMAGE = `${BASE_URL}/anteprima.png`;
 
 export function useSEO({ title, description, url, image }: SEOConfig) {
   useEffect(() => {

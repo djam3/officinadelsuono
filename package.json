@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/sitemap.mjs",
+    "build": "node scripts/og-image.mjs && vite build && node scripts/sitemap.mjs",
     "deploy": "vite build && firebase deploy --only hosting",
     "preview": "vite preview",
     "clean": "rm -rf dist",
