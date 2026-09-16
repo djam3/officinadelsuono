@@ -7,6 +7,7 @@
  * calcolatore usa quando produce disegni e liste di taglio.
  */
 
+import { useEffect, useState } from 'react';
 import { ArrowRight, MessageCircle, Ruler, Waves, Scissors, ScrollText } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { Costruzione } from '../components/Costruzione';
@@ -14,6 +15,7 @@ import { Cassa3D } from '../components/Cassa3D';
 import { Annot, Cartiglio, Griglia, IntestazioneSezione, Quota, Righello, Tavola } from '../components/blueprint';
 import { GLOSSARY } from '../data/glossary';
 import { DRIVER_LIBRARY } from '../data/driverLibrary';
+import { ENCLOSURE_LABELS } from '../utils/audio';
 import { BUSINESS, waLink } from '../config/site';
 
 interface HomeProps {
@@ -64,6 +66,17 @@ export function Home({ onNavigate }: HomeProps) {
   });
 
   const nVoci = GLOSSARY.length;
+  // contato dal motore: scritto a mano diceva ancora 5, ed erano diventate 6
+  const nCariche = Object.keys(ENCLOSURE_LABELS).length;
+  // sotto il breakpoint largo la cassa sta sotto al testo: li' va più bassa
+  const [alta, setAlta] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const agg = () => setAlta(mq.matches);
+    agg();
+    mq.addEventListener('change', agg);
+    return () => mq.removeEventListener('change', agg);
+  }, []);
   const nDriver = DRIVER_LIBRARY.length;
 
   return (
@@ -79,22 +92,48 @@ export function Home({ onNavigate }: HomeProps) {
             <Annot>Scala 1:1</Annot>
           </div>
 
-          {/* Il titolo e l'oggetto insieme: la frase dice cosa si fa, la cassa
-              dice cosa ne esce. Su schermo stretto la cassa passa sotto. */}
-          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-14 items-center mb-8">
-            <h1 className="titolo text-[13vw] leading-[0.86] sm:text-7xl md:text-8xl lg:text-8xl animate-fade-in-up">
-              <span className="block text-paper">Si progetta</span>
-              <span className="block titolo-tracciato">prima</span>
-              <span className="block text-marker">di tagliare.</span>
-            </h1>
+          {/* Una sola griglia, non due.
+              Con due griglie sovrapposte, sotto il breakpoint largo l'ordine
+              diventava titolo → cassa → testo → pulsanti: si doveva scorrere
+              oltre un oggetto alto 440 px per arrivare al pulsante principale.
+              Qui la colonna di sinistra tiene titolo, testo e pulsanti, e la
+              cassa le sta accanto: quando si impila, arriva per ultima. */}
+          <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-14 items-center">
+            <div className="animate-fade-in-up">
+              <h1 className="titolo text-[13vw] leading-[0.86] sm:text-7xl md:text-8xl lg:text-8xl mb-8">
+                <span className="block text-paper">Si progetta</span>
+                <span className="block titolo-tracciato">prima</span>
+                <span className="block text-marker">di tagliare.</span>
+              </h1>
 
+              <p className="text-lg md:text-xl text-graphite leading-relaxed max-w-2xl mb-8">
+                Un calcolatore per casse acustiche che non ti chiede di fidarti. Inserisci i parametri
+                dell&rsquo;altoparlante e ottieni volume, accordo, condotto, dimensioni, lista di taglio e curve
+                di risposta — con ogni numero riconducibile alla formula da cui esce.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button onClick={() => onNavigate('cabinet-designer')} className="btn-marker justify-center">
+                  Apri il calcolatore <ArrowRight className="w-4 h-4" />
+                </button>
+                <button onClick={() => onNavigate('amp-designer')} className="btn-tratto justify-center">
+                  Configura l&rsquo;impianto
+                </button>
+                <button onClick={() => onNavigate('glossary')} className="btn-tratto justify-center">
+                  Glossario
+                </button>
+              </div>
+            </div>
+
+            {/* più contenuta quando sta sotto: lì è un'illustrazione, non il
+                protagonista, e non deve mangiarsi una schermata */}
             <div className="relative animate-fade-in-up">
               <Cassa3D
                 widthMm={260} heightMm={641} depthMm={267} wallMm={18}
                 driverDiaMm={196}
                 port={{ kind: 'fessura', widthMm: 150, heightMm: 40 }}
                 quote={false}
-                altezzaPx={440}
+                altezzaPx={alta ? 460 : 300}
               />
               <div className="flex items-baseline gap-3 mt-2">
                 <span className="annot annot-blue">Reflex 43,1 L</span>
@@ -103,33 +142,13 @@ export function Home({ onNavigate }: HomeProps) {
               </div>
             </div>
           </div>
-
-          <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
-            <p className="text-lg md:text-xl text-graphite leading-relaxed max-w-2xl animate-fade-in-up">
-              Un calcolatore per casse acustiche che non ti chiede di fidarti. Inserisci i parametri
-              dell&rsquo;altoparlante e ottieni volume, accordo, condotto, dimensioni, lista di taglio e curve
-              di risposta — con ogni numero riconducibile alla formula da cui esce.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 shrink-0 animate-fade-in-up">
-              <button onClick={() => onNavigate('cabinet-designer')} className="btn-marker justify-center">
-                Apri il calcolatore <ArrowRight className="w-4 h-4" />
-              </button>
-              <button onClick={() => onNavigate('amp-designer')} className="btn-tratto justify-center">
-                Configura l&rsquo;impianto
-              </button>
-              <button onClick={() => onNavigate('glossary')} className="btn-tratto justify-center">
-                Glossario
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10">
           <Cartiglio
             titolo="Officina del Suono — banco di progettazione"
             campi={[
-              { etichetta: 'Tipi di cassa', valore: '5' },
+              { etichetta: 'Cariche acustiche', valore: String(nCariche) },
               { etichetta: 'Schede parametri', valore: String(nVoci) },
               { etichetta: 'Driver in libreria', valore: String(nDriver) },
               { etichetta: 'Costo', valore: 'Gratuito' },

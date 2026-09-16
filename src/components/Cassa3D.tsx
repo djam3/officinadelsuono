@@ -47,6 +47,10 @@ interface Faccia {
   /** quanto la faccia è "dentro": le superfici incassate non prendono luce */
   incasso?: number;
   bordo?: boolean;
+  /** contorni dei buchi nella faccia: si riempiono con la regola pari-dispari */
+  fori?: V3[][];
+  /** faccia del guscio: si può scartare quando volta le spalle */
+  guscio?: boolean;
 }
 
 /**
@@ -62,7 +66,7 @@ interface Faccia {
 const PANNELLO: [number, number, number] = [0x2c, 0x4a, 0x66];
 const PANNELLO_FIANCO: [number, number, number] = [0x24, 0x3e, 0x57];
 const PANNELLO_CHIARO: [number, number, number] = [0x3b, 0x60, 0x82];
-const CONO: [number, number, number] = [0x12, 0x23, 0x35];
+const CONO: [number, number, number] = [0x2a, 0x3c, 0x50];
 const ACCENTO: [number, number, number] = [0x7f, 0xd8, 0xf5];
 const TRATTO = 'rgba(220,233,245,0.55)';
 const QUOTA = '#7FB2D9';
@@ -108,36 +112,20 @@ export function Cassa3D({
     const facce: Faccia[] = [];
 
     // il guscio: cinque facce piene più il frontale, che è forato
-    facce.push({ p: [[-hw, -hh, -hd], [hw, -hh, -hd], [hw, hh, -hd], [-hw, hh, -hd]], colore: PANNELLO, bordo: true });   // retro
-    facce.push({ p: [[-hw, -hh, hd], [-hw, -hh, -hd], [-hw, hh, -hd], [-hw, hh, hd]], colore: PANNELLO_FIANCO, bordo: true });   // sinistra
-    facce.push({ p: [[hw, -hh, -hd], [hw, -hh, hd], [hw, hh, hd], [hw, hh, -hd]], colore: PANNELLO_FIANCO, bordo: true });       // destra
-    facce.push({ p: [[-hw, hh, hd], [hw, hh, hd], [hw, hh, -hd], [-hw, hh, -hd]], colore: PANNELLO_CHIARO, bordo: true });// cielo
-    facce.push({ p: [[-hw, -hh, -hd], [hw, -hh, -hd], [hw, -hh, hd], [-hw, -hh, hd]], colore: PANNELLO_FIANCO, bordo: true });   // fondo
+    facce.push({ p: [[-hw, -hh, -hd], [hw, -hh, -hd], [hw, hh, -hd], [-hw, hh, -hd]], colore: PANNELLO, bordo: true, guscio: true });   // retro
+    facce.push({ p: [[-hw, -hh, hd], [-hw, -hh, -hd], [-hw, hh, -hd], [-hw, hh, hd]], colore: PANNELLO_FIANCO, bordo: true, guscio: true });   // sinistra
+    facce.push({ p: [[hw, -hh, -hd], [hw, -hh, hd], [hw, hh, hd], [hw, hh, -hd]], colore: PANNELLO_FIANCO, bordo: true, guscio: true });       // destra
+    facce.push({ p: [[-hw, hh, hd], [hw, hh, hd], [hw, hh, -hd], [-hw, hh, -hd]], colore: PANNELLO_CHIARO, bordo: true, guscio: true });// cielo
+    facce.push({ p: [[-hw, -hh, -hd], [hw, -hh, -hd], [hw, -hh, hd], [-hw, -hh, hd]], colore: PANNELLO_FIANCO, bordo: true, guscio: true });   // fondo
 
-    // ── frontale: una corona attorno al foro del driver ──
-    // Un poligono con un buco non si disegna in un colpo solo: si taglia in
-    // spicchi che vanno dal cerchio al perimetro. È lo stesso modo in cui un
-    // programma di disegno triangola una faccia forata.
+    // il foro del driver: serve sia al pannello sia al cono
     const rD = Math.min((driverDiaMm * scala) / 2, Math.min(W, H) * 0.40);
     const cyD = hh * 0.30;                        // il driver sta in alto
     const N = 40;
-    const bordoRett = (a: number): V3 => {
-      // punto sul perimetro del frontale nella direzione dell'angolo a
-      const c = Math.cos(a), s = Math.sin(a);
-      const k = Math.min(hw / Math.max(Math.abs(c), 1e-6), (hh - cyD) / Math.max(Math.abs(s), 1e-6));
-      return [c * k, cyD + s * k, hd];
-    };
+    const cerchioDriver: V3[] = [];
     for (let i = 0; i < N; i++) {
-      const a0 = (i / N) * 2 * Math.PI, a1 = ((i + 1) / N) * 2 * Math.PI;
-      facce.push({
-        p: [
-          [Math.cos(a0) * rD, cyD + Math.sin(a0) * rD, hd],
-          [Math.cos(a1) * rD, cyD + Math.sin(a1) * rD, hd],
-          bordoRett(a1),
-          bordoRett(a0),
-        ],
-        colore: PANNELLO_CHIARO,
-      });
+      const a = (i / N) * 2 * Math.PI;
+      cerchioDriver.push([Math.cos(a) * rD, cyD + Math.sin(a) * rD, hd]);
     }
 
     // ── il cono, incassato ──
@@ -151,7 +139,7 @@ export function Cassa3D({
           [Math.cos(a0) * rD * 0.18, cyD + Math.sin(a0) * rD * 0.18, hd - rD * 0.42],
         ],
         colore: CONO,
-        incasso: 0.55,
+        incasso: 0.28,
       });
     }
     // cupola centrale
@@ -170,12 +158,19 @@ export function Cassa3D({
 
     // ── il condotto ──
     const cyP = -hh * 0.62;
+    const foriCondotto: V3[][] = [];
     if (port?.kind === 'circolare') {
       const rP = (port.diaMm * scala) / 2;
       const n = Math.max(1, Math.min(port.count, 3));
       const passo = n > 1 ? W * 0.30 : 0;
       for (let k = 0; k < n; k++) {
         const cx = (k - (n - 1) / 2) * passo;
+        const bocca: V3[] = [];
+        for (let i = 0; i < 24; i++) {
+          const a = (i / 24) * 2 * Math.PI;
+          bocca.push([cx + Math.cos(a) * rP, cyP + Math.sin(a) * rP, hd]);
+        }
+        foriCondotto.push(bocca);
         for (let i = 0; i < 24; i++) {
           const a0 = (i / 24) * 2 * Math.PI, a1 = ((i + 1) / 24) * 2 * Math.PI;
           facce.push({
@@ -195,6 +190,7 @@ export function Cassa3D({
       const ph = (port.heightMm * scala) / 2;
       const prof = Math.max(ph * 2.2, 0.03);
       const ang: [number, number][] = [[-pw, -ph], [pw, -ph], [pw, ph], [-pw, ph]];
+      foriCondotto.push(ang.map(([x, y]) => [x, cyP + y, hd] as V3));
       for (let i = 0; i < 4; i++) {
         const [x0, y0] = ang[i], [x1, y1] = ang[(i + 1) % 4];
         facce.push({
@@ -212,6 +208,24 @@ export function Cassa3D({
       });
     }
 
+    // ── frontale: UNA faccia sola, coi buchi dentro ──
+    //
+    // Prima erano quaranta spicchi che andavano dal cerchio al perimetro, e sul
+    // pannello si vedevano i raggi: due poligoni adiacenti non combaciano mai
+    // perfettamente, perché il disegno sfuma i bordi di ciascuno per conto suo e
+    // fra l'uno e l'altro resta un capello di sfondo. Una faccia sola, riempita
+    // con la regola pari-dispari, non ha giunzioni da far vedere.
+    //
+    // I buchi devono esserci TUTTI: col solo foro del driver il pannello
+    // ricopriva il condotto, che spariva.
+    facce.push({
+      p: [[-hw, -hh, hd], [hw, -hh, hd], [hw, hh, hd], [-hw, hh, hd]],
+      colore: PANNELLO_CHIARO,
+      fori: [cerchioDriver, ...foriCondotto],
+      bordo: true,
+      guscio: true,
+    });
+
     // ── disegno ──
     const luce: V3 = (() => { const l: V3 = [-0.45, 0.7, 0.9]; const m = Math.hypot(...l); return [l[0] / m, l[1] / m, l[2] / m]; })();
     let anim = 0;
@@ -226,11 +240,23 @@ export function Cassa3D({
       ctx.clearRect(0, 0, larg, alt);
 
       const { yaw, pitch } = vista.current;
-      const zoom = Math.min(larg, alt) * 0.86;
-      const dist = 3.1;
+      // con le quote attorno serve il margine per scriverle: l'oggetto si
+      // rimpicciolisce invece di lasciare che i numeri finiscano tagliati
+      const zoom = Math.min(larg, alt) * (quote ? 0.70 : 0.86);
+      const dist = 7.0;
+      /**
+       * La camera guarda il modello da +z, quindi la profondità cresce
+       * ALLONTANANDOSI: `dist - r[2]`, non `r[2] + dist`.
+       *
+       * Con il segno sbagliato il lato +z del modello — quello su cui stanno
+       * il foro del driver e il condotto — risultava il più lontano, e la
+       * scatola si vedeva sempre di spalle: due pannelli lisci e nient'altro.
+       * Non era il ritaglio delle facce nascoste a sbagliare, era da che parte
+       * si guardava.
+       */
       const proietta = (p: V3): [number, number, number] => {
         const r = ruotaX(ruotaY(p, yaw), pitch);
-        const z = r[2] + dist;
+        const z = dist - r[2];
         const f = (dist * 0.92) / z;
         return [larg / 2 + r[0] * zoom * f, alt / 2 - r[1] * zoom * f, z];
       };
@@ -265,15 +291,38 @@ export function Cassa3D({
       }).sort((a, b) => b.zMed - a.zMed);
 
       for (const { f, pr } of pronte) {
-        // faccia voltata: si scarta guardando il verso del contorno proiettato
-        const area = pr.reduce((s, q, i) => {
-          const r = pr[(i + 1) % pr.length];
-          return s + (q[0] * r[1] - r[0] * q[1]);
-        }, 0);
-        if (area > 0) continue;
+        // Niente scarto delle facce voltate.
+        //
+        // Prima c'era, e guardava il verso del contorno proiettato: ma quel
+        // criterio pretende che TUTTE le facce siano avvolte nello stesso
+        // senso, e la corona attorno al foro del driver — costruita girando
+        // sul cerchio e tornando sul perimetro — risulta avvolta al contrario
+        // del guscio. Il risultato era che il frontale spariva: si vedeva il
+        // retro della cassa, senza driver e senza condotto.
+        //
+        // Per un solido convesso disegnato dal fondo verso chi guarda lo
+        // scarto non serve: le facce dietro vengono coperte da quelle davanti
+        // perché arrivano prima. Costa qualche riempimento in più e toglie
+        // una classe intera di errori.
+        const ruotati = f.p.map(p => ruotaX(ruotaY(p, yaw), pitch)) as V3[];
+        let n = normale(ruotati);
 
-        const n = normale(f.p.map(p => ruotaX(ruotaY(p, yaw), pitch)) as V3[]);
-        const diff = Math.max(0, n[0] * luce[0] + n[1] * luce[1] + n[2] * luce[2]);
+        // La scatola sta attorno all'origine ed è convessa: la normale che
+        // punta FUORI è quella che si allontana dal centro della faccia. Con
+        // questo criterio l'orientamento non dipende da come è avvolto il
+        // poligono — che sul frontale col foro sarebbe al contrario — e il
+        // ritaglio si può fare sul serio invece che affidare tutto all'ordine
+        // di disegno. Le superfici incassate non si scartano mai: stanno
+        // dentro, e l'ordine di disegno basta.
+        if (f.guscio) {
+          const c = ruotati.reduce<V3>((a, q) => [a[0] + q[0] / ruotati.length, a[1] + q[1] / ruotati.length, a[2] + q[2] / ruotati.length], [0, 0, 0]);
+          if (n[0] * c[0] + n[1] * c[1] + n[2] * c[2] < 0) n = [-n[0], -n[1], -n[2]];
+          // la camera guarda da +z: una faccia che punta verso -z dà le spalle
+          if (n[2] <= 0.001) continue;
+        }
+        // il verso della normale ora non è garantito: conta quanto la faccia
+        // è inclinata rispetto alla luce, non da che parte guarda
+        const diff = Math.abs(n[0] * luce[0] + n[1] * luce[1] + n[2] * luce[2]);
         const k = (0.46 + 0.62 * diff) * (1 - (f.incasso ?? 0));
         const [cr, cg, cb] = f.colore;
 
@@ -281,8 +330,14 @@ export function Cassa3D({
         ctx.moveTo(pr[0][0], pr[0][1]);
         for (let i = 1; i < pr.length; i++) ctx.lineTo(pr[i][0], pr[i][1]);
         ctx.closePath();
+        for (const foro of f.fori ?? []) {
+          const fr = foro.map(proietta);
+          ctx.moveTo(fr[0][0], fr[0][1]);
+          for (let i = 1; i < fr.length; i++) ctx.lineTo(fr[i][0], fr[i][1]);
+          ctx.closePath();
+        }
         ctx.fillStyle = `rgb(${Math.round(cr * k)},${Math.round(cg * k)},${Math.round(cb * k)})`;
-        ctx.fill();
+        ctx.fill('evenodd');
 
         if (f.bordo) {
           ctx.strokeStyle = TRATTO;
@@ -306,9 +361,9 @@ export function Cassa3D({
           ctx.clearRect(m[0] - wTxt / 2 - 3, m[1] - 7, wTxt + 6, 14);
           ctx.fillText(testo, m[0] - wTxt / 2, m[1] + 4);
         };
-        q([-hw, -hh, hd], [hw, -hh, hd], `${Math.round(widthMm)}`, [0, -0.10, 0]);
-        q([hw, -hh, hd], [hw, hh, hd], `${Math.round(heightMm)}`, [0.10, 0, 0]);
-        q([hw, -hh, hd], [hw, -hh, -hd], `${Math.round(depthMm)}`, [0.06, -0.09, 0]);
+        q([-hw, -hh, hd], [hw, -hh, hd], `${Math.round(widthMm)}`, [0, -0.08, 0.02]);
+        q([hw, -hh, hd], [hw, hh, hd], `${Math.round(heightMm)}`, [0.08, 0, 0.02]);
+        q([hw, -hh, hd], [hw, -hh, -hd], `${Math.round(depthMm)}`, [0.05, -0.07, 0]);
       }
     };
 
