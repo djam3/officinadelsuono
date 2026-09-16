@@ -19,6 +19,7 @@ const BASE = 'https://officinadelsuono-87986.web.app';
 const PAGINE = [
   { path: '/', priority: '1.0', changefreq: 'monthly' },
   { path: '/progetta-cassa', priority: '0.9', changefreq: 'monthly' },
+  { path: '/configura-impianto', priority: '0.9', changefreq: 'monthly' },
   { path: '/glossario', priority: '0.8', changefreq: 'monthly' },
   { path: '/chi-siamo', priority: '0.5', changefreq: 'yearly' },
   { path: '/contatti', priority: '0.5', changefreq: 'yearly' },

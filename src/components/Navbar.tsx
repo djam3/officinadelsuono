@@ -19,6 +19,7 @@ interface NavbarProps {
 
 const VOCI: { page: string; label: string; nota: string }[] = [
   { page: 'cabinet-designer', label: 'Progetta', nota: 'Calcolatore casse' },
+  { page: 'amp-designer', label: 'Impianto', nota: 'Amplificatore e cavi' },
   { page: 'glossary', label: 'Glossario', nota: 'I parametri spiegati' },
   { page: 'about', label: 'Officina', nota: 'Chi c’è dietro' },
   { page: 'contact', label: 'Contatti', nota: 'Parliamone' },
