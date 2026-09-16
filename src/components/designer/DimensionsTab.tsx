@@ -1,5 +1,6 @@
 import { NumField, SelectField, Section, Stat, CheckField } from './ui';
 import { Cassa3D } from '../Cassa3D';
+import { Paracadute } from '../Paracadute';
 import { ABSORBERS, PLACEMENT_LABELS, SHAPE_LABELS } from '../../utils/audio';
 import type {
   AbsorberId, AbsorberResult, BoxDimensions, BoxShape, CutPanel, DampingLevel, Placement,
@@ -173,6 +174,7 @@ export function DimensionsTab({
               subtitle="Proporzioni, foro del driver e condotto sono quelli calcolati. Trascina per girarla."
             >
               <div className="bg-ink/60 border border-paper/[0.07]">
+                <Paracadute dove="vista tridimensionale">
                 <Cassa3D
                   widthMm={dimensions.width}
                   heightMm={dimensions.height}
@@ -188,6 +190,7 @@ export function DimensionsTab({
                   }
                   altezzaPx={420}
                 />
+                </Paracadute>
               </div>
             </Section>
           )}

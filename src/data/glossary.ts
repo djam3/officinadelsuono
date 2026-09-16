@@ -1913,6 +1913,68 @@ export const GLOSSARY: GlossaryEntry[] = [
   },
 ];
 
+/**
+ * Testo su cui cerca l'indice.
+ *
+ * Non basta simbolo e titolo: cercando «Qts» si trovava una scheda sola,
+ * mentre il Qts e' nominato in mezzo glossario ed e' quasi sempre una di
+ * quelle le schede che servono. Qui dentro finisce tutto il testo della voce,
+ * corpo compreso.
+ *
+ * E i simboli si scrivono a tastiera. Nessuno digita Ω, α o η: chi cerca
+ * scrive «ohm», «alpha», «eta». Ogni voce si porta dietro i nomi per esteso
+ * dei simboli che contiene, cosi' la ricerca funziona come la gente scrive.
+ */
+const SINONIMI: [RegExp, string][] = [
+  [/Ω/g, ' ohm '],
+  [/α/g, ' alpha alfa '],
+  [/η/g, ' eta rendimento '],
+  [/λ/g, ' lambda '],
+  [/ρ/g, ' rho resistivita '],
+  [/²/g, '2'],
+  [/³/g, '3'],
+];
+
+function testoCercabile(e: GlossaryEntry): string {
+  const pezzi: string[] = [e.symbol, e.title, e.summary, e.unit ?? '', e.category];
+  for (const t of e.typical ?? []) pezzi.push(t.label, t.value);
+  for (const b of e.blocks) {
+    if (b.heading) pezzi.push(b.heading);
+    if (b.paragraphs) pezzi.push(...b.paragraphs);
+    if (b.list) pezzi.push(...b.list);
+    if (b.formula) pezzi.push(b.formula.expr, b.formula.caption ?? '');
+    if (b.callout) pezzi.push(b.callout.text);
+  }
+  let testo = pezzi.join(' ');
+  for (const [da, a] of SINONIMI) testo = testo.replace(da, a);
+  // gli accenti non devono contare: chi scrive "cavita" deve trovare "cavità"
+  return testo.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+/** indice precalcolato: si costruisce una volta, non a ogni battuta */
+export const GLOSSARY_SEARCH: { entry: GlossaryEntry; testo: string; capo: string }[] =
+  GLOSSARY.map(entry => ({
+    entry,
+    testo: testoCercabile(entry),
+    // simbolo e titolo separati: una corrispondenza li' vale piu' di una nel corpo
+    capo: `${entry.symbol} ${entry.title} ${entry.unit ?? ''}`
+      .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''),
+  }));
+
+/** Cerca, mettendo davanti le voci che corrispondono nel nome. */
+export function cercaGlossario(q: string): GlossaryEntry[] {
+  const query = q.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (!query) return [];
+  const trovate = GLOSSARY_SEARCH.filter(v => v.testo.includes(query));
+  return trovate
+    .sort((a, b) => {
+      const pa = a.capo.includes(query) ? (a.capo.startsWith(query) ? 0 : 1) : 2;
+      const pb = b.capo.includes(query) ? (b.capo.startsWith(query) ? 0 : 1) : 2;
+      return pa - pb;
+    })
+    .map(v => v.entry);
+}
+
 export const GLOSSARY_BY_ID: Record<string, GlossaryEntry> = Object.fromEntries(
   GLOSSARY.map(e => [e.id, e]),
 );

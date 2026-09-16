@@ -12,6 +12,7 @@ import { ArrowRight, MessageCircle, Ruler, Waves, Scissors, ScrollText } from 'l
 import { useSEO } from '../hooks/useSEO';
 import { Costruzione } from '../components/Costruzione';
 import { Cassa3D } from '../components/Cassa3D';
+import { Paracadute } from '../components/Paracadute';
 import { Annot, Cartiglio, Griglia, IntestazioneSezione, Quota, Righello, Tavola } from '../components/blueprint';
 import { GLOSSARY } from '../data/glossary';
 import { DRIVER_LIBRARY } from '../data/driverLibrary';
@@ -128,6 +129,7 @@ export function Home({ onNavigate }: HomeProps) {
             {/* più contenuta quando sta sotto: lì è un'illustrazione, non il
                 protagonista, e non deve mangiarsi una schermata */}
             <div className="relative animate-fade-in-up">
+              <Paracadute dove="vista tridimensionale">
               <Cassa3D
                 widthMm={260} heightMm={641} depthMm={267} wallMm={18}
                 driverDiaMm={196}
@@ -135,6 +137,7 @@ export function Home({ onNavigate }: HomeProps) {
                 quote={false}
                 altezzaPx={alta ? 460 : 300}
               />
+              </Paracadute>
               <div className="flex items-baseline gap-3 mt-2">
                 <span className="annot annot-blue">Reflex 43,1 L</span>
                 <div className="quota flex-1" aria-hidden />

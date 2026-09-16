@@ -7,11 +7,11 @@
  * corso.
  */
 
-import type { MouseEvent } from 'react';
-import { ArrowLeft, BookOpen, Info, Link2, AlertTriangle } from 'lucide-react';
+import { useMemo, useState, type MouseEvent } from 'react';
+import { ArrowLeft, BookOpen, Info, Link2, AlertTriangle, Search, X } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import {
-  CATEGORY_INTRO, CATEGORY_LABELS, GLOSSARY, GLOSSARY_BY_ID, glossaryUrl,
+  CATEGORY_INTRO, CATEGORY_LABELS, GLOSSARY, GLOSSARY_BY_ID, cercaGlossario, glossaryUrl,
   type GlossaryBlock, type GlossaryCategory, type GlossaryEntry,
 } from '../data/glossary';
 import { Annot, Griglia, Righello } from '../components/blueprint';
@@ -181,12 +181,39 @@ function Voce({ entry, naviga }: { entry: GlossaryEntry; naviga?: Naviga }) {
   );
 }
 
+/** La tessera di una voce nell'indice. Era scritta una volta sola dentro
+ *  l'elenco per categoria; adesso la usa anche la ricerca. */
+function Scheda({ e, naviga }: { e: GlossaryEntry; naviga?: Naviga }) {
+  return (
+    <a
+      href={glossaryUrl(e.id)}
+      onClick={interno(naviga, 'glossary', e.id)}
+      className="tavola tavola-hover block p-4 group"
+    >
+      <div className="flex items-baseline gap-2 mb-1.5">
+        <span className="text-marker font-black">{e.symbol}</span>
+        {e.unit && <span className="text-[11px] text-graphite-dim">{e.unit}</span>}
+      </div>
+      <p className="text-sm text-paper/90 font-medium mb-1.5 group-hover:text-white transition-colors">
+        {e.title}
+      </p>
+      <p className="text-[11px] text-graphite leading-relaxed">{e.summary}</p>
+    </a>
+  );
+}
+
 function Indice({ naviga }: { naviga?: Naviga }) {
   useSEO({
     title: 'Glossario dei parametri Thiele-Small e di progettazione casse',
     description: 'Una scheda per ogni parametro del calcolatore: che cos’è, a cosa serve nel progetto, quali valori aspettarsi e dove si sbaglia.',
     url: '/glossario',
   });
+
+  const [cerca, setCerca] = useState('');
+
+  // cinquantanove schede sono troppe per scorrerle, e chi arriva qui cerca
+  // quasi sempre una cosa sola. Il come sta in cercaGlossario.
+  const trovate = useMemo(() => (cerca.trim() ? cercaGlossario(cerca) : null), [cerca]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -206,9 +233,54 @@ function Indice({ naviga }: { naviga?: Naviga }) {
           quali. Dove un conto è stato ricavato invece che copiato, la scheda riporta anche il controllo che lo
           conferma: il valore atteso, quello ottenuto e lo scarto.
         </p>
+        <div className="relative max-w-xl mt-8">
+          <Search className="w-4 h-4 text-graphite absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            id="cerca-glossario"
+            type="search"
+            value={cerca}
+            onChange={e => setCerca(e.target.value)}
+            placeholder="Cerca un parametro, un&rsquo;unità, un valore…"
+            className="w-full bg-ink-2 border border-paper/10 rounded-none pl-10 pr-10 py-3 text-paper placeholder:text-graphite-dim focus:border-marker/50 outline-none"
+          />
+          {cerca && (
+            <button
+              type="button"
+              onClick={() => setCerca('')}
+              aria-label="Cancella la ricerca"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-graphite hover:text-marker transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {trovate && (
+          <p className="annot mt-3" aria-live="polite">
+            {trovate.length === 0
+              ? 'Nessuna scheda con questa parola'
+              : `${trovate.length} ${trovate.length === 1 ? 'scheda' : 'schede'}`}
+          </p>
+        )}
       </div>
 
-      {ORDER.map(cat => {
+      {/* con una ricerca in corso si mostrano i risultati, non le categorie:
+          raggrupparli per categoria quando sono tre renderebbe solo piu'
+          lungo arrivarci */}
+      {trovate && (
+        <section className="mb-14">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {trovate.map(e => <Scheda key={e.id} e={e} naviga={naviga} />)}
+          </div>
+          {trovate.length === 0 && (
+            <p className="text-graphite leading-relaxed max-w-2xl">
+              Prova con il simbolo (Qts, Fb, Vas), con l&rsquo;unità di misura, o con quello che vuoi
+              ottenere — «condotto», «assorbente», «cavo».
+            </p>
+          )}
+        </section>
+      )}
+
+      {!trovate && ORDER.map(cat => {
         const voci = GLOSSARY.filter(e => e.category === cat);
         if (!voci.length) return null;
         return (
@@ -216,23 +288,7 @@ function Indice({ naviga }: { naviga?: Naviga }) {
             <h2 className="titolo text-2xl mb-2">{CATEGORY_LABELS[cat]}</h2>
             <p className="text-sm text-graphite mb-6 max-w-3xl leading-relaxed">{CATEGORY_INTRO[cat]}</p>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {voci.map(e => (
-                <a
-                  key={e.id}
-                  href={glossaryUrl(e.id)}
-                  onClick={interno(naviga, 'glossary', e.id)}
-                  className="tavola tavola-hover block p-4 group"
-                >
-                  <div className="flex items-baseline gap-2 mb-1.5">
-                    <span className="text-marker font-black">{e.symbol}</span>
-                    {e.unit && <span className="text-[11px] text-graphite-dim">{e.unit}</span>}
-                  </div>
-                  <p className="text-sm text-paper/90 font-medium mb-1.5 group-hover:text-white transition-colors">
-                    {e.title}
-                  </p>
-                  <p className="text-[11px] text-graphite leading-relaxed">{e.summary}</p>
-                </a>
-              ))}
+              {voci.map(e => <Scheda key={e.id} e={e} naviga={naviga} />)}
             </div>
           </section>
         );

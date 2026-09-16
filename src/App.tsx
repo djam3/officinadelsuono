@@ -7,6 +7,7 @@ import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CustomCursor } from './components/CustomCursor';
+import { Paracadute } from './components/Paracadute';
 import { CookieBanner } from './components/CookieBanner';
 import { trackPageView } from './utils/analytics';
 import { captureUTMs } from './utils/utm';
@@ -104,7 +105,17 @@ export default function App() {
 
       <Navbar onNavigate={handleNavigate} current={currentPage} />
 
+      {/* Il paracadute sta DENTRO main e FUORI da Suspense: cosi' una pagina
+          che si rompe lascia in piedi barra e piede, e si puo' andare altrove
+          invece di restare davanti a uno schermo vuoto. La chiave sulla pagina
+          corrente lo fa ripartire quando si cambia sezione: senza, una pagina
+          rotta continuerebbe a mostrare l'errore anche dopo aver navigato. */}
       <main className="flex-grow relative">
+        <Paracadute
+          key={currentPage}
+          dove={currentPage}
+          offriPulizia={currentPage === 'cabinet-designer' || currentPage === 'amp-designer'}
+        >
         <Suspense fallback={<PageLoader />}>
           {currentPage === 'home' && <Home onNavigate={handleNavigate} />}
           {currentPage === 'about' && <AboutUs />}
@@ -117,6 +128,7 @@ export default function App() {
           {currentPage === 'cookie-policy' && <CookiePolicy />}
           {currentPage === 'glossary' && <Glossario slug={pageParam} onNavigate={handleNavigate} />}
         </Suspense>
+        </Paracadute>
       </main>
 
       <Footer onNavigate={handleNavigate} />
