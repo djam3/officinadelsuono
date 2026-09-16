@@ -73,7 +73,7 @@ export function AboutUs() {
             className="order-2 lg:order-1"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-ink-2 text-graphite border border-paper/10 mb-6">
-              <ShieldCheck className="w-4 h-4 text-[#35CFC0]" />
+              <ShieldCheck className="w-4 h-4 text-[#7FD8F5]" />
               <span className="text-xs font-bold uppercase tracking-wider">Proof of Concept</span>
             </div>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
@@ -113,8 +113,8 @@ export function AboutUs() {
                 <div className="text-center mb-10">
                   <div className="inline-flex items-center justify-center gap-3 mb-6">
                     <div className="flex gap-1.5">
-                      <div className="w-2 h-8 bg-[#35CFC0] transform -skew-x-12"></div>
-                      <div className="w-2 h-10 bg-[#35CFC0] transform -skew-x-12 -translate-y-1"></div>
+                      <div className="w-2 h-8 bg-[#7FD8F5] transform -skew-x-12"></div>
+                      <div className="w-2 h-10 bg-[#7FD8F5] transform -skew-x-12 -translate-y-1"></div>
                       <div className="w-2 h-8 bg-marker transform -skew-x-12"></div>
                     </div>
                     <span className="text-2xl font-black tracking-[0.2em] text-white">MAT ACADEMY</span>

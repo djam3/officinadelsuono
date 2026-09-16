@@ -290,10 +290,10 @@ function Disegno({ fasi }: { fasi: Fase[] }) {
       {/* griglia di sfondo */}
       <defs>
         <pattern id="mm" width="16" height="16" patternUnits="userSpaceOnUse">
-          <path d="M16 0H0v16" fill="none" stroke="rgba(228,234,240,0.05)" strokeWidth="1" />
+          <path d="M16 0H0v16" fill="none" stroke="rgba(220,233,245,0.05)" strokeWidth="1" />
         </pattern>
         <pattern id="lana" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(53,207,192,0.30)" strokeWidth="1.4" />
+          <line x1="0" y1="0" x2="0" y2="7" stroke="rgba(127,216,245,0.30)" strokeWidth="1.4" />
         </pattern>
       </defs>
       <rect width="520" height="420" fill="url(#mm)" />
@@ -302,22 +302,22 @@ function Disegno({ fasi }: { fasi: Fase[] }) {
       <motion.g style={{ opacity: volume.disegno }}>
         <motion.rect
           x="60" y="40" width="240" height="330" fill="none"
-          stroke="#E4EAF0" strokeWidth="2.5"
+          stroke="#DCE9F5" strokeWidth="2.5"
           style={{ pathLength: volume.tratto }}
         />
         {/* spessore dei pannelli */}
-        <rect x="70" y="50" width="220" height="310" fill="none" stroke="rgba(228,234,240,0.35)" strokeWidth="1" />
+        <rect x="70" y="50" width="220" height="310" fill="none" stroke="rgba(220,233,245,0.35)" strokeWidth="1" />
         {/* quote */}
-        <motion.g style={{ opacity: volume.disegno }} stroke="#6E90B4" strokeWidth="1">
+        <motion.g style={{ opacity: volume.disegno }} stroke="#7FB2D9" strokeWidth="1">
           <line x1="40" y1="40" x2="40" y2="370" />
           <line x1="36" y1="40" x2="44" y2="40" />
           <line x1="36" y1="370" x2="44" y2="370" />
-          <text x="26" y="210" fill="#6E90B4" fontSize="11" fontFamily="monospace"
+          <text x="26" y="210" fill="#7FB2D9" fontSize="11" fontFamily="monospace"
             transform="rotate(-90 26 210)" textAnchor="middle">641 mm</text>
           <line x1="60" y1="390" x2="300" y2="390" />
           <line x1="60" y1="386" x2="60" y2="394" />
           <line x1="300" y1="386" x2="300" y2="394" />
-          <text x="180" y="406" fill="#6E90B4" fontSize="11" fontFamily="monospace" textAnchor="middle">260 mm</text>
+          <text x="180" y="406" fill="#7FB2D9" fontSize="11" fontFamily="monospace" textAnchor="middle">260 mm</text>
         </motion.g>
       </motion.g>
 
@@ -333,48 +333,48 @@ function Disegno({ fasi }: { fasi: Fase[] }) {
         {/* cestello visto di lato: cono e magnete */}
         <motion.path
           d="M60 120 L112 104 L112 176 L60 160 Z"
-          fill="rgba(53,207,192,0.10)" stroke="#35CFC0" strokeWidth="2"
+          fill="rgba(127,216,245,0.10)" stroke="#7FD8F5" strokeWidth="2"
           style={{ pathLength: driver.tratto }}
         />
-        <rect x="112" y="124" width="30" height="32" fill="rgba(53,207,192,0.18)" stroke="#35CFC0" strokeWidth="1.5" />
-        <line x1="60" y1="118" x2="60" y2="162" stroke="#35CFC0" strokeWidth="3" />
-        <text x="150" y="136" fill="#8895A5" fontSize="10" fontFamily="monospace">Sd 510 cm²</text>
-        <text x="150" y="150" fill="#8895A5" fontSize="10" fontFamily="monospace">Xmax 8 mm</text>
+        <rect x="112" y="124" width="30" height="32" fill="rgba(127,216,245,0.18)" stroke="#7FD8F5" strokeWidth="1.5" />
+        <line x1="60" y1="118" x2="60" y2="162" stroke="#7FD8F5" strokeWidth="3" />
+        <text x="150" y="136" fill="#8EA8C2" fontSize="10" fontFamily="monospace">Sd 510 cm²</text>
+        <text x="150" y="150" fill="#8EA8C2" fontSize="10" fontFamily="monospace">Xmax 8 mm</text>
       </motion.g>
 
       {/* ── 03 · il condotto, ripiegato a L ── */}
       <motion.g style={{ opacity: condotto.disegno }}>
         <motion.path
           d="M60 300 L200 300 L200 340 L60 340"
-          fill="none" stroke="#35CFC0" strokeWidth="2"
+          fill="none" stroke="#7FD8F5" strokeWidth="2"
           style={{ pathLength: condotto.tratto }}
         />
-        <path d="M60 300 L200 300 L200 340 L60 340 Z" fill="rgba(53,207,192,0.07)" />
+        <path d="M60 300 L200 300 L200 340 L60 340 Z" fill="rgba(127,216,245,0.07)" />
         {/* frecce dell'aria */}
-        <g stroke="#6E90B4" strokeWidth="1.2" fill="none">
+        <g stroke="#7FB2D9" strokeWidth="1.2" fill="none">
           <path d="M150 320 L120 320 M126 315 L120 320 L126 325" />
           <path d="M100 320 L72 320 M78 315 L72 320 L78 325" />
         </g>
-        <text x="212" y="318" fill="#8895A5" fontSize="10" fontFamily="monospace">Fb 31,4 Hz</text>
-        <text x="212" y="332" fill="#8895A5" fontSize="10" fontFamily="monospace">L 66,9 cm</text>
+        <text x="212" y="318" fill="#8EA8C2" fontSize="10" fontFamily="monospace">Fb 31,4 Hz</text>
+        <text x="212" y="332" fill="#8EA8C2" fontSize="10" fontFamily="monospace">L 66,9 cm</text>
       </motion.g>
 
       {/* ── 05 · la curva ── */}
       <motion.g style={{ opacity: risposta.disegno }}>
-        <line x1="330" y1="330" x2="500" y2="330" stroke="rgba(228,234,240,0.25)" strokeWidth="1" />
-        <line x1="330" y1="90" x2="330" y2="330" stroke="rgba(228,234,240,0.25)" strokeWidth="1" />
+        <line x1="330" y1="330" x2="500" y2="330" stroke="rgba(220,233,245,0.25)" strokeWidth="1" />
+        <line x1="330" y1="90" x2="330" y2="330" stroke="rgba(220,233,245,0.25)" strokeWidth="1" />
         {/* linea dei −3 dB */}
-        <line x1="330" y1="160" x2="500" y2="160" stroke="rgba(110,144,180,0.5)" strokeWidth="1" strokeDasharray="3 4" />
-        <text x="336" y="154" fill="#6E90B4" fontSize="9" fontFamily="monospace">−3 dB</text>
+        <line x1="330" y1="160" x2="500" y2="160" stroke="rgba(127,178,217,0.5)" strokeWidth="1" strokeDasharray="3 4" />
+        <text x="336" y="154" fill="#7FB2D9" fontSize="9" fontFamily="monospace">−3 dB</text>
         <motion.path
           d="M336 300 C352 292 362 250 374 196 C384 156 396 140 414 136 C440 132 470 134 498 134"
-          fill="none" stroke="#35CFC0" strokeWidth="2.5" strokeLinecap="round"
+          fill="none" stroke="#7FD8F5" strokeWidth="2.5" strokeLinecap="round"
           style={{ pathLength: risposta.tratto }}
         />
-        <circle cx="374" cy="160" r="3" fill="#35CFC0" />
-        <text x="352" y="322" fill="#8895A5" fontSize="9" fontFamily="monospace">20</text>
-        <text x="368" y="322" fill="#35CFC0" fontSize="9" fontFamily="monospace">43</text>
-        <text x="470" y="322" fill="#8895A5" fontSize="9" fontFamily="monospace">200 Hz</text>
+        <circle cx="374" cy="160" r="3" fill="#7FD8F5" />
+        <text x="352" y="322" fill="#8EA8C2" fontSize="9" fontFamily="monospace">20</text>
+        <text x="368" y="322" fill="#7FD8F5" fontSize="9" fontFamily="monospace">43</text>
+        <text x="470" y="322" fill="#8EA8C2" fontSize="9" fontFamily="monospace">200 Hz</text>
       </motion.g>
     </svg>
   );

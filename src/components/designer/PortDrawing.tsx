@@ -11,10 +11,10 @@
 
 import { PORT_TYPES, type PortGeometry } from '../../utils/audio';
 
-const ACCENTO = '#35CFC0';
-const WALL = '#3A4654';    // pareti della cassa
-const DIM = '#6E90B4';     // quote
-const LABEL = '#8895A5';
+const ACCENTO = '#7FD8F5';
+const WALL = '#2F4A63';    // pareti della cassa
+const DIM = '#7FB2D9';     // quote
+const LABEL = '#8EA8C2';
 
 interface Props {
   geometry: PortGeometry;
@@ -239,7 +239,7 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
       {/* intestazioni delle due viste */}
       <text x={boxX} y={22} fontSize="9" fill={LABEL} fontWeight="bold">SEZIONE DELLA LUCE</text>
       <text x={lx} y={22} fontSize="9" fill={LABEL} fontWeight="bold">SVILUPPO</text>
-      <line x1={lx - 14} y1={30} x2={lx - 14} y2={H - 16} stroke="#19212A" strokeWidth={1} />
+      <line x1={lx - 14} y1={30} x2={lx - 14} y2={H - 16} stroke="#1A2E44" strokeWidth={1} />
 
       {crossSection()}
       {longitudinal()}

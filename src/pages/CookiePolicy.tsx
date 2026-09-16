@@ -96,7 +96,7 @@ export function CookiePolicy() {
               </p>
               <button
                 onClick={openPreferences}
-                className="px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#5FE3D6] transition-all "
+                className="px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#A5E6FA] transition-all "
               >
                 Gestisci preferenze cookie
               </button>

@@ -29,27 +29,27 @@
 
 @theme {
   /* piani del banco */
-  --color-ink: #0A0D11;
-  --color-ink-2: #11161D;
-  --color-ink-3: #19212A;
-  --color-ink-4: #232D39;
+  --color-ink: #0B1826;
+  --color-ink-2: #122335;
+  --color-ink-3: #1A2E44;
+  --color-ink-4: #254057;
 
   /* inchiostri */
-  --color-paper: #E4EAF0;
-  --color-graphite: #8895A5;
-  --color-graphite-dim: #5A6675;
-  --color-blueprint: #6E90B4;
-  --color-mdf: #C08A4E;
-  --color-marker: #35CFC0;
-  --color-marker-dim: #1E8E85;
+  --color-paper: #DCE9F5;
+  --color-graphite: #8EA8C2;
+  --color-graphite-dim: #7590AC;
+  --color-blueprint: #7FB2D9;
+  --color-mdf: #C9A063;
+  --color-marker: #7FD8F5;
+  --color-marker-dim: #3E8FB0;
   /* l'unico caldo dell'interfaccia, e vale solo per gli avvisi */
-  --color-segnale: #E8A83C;
+  --color-segnale: #F0B94A;
 
   /* alias di compatibilità con i componenti già scritti */
-  --color-brand-dark: #0A0D11;
-  --color-brand-orange: #35CFC0;
-  --color-brand-orange-light: #5FE3D6;
-  --color-brand-amber: #C08A4E;
+  --color-brand-dark: #0B1826;
+  --color-brand-orange: #7FD8F5;
+  --color-brand-orange-light: #A5E6FA;
+  --color-brand-amber: #C9A063;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo", "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -75,8 +75,8 @@ html {
 }
 
 body {
-  background-color: #0A0D11;
-  color: #E4EAF0;
+  background-color: #0B1826;
+  color: #DCE9F5;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -85,7 +85,7 @@ body {
 }
 
 #root {
-  background-color: #0A0D11;
+  background-color: #0B1826;
   overflow-x: hidden;
   overflow-x: clip;
 }
@@ -122,10 +122,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
    percepibile, quello grosso ogni cinque quadretti. */
 .blueprint-grid {
   background-image:
-    linear-gradient(to right, rgba(228, 234, 240, 0.028) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(228, 234, 240, 0.028) 1px, transparent 1px),
-    linear-gradient(to right, rgba(228, 234, 240, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(228, 234, 240, 0.055) 1px, transparent 1px);
+    linear-gradient(to right, rgba(220, 233, 245, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(220, 233, 245, 0.028) 1px, transparent 1px),
+    linear-gradient(to right, rgba(220, 233, 245, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(220, 233, 245, 0.055) 1px, transparent 1px);
   background-size: 16px 16px, 16px 16px, 80px 80px, 80px 80px;
   background-position: -1px -1px;
 }
@@ -142,7 +142,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 .tavola {
   position: relative;
   background: rgba(20, 18, 16, 0.72);
-  border: 1px solid rgba(228, 234, 240, 0.10);
+  border: 1px solid rgba(220, 233, 245, 0.10);
 }
 
 .tavola::before,
@@ -152,17 +152,17 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   width: 9px;
   height: 9px;
   pointer-events: none;
-  border-color: rgba(110, 144, 180, 0.55);
+  border-color: rgba(127, 178, 217, 0.55);
 }
 .tavola::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
 .tavola::after { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
 
 .tavola-hover:hover {
-  border-color: rgba(53, 207, 192, 0.38);
+  border-color: rgba(127, 216, 245, 0.38);
 }
 .tavola-hover:hover::before,
 .tavola-hover:hover::after {
-  border-color: rgba(53, 207, 192, 0.75);
+  border-color: rgba(127, 216, 245, 0.75);
 }
 
 /* ═══ ANNOTAZIONE ══════════════════════════════════════════════════════════
@@ -182,10 +182,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
    Divisore con le tacche, come il bordo di un righello da disegno. */
 .righello {
   height: 11px;
-  border-top: 1px solid rgba(228, 234, 240, 0.16);
+  border-top: 1px solid rgba(220, 233, 245, 0.16);
   background-image: repeating-linear-gradient(
     to right,
-    rgba(228, 234, 240, 0.16) 0 1px,
+    rgba(220, 233, 245, 0.16) 0 1px,
     transparent 1px 16px
   );
   background-size: 100% 5px;
@@ -195,10 +195,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 
 .righello-fitto {
   height: 14px;
-  border-top: 1px solid rgba(228, 234, 240, 0.2);
+  border-top: 1px solid rgba(220, 233, 245, 0.2);
   background-image:
-    repeating-linear-gradient(to right, rgba(228, 234, 240, 0.28) 0 1px, transparent 1px 80px),
-    repeating-linear-gradient(to right, rgba(228, 234, 240, 0.14) 0 1px, transparent 1px 16px);
+    repeating-linear-gradient(to right, rgba(220, 233, 245, 0.28) 0 1px, transparent 1px 80px),
+    repeating-linear-gradient(to right, rgba(220, 233, 245, 0.14) 0 1px, transparent 1px 16px);
   background-size: 100% 9px, 100% 5px;
   background-repeat: no-repeat;
 }
@@ -208,7 +208,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 .quota {
   position: relative;
   height: 1px;
-  background: rgba(110, 144, 180, 0.45);
+  background: rgba(127, 178, 217, 0.45);
 }
 .quota::before,
 .quota::after {
@@ -220,13 +220,13 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   border-top: 3.5px solid transparent;
   border-bottom: 3.5px solid transparent;
 }
-.quota::before { left: 0; border-right: 6px solid rgba(110, 144, 180, 0.7); }
-.quota::after { right: 0; border-left: 6px solid rgba(110, 144, 180, 0.7); }
+.quota::before { left: 0; border-right: 6px solid rgba(127, 178, 217, 0.7); }
+.quota::after { right: 0; border-left: 6px solid rgba(127, 178, 217, 0.7); }
 
 /* estensioni verticali agli estremi della quota */
 .quota-ext {
-  border-left: 1px solid rgba(110, 144, 180, 0.35);
-  border-right: 1px solid rgba(110, 144, 180, 0.35);
+  border-left: 1px solid rgba(127, 178, 217, 0.35);
+  border-right: 1px solid rgba(127, 178, 217, 0.35);
 }
 
 /* ═══ TITOLI ═══════════════════════════════════════════════════════════════ */
@@ -241,7 +241,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 /* titolo cavo, come una lettera tracciata a matita e non ancora campita */
 .titolo-tracciato {
   color: transparent;
-  -webkit-text-stroke: 1.5px rgba(228, 234, 240, 0.42);
+  -webkit-text-stroke: 1.5px rgba(220, 233, 245, 0.42);
 }
 
 /* ═══ PULSANTI ═════════════════════════════════════════════════════════════ */
@@ -252,14 +252,14 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   letter-spacing: 0.16em;
   text-transform: uppercase;
   background: var(--color-marker);
-  color: #0A0D11;
+  color: #0B1826;
   border: 1px solid var(--color-marker);
   padding: 0.85rem 1.6rem;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
 }
-.btn-marker:hover { background: #5FE3D6; border-color: #5FE3D6; }
+.btn-marker:hover { background: #A5E6FA; border-color: #A5E6FA; }
 
 .btn-tratto {
   font-family: var(--font-mono);
@@ -269,7 +269,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   text-transform: uppercase;
   background: transparent;
   color: var(--color-paper);
-  border: 1px solid rgba(228, 234, 240, 0.22);
+  border: 1px solid rgba(220, 233, 245, 0.22);
   padding: 0.85rem 1.6rem;
   display: inline-flex;
   align-items: center;
@@ -280,16 +280,16 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 /* ═══ TEXTURE MDF ══════════════════════════════════════════════════════════
    Venatura appena accennata del pannello, per le superfici "legno". */
 .mdf {
-  background-color: #19212A;
+  background-color: #1A2E44;
   background-image:
     repeating-linear-gradient(
       92deg,
-      rgba(192, 138, 78, 0.035) 0 2px,
+      rgba(201, 160, 99, 0.035) 0 2px,
       transparent 2px 7px
     ),
     repeating-linear-gradient(
       88deg,
-      rgba(192, 138, 78, 0.02) 0 1px,
+      rgba(201, 160, 99, 0.02) 0 1px,
       transparent 1px 11px
     );
 }
@@ -318,17 +318,17 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 
 /* ─── Scrollbar ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #0A0D11; }
+::-webkit-scrollbar-track { background: #0B1826; }
 ::-webkit-scrollbar-thumb {
-  background: #232D39;
-  border: 2px solid #0A0D11;
+  background: #254057;
+  border: 2px solid #0B1826;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-marker-dim); }
 
 /* ─── Selezione ─────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(53, 207, 192, 0.28);
-  color: #E4EAF0;
+  background: rgba(127, 216, 245, 0.28);
+  color: #DCE9F5;
 }
 
 /* ─── Campi numerici senza frecce ───────────────────────────────── */

@@ -18,6 +18,7 @@ const PAGE_TO_PATH: Record<string, string> = {
   contact: '/contatti',
   'cabinet-designer': '/progetta-cassa',
   'amp-designer': '/configura-impianto',
+  palette: '/palette',
   terms: '/termini',
   privacy: '/privacy',
   'cookie-policy': '/cookie-policy',
@@ -44,6 +45,7 @@ const AboutUs = lazy(() => import('./pages/AboutUs').then(m => ({ default: m.Abo
 const Contact = lazy(() => import('./pages/Contact').then(m => ({ default: m.Contact })));
 const CabinetDesigner = lazy(() => import('./pages/CabinetDesigner').then(m => ({ default: m.CabinetDesigner })));
 const AmpDesigner = lazy(() => import('./pages/AmpDesigner').then(m => ({ default: m.AmpDesigner })));
+const Palette = lazy(() => import('./pages/Palette').then(m => ({ default: m.Palette })));
 const Terms = lazy(() => import('./pages/Terms').then(m => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Privacy').then(m => ({ default: m.Privacy })));
 const CookiePolicy = lazy(() => import('./pages/CookiePolicy').then(m => ({ default: m.CookiePolicy })));
@@ -109,6 +111,7 @@ export default function App() {
           {currentPage === 'contact' && <Contact />}
           {currentPage === 'cabinet-designer' && <CabinetDesigner />}
           {currentPage === 'amp-designer' && <AmpDesigner />}
+          {currentPage === 'palette' && <Palette onNavigate={handleNavigate} />}
           {currentPage === 'terms' && <Terms />}
           {currentPage === 'privacy' && <Privacy />}
           {currentPage === 'cookie-policy' && <CookiePolicy />}

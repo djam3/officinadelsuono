@@ -25,16 +25,16 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
       >
         <defs>
           <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#E4EAF0" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#8895A5" stopOpacity="0.7" />
+            <stop offset="0%" stopColor="#DCE9F5" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#8EA8C2" stopOpacity="0.7" />
           </linearGradient>
           <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#35CFC0" />
-            <stop offset="100%" stopColor="#F27D26" />
+            <stop offset="0%" stopColor="#7FD8F5" />
+            <stop offset="100%" stopColor="#3E8FB0" />
           </linearGradient>
           <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#F27D26" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#F27D26" stopOpacity="0" />
+            <stop offset="0%" stopColor="#7FD8F5" stopOpacity="0.25" />
+            <stop offset="100%" stopColor="#7FD8F5" stopOpacity="0" />
           </radialGradient>
         </defs>
 
@@ -58,7 +58,7 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
           cx="50"
           cy="50"
           r="36"
-          stroke="#E4EAF0"
+          stroke="#DCE9F5"
           strokeWidth="0.5"
           strokeOpacity="0.15"
           strokeDasharray="2 3"
@@ -92,7 +92,7 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
         </g>
 
         {/* Tick marks at 12/3/6/9 o'clock — precision feel */}
-        <g stroke="#F27D26" strokeWidth="2" strokeLinecap="round">
+        <g stroke="#7FD8F5" strokeWidth="2" strokeLinecap="round">
           <line x1="50" y1="6" x2="50" y2="11" />
           <line x1="94" y1="50" x2="89" y2="50" />
           <line x1="50" y1="94" x2="50" y2="89" />
