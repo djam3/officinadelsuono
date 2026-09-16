@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search, Save, Trash2, Wand2, Users, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
 import { NumField, SelectField, Section, ActionButton, Stat, Warnings, CheckField, type FieldStatus } from './ui';
+import { MisuraSection } from './MisuraSection';
 import { CATEGORY_LABELS, DRIVER_LIBRARY, type DriverCategory, type LibraryDriver } from '../../data/driverLibrary';
 import { WIRING_LABELS } from '../../utils/audio';
 import type { DriverConfig, DriverWiring, TSInput, TSParams, ValidationResult } from '../../utils/audio';
@@ -308,6 +309,15 @@ export function DriverTab({
           </Section>
         </div>
       </div>
+
+      <MisuraSection
+        sdCm2={shown('sd')}
+        onApplica={(patch, pulisci) => {
+          const next: TSInput = { ...input, ...patch };
+          for (const k of pulisci) delete next[k];
+          onChange(next);
+        }}
+      />
 
       <Section
         title="Configurazione altoparlanti"

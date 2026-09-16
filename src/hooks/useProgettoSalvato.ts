@@ -38,10 +38,21 @@ function fondi<T extends object>(predefiniti: T, salvato: unknown): T {
   for (const k of Object.keys(predefiniti)) {
     const val = s[k];
     if (val === undefined) continue;
-    // stesso tipo del predefinito, o una stringa vuota (i campi numerici
-    // vuoti del calcolatore si rappresentano così)
-    const atteso = typeof (predefiniti as Record<string, unknown>)[k];
-    if (typeof val === atteso || val === '') out[k] = val;
+    const pred = (predefiniti as Record<string, unknown>)[k];
+    // Nel calcolatore un campo numerico non compilato vale stringa vuota, e il
+    // suo predefinito e' '' — quindi `typeof` da solo non basta: un campo che
+    // parte vuoto e in cui l'utente ha scritto 27,3 torna dalla memoria come
+    // numero, e col solo confronto di tipo veniva scartato in silenzio.
+    //
+    // Era un difetto serio e invisibile: quattordici campi del progetto
+    // partono vuoti - volume e accordo imposti a mano, misure del condotto,
+    // dati del radiatore passivo, larghezza e altezza fissate - e tutti
+    // tornavano vuoti al ricaricamento, mentre gli altri si ricordavano. Chi
+    // lo vedeva poteva solo pensare che il salvataggio funzionasse a caso.
+    const ok = typeof val === typeof pred
+      || val === ''                                  // campo svuotato
+      || (pred === '' && typeof val === 'number');    // campo numerico compilato
+    if (ok) out[k] = val;
   }
   return out as T;
 }
