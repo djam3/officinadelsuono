@@ -71,7 +71,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
       </Section>
 
       <Section title="Grafici da mostrare">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-2">
           {(Object.keys(GRAPH_LABELS) as GraphKey[]).map(key => (
             <CheckField
               key={key}
@@ -229,7 +229,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           subtitle="Senza volume da calcolare, il progetto sta tutto nel percorso fronte-retro e nella profondità delle alette."
           right={<InfoLink id="dipole" />}
         >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+          <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
             <Riga k="Percorso efficace" v={`${(design.openBaffle.dEffMm / 10).toFixed(1)} cm`} />
             <Riga k="Primo massimo" v={`${design.openBaffle.fPeakHz.toFixed(0)} Hz`} />
             <Riga
@@ -244,7 +244,7 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
                 Notch per la risonanza di cavità — {design.openBaffle.notch.fHz.toFixed(0)} Hz{' '}
                 <InfoLink id="notch" />
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Riga k="Induttanza L" v={`${design.openBaffle.notch.lMh.toFixed(2)} mH`} />
                 <Riga k="Capacità C" v={`${design.openBaffle.notch.cUf.toFixed(0)} µF`} />
                 <Riga k="Resistenza R" v={`${design.openBaffle.notch.rOhm.toFixed(1)} Ω`} />

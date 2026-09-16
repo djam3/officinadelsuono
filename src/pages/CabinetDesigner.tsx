@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Speaker, Box, Ruler, LineChart } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
+import { useProgettoSalvato } from '../hooks/useProgettoSalvato';
 import { Annot, Griglia } from '../components/blueprint';
 import { TabBar, Stat } from '../components/designer/ui';
 import { DriverTab } from '../components/designer/DriverTab';
@@ -88,11 +89,19 @@ export function CabinetDesigner() {
   });
 
   const [tab, setTab] = useState<TabId>('driver');
-  const [tsInput, setTsInput] = useState<TSInput>(DEFAULT_DRIVER);
-  const [driverConfig, setDriverConfig] = useState<DriverConfig>({ count: 1, wiring: 'single' });
-  const [enclosure, setEnclosure] = useState<EnclosureSettings>(DEFAULT_ENCLOSURE);
-  const [dimensions, setDimensions] = useState<DimensionSettings>(DEFAULT_DIMENSIONS);
-  const [response, setResponse] = useState<ResponseSettings>(DEFAULT_RESPONSE);
+  // La scheda aperta non si ricorda: e' dove si sta guardando adesso, non una
+  // scelta di progetto. Tutto il resto si', perche' compilarlo e' meta' del
+  // lavoro e perderlo per un aggiornamento della pagina e' inaccettabile.
+  const [tsInput, setTsInput, scordaDriver] = useProgettoSalvato<TSInput>('driver', DEFAULT_DRIVER);
+  const [driverConfig, setDriverConfig, scordaConfig] = useProgettoSalvato<DriverConfig>('config', { count: 1, wiring: 'single' });
+  const [enclosure, setEnclosure, scordaCassa] = useProgettoSalvato<EnclosureSettings>('cassa', DEFAULT_ENCLOSURE);
+  const [dimensions, setDimensions, scordaMisure] = useProgettoSalvato<DimensionSettings>('misure', DEFAULT_DIMENSIONS);
+  const [response, setResponse, scordaGrafici] = useProgettoSalvato<ResponseSettings>('grafici', DEFAULT_RESPONSE);
+
+  const ricomincia = () => {
+    scordaDriver(); scordaConfig(); scordaCassa(); scordaMisure(); scordaGrafici();
+    setTab('driver');
+  };
 
   // ── Catena di calcolo ────────────────────────────────────────────────────
   // la verifica lavora sui valori INSERITI: i derivati sono coerenti per costruzione
@@ -180,7 +189,7 @@ export function CabinetDesigner() {
             condotto, dimensioni, lista di taglio e curve di risposta.
           </p>
           <p className="text-sm text-graphite mt-3">
-            Non sai cosa scrivere in un campo? Accanto a ogni etichetta c'e una{' '}
+            Non sai cosa scrivere in un campo? Accanto a ogni etichetta c’è una{' '}
             <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-paper/20 text-[9px] font-black align-middle">i</span>
             {' '}che apre la scheda di quel parametro, oppure vai al{' '}
             <a href="/glossario" className="text-marker hover:underline">glossario completo</a>.
@@ -189,7 +198,7 @@ export function CabinetDesigner() {
 
         {/* Riepilogo sempre visibile */}
         {design && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+          <div className="riempi grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
             {/* su un pannello aperto non c'è volume: al suo posto va il numero
                 che quel progetto ha davvero, cioè il percorso fronte-retro */}
             {design.openBaffle ? (
@@ -226,8 +235,21 @@ export function CabinetDesigner() {
         )}
 
         <div className="bg-ink-2/70 border border-paper/10 rounded-none overflow-hidden">
-          <div className="px-5 pt-2">
+          <div className="px-5 pt-2 flex items-end justify-between gap-4">
             <TabBar<TabId> tabs={tabs} active={tab} onChange={id => setTab(id)} />
+            {/* Il progetto resta in questo browser: va detto, o non si sa se
+                si può chiudere la pagina. E se resta, ci vuole il modo di
+                buttarlo via. */}
+            <div className="hidden sm:flex items-center gap-3 pb-3 shrink-0">
+              <span className="annot text-[9px]">Salvato in questo browser</span>
+              <button
+                type="button"
+                onClick={ricomincia}
+                className="annot text-[9px] hover:text-marker transition-colors underline underline-offset-4 decoration-paper/20"
+              >
+                Ricomincia
+              </button>
+            </div>
           </div>
 
           <div className="p-5 md:p-6">

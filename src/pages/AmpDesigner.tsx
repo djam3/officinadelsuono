@@ -11,6 +11,7 @@
 import { useMemo, useState } from 'react';
 import { Zap, Speaker, Cable, Gauge } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
+import { useProgettoSalvato } from '../hooks/useProgettoSalvato';
 import { Annot, Griglia } from '../components/blueprint';
 import {
   TabBar, Stat, Section, NumField, SelectField, CheckField, Warnings, InfoLink,
@@ -90,7 +91,7 @@ export function AmpDesigner() {
   });
 
   const [tab, setTab] = useState<TabId>('ampli');
-  const [s, setS] = useState<Settings>(DEFAULTS);
+  const [s, setS, ricomincia] = useProgettoSalvato<Settings>('impianto', DEFAULTS);
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS(p => ({ ...p, [k]: v }));
 
   const calc = useMemo(() => {
@@ -173,7 +174,7 @@ export function AmpDesigner() {
         </div>
 
         {/* riepilogo sempre visibile */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+        <div className="riempi grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
           <Stat label="Carico visto" value={calc.load.seenOhm.toFixed(1)} unit="Ω" accent />
           <Stat label="Cavo diffusori" value={calc.cableMin.commercialMm2 ?? '—'} unit="mm²" />
           <Stat label="Cavo rete" value={calc.mainsSection.scelta ?? '—'} unit="mm²" />
@@ -181,7 +182,19 @@ export function AmpDesigner() {
           <Stat label="Assorbimento" value={calc.mains.currentA.toFixed(1)} unit="A" />
         </div>
 
-        <TabBar<TabId> tabs={TABS} active={tab} onChange={id => setTab(id)} />
+        <div className="flex items-end justify-between gap-4">
+          <TabBar<TabId> tabs={TABS} active={tab} onChange={id => setTab(id)} />
+          <div className="hidden sm:flex items-center gap-3 pb-3 shrink-0">
+            <span className="annot text-[9px]">Salvato in questo browser</span>
+            <button
+              type="button"
+              onClick={() => { ricomincia(); setTab('ampli'); }}
+              className="annot text-[9px] hover:text-marker transition-colors underline underline-offset-4 decoration-paper/20"
+            >
+              Ricomincia
+            </button>
+          </div>
+        </div>
 
         <div className="mt-6 space-y-5">
           {tab === 'ampli' && (

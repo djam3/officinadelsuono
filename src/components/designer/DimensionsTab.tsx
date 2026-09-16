@@ -57,7 +57,7 @@ export function DimensionsTab({
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" data-stampa="no">
         <Section title="Forma e materiale">
           <div className="space-y-3">
             <SelectField
@@ -193,7 +193,7 @@ export function DimensionsTab({
           )}
 
           <Section title="Dimensioni esterne" subtitle="Misure finali della cassa, spessore dei pannelli incluso.">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3">
               {dimensions.shape === 'cylindrical' ? (
                 <>
                   <Stat label="Diametro" value={dimensions.diameter ?? dimensions.width} unit="mm" accent />
@@ -214,14 +214,14 @@ export function DimensionsTab({
           {/* un pannello aperto non ha volume: mostrare cinque zeri sarebbe
               peggio che non mostrare niente */}
           <Section title="Bilancio dei volumi" subtitle="Dal volume interno lordo al volume acustico effettivo." hidden={volumes.gross <= 0}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="riempi grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <Stat label="Lordo interno" value={volumes.gross.toFixed(1)} unit="L" />
               <Stat label="− Driver" value={volumes.driverDisp.toFixed(2)} unit="L" />
               <Stat label="− Condotto" value={volumes.portDisp.toFixed(2)} unit="L" />
               <Stat label="− Rinforzi" value={volumes.bracingDisp.toFixed(2)} unit="L" />
               <Stat label="= Netto" value={volumes.net.toFixed(1)} unit="L" accent />
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+            <div className="riempi grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
               <Stat label="− Solido assorbente" value={volumes.absorberSolid.toFixed(2)} unit="L" />
               <Stat label="= Volume apparente" value={volumes.effective.toFixed(1)} unit="L" accent />
             </div>
@@ -232,7 +232,7 @@ export function DimensionsTab({
               title="Effetto del materiale fonoassorbente"
               subtitle={`${absorber.spec.label} — ${PLACEMENT_LABELS[absorber.placement].toLowerCase()}, ${absorber.densityKgM3} kg/m³.`}
             >
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="riempi grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                 <Stat label="Volume apparente" value={`+${(absorber.volume.delta * 100).toFixed(1)}`} unit="%" accent />
                 <Stat label="Qa assorbimento" value={absorber.losses.qa.toFixed(1)} />
                 <Stat label="Materiale" value={(absorber.fill.materialMassKg * 1000).toFixed(0)} unit="g" />
@@ -304,7 +304,20 @@ export function DimensionsTab({
             </Section>
           )}
 
-          <Section title="Lista di taglio" subtitle={`${panelAreaM2.toFixed(2)} m² di pannello — circa ${Math.ceil(panelAreaM2 / 2.98)} foglio/i da 244×122 cm.`}>
+          <Section
+            title="Lista di taglio"
+            subtitle={`${panelAreaM2.toFixed(2)} m² di pannello — circa ${Math.ceil(panelAreaM2 / 2.98)} foglio/i da 244×122 cm.`}
+            right={
+              <button
+                type="button"
+                data-stampa="no"
+                onClick={() => window.print()}
+                className="annot text-[9px] hover:text-marker transition-colors underline underline-offset-4 decoration-paper/20"
+              >
+                Stampa il foglio
+              </button>
+            }
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

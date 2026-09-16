@@ -374,3 +374,74 @@ input[type="number"] { -moz-appearance: textfield; }
     scroll-behavior: auto !important;
   }
 }
+
+/* ═══ GRIGLIE CHE SI RIEMPIONO ════════════════════════════════════════════
+   Cinque caselle in due colonne fanno due righe piene e una casella sola in
+   fondo, con mezza riga di vuoto accanto. Capita in tutte le file di risultati
+   del calcolatore, perché il numero di voci non è scelto per stare in griglia:
+   è quello che il conto produce.
+
+   La regola: se l'ultimo elemento comincia una riga — cioè sarebbe solo — si
+   allarga fino a riempirla. Una riga per ogni numero di colonne, e non serve
+   più pensarci in nessun componente. */
+.riempi.grid-cols-2 > *:last-child:nth-child(odd) { grid-column: span 2; }
+
+/* Le colonne cambiano col breakpoint e non sono le stesse in tutte le file:
+   la regola va agganciata alla griglia che c'è davvero, non a un numero
+   deciso una volta per tutte. Una griglia che non compare qui semplicemente
+   non viene toccata. */
+@media (min-width: 640px) {
+  .riempi > *:last-child { grid-column: auto; }
+  .riempi[class*="sm:grid-cols-3"] > *:last-child:nth-child(3n + 1) { grid-column: span 3; }
+  .riempi[class*="sm:grid-cols-4"] > *:last-child:nth-child(4n + 1) { grid-column: span 4; }
+}
+
+@media (min-width: 1024px) {
+  .riempi > *:last-child { grid-column: auto; }
+  .riempi[class*="lg:grid-cols-5"] > *:last-child:nth-child(5n + 1) { grid-column: span 5; }
+}
+
+/* ═══ STAMPA ═══════════════════════════════════════════════════════════════
+   La lista di taglio finisce in falegnameria, e in falegnameria si va con un
+   foglio in mano. Stampata così com'è veniva un rettangolo blu scuro che si
+   beve una cartuccia e non si legge: qui il foglio torna bianco, il tratto
+   nero, e sparisce tutto quello che su carta non serve — menu, griglia,
+   grafici, pulsanti, il piede della pagina.
+
+   Resta il titolo del progetto, le misure, e la tabella dei pezzi. */
+@media print {
+  @page { margin: 14mm; }
+
+  html, body, #root {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* niente di quello che non si può toccare con le mani */
+  nav, footer, .blueprint-grid, canvas, svg.p-graf,
+  [data-stampa="no"] {
+    display: none !important;
+  }
+
+  /* i pannelli diventano riquadri a filo, senza fondi da inchiostrare */
+  .tavola, .bg-ink-2\/70, .bg-ink-2\/40, .bg-ink\/60 {
+    background: #fff !important;
+    border-color: #999 !important;
+    box-shadow: none !important;
+  }
+
+  /* i colori del tema non si stampano: sul bianco l'azzurro sparisce */
+  .text-paper, .text-graphite, .text-graphite-dim, .text-marker, .text-blueprint,
+  .titolo, .annot, h1, h2, h3, p, li, dt, dd, td, th {
+    color: #000 !important;
+  }
+  .text-graphite, .text-graphite-dim, .annot { color: #555 !important; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #999 !important; padding: 4px 8px !important; }
+
+  /* una riga di taglio non si spezza fra due fogli */
+  tr, .tavola { break-inside: avoid; }
+
+  a[href]::after { content: ""; }
+}

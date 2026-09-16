@@ -354,7 +354,7 @@ export function DriverTab({
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+        <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
           <Stat label="Coni radianti" value={effectiveSummary.cones} />
           <Stat label="Carico ampli" value={effectiveSummary.impedance.toFixed(1)} unit="Ω" accent />
           <Stat label="Potenza totale" value={Math.round(effectiveSummary.power)} unit="W" />
