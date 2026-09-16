@@ -136,6 +136,11 @@ export function minSection(
 export function shiftedQ(
   qes: number, qms: number, reOhm: number, seriesOhm: number,
 ): { qes: number; qts: number; qtsOriginale: number; deltaPercent: number } {
+  // Senza i Q del driver non c'e' niente da dire, e il parallelo di due zeri
+  // fa 0/0: usciva NaN, stampato come tale accanto a «Qts di progetto».
+  if (!(qms > 0) || !(qes > 0)) {
+    return { qes: 0, qts: 0, qtsOriginale: 0, deltaPercent: 0 };
+  }
   const qts0 = (qms * qes) / (qms + qes);
   if (!(reOhm > 0)) return { qes, qts: qts0, qtsOriginale: qts0, deltaPercent: 0 };
   const qesNew = (qes * (reOhm + seriesOhm)) / reOhm;

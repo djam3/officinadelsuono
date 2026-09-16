@@ -99,7 +99,11 @@ export function computePower(input: PowerInput): PowerResult {
   const warnings: string[] = [];
 
   const z = Math.max(loadOhm, 0.1);
-  const rmsV = Math.sqrt(ampPowerW * z);
+  // Una potenza negativa non vuol dire niente, ma un campo numerico la accetta
+  // eccome: la radice di un numero negativo usciva NaN e finiva stampata sotto
+  // «Tensione d'uscita». Si tratta come zero, che e' la sola lettura sensata.
+  const pAmp = Math.max(ampPowerW, 0);
+  const rmsV = Math.sqrt(pAmp * z);
   const peakV = rmsV * Math.SQRT2;
   const peakI = peakV / z;
 
@@ -111,7 +115,7 @@ export function computePower(input: PowerInput): PowerResult {
   const arrayGain = 10 * Math.log10(n);
 
   // SPL: sensibilità + 10log(P) − 20log(d), con la potenza PER diffusore
-  const perSpeakerW = ampPowerW / n;
+  const perSpeakerW = pAmp / n;
   const distLoss = 20 * Math.log10(Math.max(distanceM, 0.1));
   const halfSpaceGain = input.halfSpace ? 3 : 0;
 
@@ -120,7 +124,7 @@ export function computePower(input: PowerInput): PowerResult {
   // e la potenza MEDIA, che e' quella che scalda la bobina. Un picco da 500 W
   // su programma pop nasce da una media di 32 W: e' la media a decidere quanto
   // il driver si comprime, non il picco.
-  const averageW = ampPowerW / Math.pow(10, crestDb / 10);
+  const averageW = pAmp / Math.pow(10, crestDb / 10);
   const avgPerSpeaker = averageW / n;
   const fraction = speakerPeW > 0 ? avgPerSpeaker / speakerPeW : 0;
   const compression = powerCompressionDb(coilRiseK(fraction));
@@ -131,7 +135,7 @@ export function computePower(input: PowerInput): PowerResult {
   const splAverage = splPeak - crestDb;
 
   // ── avvisi ──
-  const ratio = ampPowerW / Math.max(speakerPeW, 1e-9);
+  const ratio = pAmp / Math.max(speakerPeW, 1e-9);
   if (ratio > 2.5) {
     warnings.push(
       `L'amplificatore dà ${ampPowerW.toFixed(0)} W su un diffusore da ${speakerPeW} W, cioè ` +
@@ -168,7 +172,7 @@ export function computePower(input: PowerInput): PowerResult {
     splPeak,
     splAverage,
     averageW,
-    headroomDb: 10 * Math.log10(ratio),
+    headroomDb: 10 * Math.log10(Math.max(ratio, 1e-9)),
     arrayGainDb: arrayGain,
     compressionDb: compression,
     warnings,

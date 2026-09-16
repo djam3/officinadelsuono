@@ -402,8 +402,16 @@ function Risultati({ calc, s }: { calc: Calc; s: Settings }) {
         <div className="mt-4 bg-marker/5 border border-marker/25 p-4">
           <p className="annot annot-marker block mb-2">Quanto il cavo cambia la cassa</p>
           <dl className="space-y-2">
-            <Riga k="Qts di progetto" v={qShift.qtsOriginale.toFixed(4)} />
-            <Riga k="Qts con questo cavo" v={`${qShift.qts.toFixed(4)} (+${qShift.deltaPercent.toFixed(1)}%)`} />
+            <Riga
+              k="Qts di progetto"
+              v={qShift.qtsOriginale > 0 ? qShift.qtsOriginale.toFixed(4) : '—'}
+            />
+            <Riga
+              k="Qts con questo cavo"
+              v={qShift.qtsOriginale > 0
+                ? `${qShift.qts.toFixed(4)} (+${qShift.deltaPercent.toFixed(1)}%)`
+                : 'servono Qes e Qms del driver'}
+            />
           </dl>
           <p className="text-[11px] text-graphite mt-3 leading-relaxed">
             Qualunque resistenza in serie riduce lo smorzamento elettrico: Qes&prime; = Qes·(Re+Rs)/Re. Una
@@ -424,8 +432,15 @@ function Risultati({ calc, s }: { calc: Calc; s: Settings }) {
           <Riga k="Potenza media assorbita" v={`${power.averageW.toFixed(0)} W`}
             nota="È questa che scalda la bobina, non quella di picco." />
           <Riga k="Compressione di potenza" v={`${power.compressionDb.toFixed(2)} dB`} />
-          <Riga k="Guadagno d’ingresso" v={`${gain.gainDb.toFixed(1)} dB`}
-            nota={`${gain.outMaxV.toFixed(1)} V massimi per ${s.inputSensV} V d’ingresso (${gain.inputDbu.toFixed(1)} dBu).`} />
+          {/* con zero watt d'uscita il guadagno e' meno infinito: vero, e
+              inutile da stampare */}
+          <Riga
+            k="Guadagno d’ingresso"
+            v={Number.isFinite(gain.gainDb) ? `${gain.gainDb.toFixed(1)} dB` : '—'}
+            nota={Number.isFinite(gain.gainDb)
+              ? `${gain.outMaxV.toFixed(1)} V massimi per ${s.inputSensV} V d’ingresso (${gain.inputDbu.toFixed(1)} dBu).`
+              : 'Serve la potenza dell’amplificatore.'}
+          />
         </dl>
       </Section>
 

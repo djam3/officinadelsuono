@@ -51,6 +51,7 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
   const hasFullModel = !!curves;
 
   const ventPeak = design?.ventVelocity?.reduce((max, p) => Math.max(max, p.v), 0) ?? 0;
+  const dipolo = design?.openBaffle;
 
   return (
     <div className="space-y-5">
@@ -237,33 +238,37 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
           />
         </Section>
       )}
-      {/* Dipolo: percorso, cavita' e il prezzo in escursione della correzione */}
-      {design.openBaffle && (
+      {/* Dipolo: percorso, cavita' e il prezzo in escursione della correzione.
+          `dipolo` invece di `design.openBaffle` non e' pignoleria: con i campi
+          del driver vuoti `design` e' null, e questa riga - l'unica di tutta
+          la scheda che non lo controllava - faceva cadere l'intero
+          calcolatore. Il paracadute lo ha contenuto, ma la scheda spariva. */}
+      {dipolo && (
         <Section
           title="Pannello aperto: percorso, cavità ed escursione"
           subtitle="Senza volume da calcolare, il progetto sta tutto nel percorso fronte-retro e nella profondità delle alette."
           right={<InfoLink id="dipole" />}
         >
           <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-            <Riga k="Percorso efficace" v={`${(design.openBaffle.dEffMm / 10).toFixed(1)} cm`} />
-            <Riga k="Primo massimo" v={`${design.openBaffle.fPeakHz.toFixed(0)} Hz`} />
+            <Riga k="Percorso efficace" v={`${(dipolo.dEffMm / 10).toFixed(1)} cm`} />
+            <Riga k="Primo massimo" v={`${dipolo.fPeakHz.toFixed(0)} Hz`} />
             <Riga
               k="Risonanza di cavità"
-              v={design.openBaffle.fPipeHz ? `${design.openBaffle.fPipeHz.toFixed(0)} Hz` : 'nessuna'}
+              v={dipolo.fPipeHz ? `${dipolo.fPipeHz.toFixed(0)} Hz` : 'nessuna'}
             />
-            <Riga k="F3 risultante" v={`${design.openBaffle.f3Hz.toFixed(0)} Hz`} />
+            <Riga k="F3 risultante" v={`${dipolo.f3Hz.toFixed(0)} Hz`} />
           </div>
-          {design.openBaffle.notch && (
+          {dipolo.notch && (
             <div className="mb-5 bg-ink-2/80 border border-amber-500/25 rounded-none p-4">
               <p className="annot annot-marker block mb-3">
-                Notch per la risonanza di cavità — {design.openBaffle.notch.fHz.toFixed(0)} Hz{' '}
+                Notch per la risonanza di cavità — {dipolo.notch.fHz.toFixed(0)} Hz{' '}
                 <InfoLink id="notch" />
               </p>
               <div className="riempi grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <Riga k="Induttanza L" v={`${design.openBaffle.notch.lMh.toFixed(2)} mH`} />
-                <Riga k="Capacità C" v={`${design.openBaffle.notch.cUf.toFixed(0)} µF`} />
-                <Riga k="Resistenza R" v={`${design.openBaffle.notch.rOhm.toFixed(1)} Ω`} />
-                <Riga k="Profondità · Q" v={`${design.openBaffle.notch.depthDb.toFixed(0)} dB · Q ${design.openBaffle.notch.q}`} />
+                <Riga k="Induttanza L" v={`${dipolo.notch.lMh.toFixed(2)} mH`} />
+                <Riga k="Capacità C" v={`${dipolo.notch.cUf.toFixed(0)} µF`} />
+                <Riga k="Resistenza R" v={`${dipolo.notch.rOhm.toFixed(1)} Ω`} />
+                <Riga k="Profondità · Q" v={`${dipolo.notch.depthDb.toFixed(0)} dB · Q ${dipolo.notch.q}`} />
               </div>
               <p className="text-[11px] text-graphite mt-3 leading-relaxed">
                 Circuito risonante parallelo L‖C‖R da mettere <strong>in serie</strong> al driver, non in
@@ -278,13 +283,13 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
             height={200}
             yLabel="Correzione"
             yUnit="dB"
-            series={[{ name: 'Da applicare', color: PLOT_COLORS[3], points: design.openBaffle.eqBoostDb }]}
+            series={[{ name: 'Da applicare', color: PLOT_COLORS[3], points: dipolo.eqBoostDb }]}
           />
           <p className="text-[11px] text-graphite mt-2 mb-5 leading-relaxed">
             La discesa del dipolo è di 6 dB/ottava e va compensata: questa è la curva che il filtro deve avere.
-            {design.openBaffle.eqHighPassHz > 0 && (
+            {dipolo.eqHighPassHz > 0 && (
               <>
-                {' '}Sotto i <strong>{design.openBaffle.eqHighPassHz.toFixed(0)} Hz</strong> torna a scendere, e
+                {' '}Sotto i <strong>{dipolo.eqHighPassHz.toFixed(0)} Hz</strong> torna a scendere, e
                 non per prudenza: sotto quel punto il cono è già a Xmax e alzare il livello non produce più
                 suono, produce solo corsa.
               </>
@@ -295,9 +300,9 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
             yLabel="Escursione"
             yUnit="mm"
             series={[
-              { name: 'Con correzione', color: PLOT_COLORS[0], points: design.openBaffle.excursionEq },
-              { name: 'Senza', color: PLOT_COLORS[2], points: design.openBaffle.curves.excursion },
-              ...(ts.xmax ? [{ name: `Xmax ${ts.xmax} mm`, color: '#3f3f46', points: limitLine(design.openBaffle.excursionEq, ts.xmax) }] : []),
+              { name: 'Con correzione', color: PLOT_COLORS[0], points: dipolo.excursionEq },
+              { name: 'Senza', color: PLOT_COLORS[2], points: dipolo.curves.excursion },
+              ...(ts.xmax ? [{ name: `Xmax ${ts.xmax} mm`, color: '#3f3f46', points: limitLine(dipolo.excursionEq, ts.xmax) }] : []),
             ]}
           />
           <p className="text-[11px] text-graphite mt-2 leading-relaxed">
@@ -310,6 +315,7 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
 
       {/* Effetto pannello e Zobel: due conti che non dipendono dalla curva ma
           decidono quanto la cassa suonerà magra e che carico vedrà il filtro */}
+      {design && (
       <Section
         title="Effetto pannello e carico elettrico"
         subtitle="Due cose che si risolvono nel filtro, non nella cassa — ma si progettano qui."
@@ -354,6 +360,7 @@ export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: 
           </div>
         </div>
       </Section>
+      )}
     </div>
   );
 }
