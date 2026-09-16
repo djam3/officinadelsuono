@@ -42,6 +42,29 @@ export const CAMPI_CASSA = [
   'bandpassGainDb', 'dipoleFrame', 'wingDepthMm', 'dipoleTargetHz',
 ] as const;
 
+/**
+ * Il quarto gruppo e' arrivato dopo, e lo si vede: c'e' dentro roba di due
+ * schede diverse. Ci sta perche' il formato non ha nomi - solo posizioni - e i
+ * nomi di queste sette chiavi non si pestano fra loro.
+ *
+ * Perche' e' servito: senza, un progetto a due driver arrivava a destinazione
+ * come un progetto a un driver, e chi lo apriva vedeva un volume sbagliato di
+ * meta' senza nessun avviso. E le condizioni di simulazione - potenza,
+ * ambiente, tolleranza - decidono meta' dei numeri che si guardano, quindi un
+ * collegamento che non le porta mostra un'altra cosa da quella che si e'
+ * mandata.
+ *
+ * NON HA CAMBIATO LA VERSIONE, di proposito. Un collegamento vecchio ha tre
+ * gruppi e questi campi restano ai predefiniti; uno nuovo ne ha quattro e una
+ * versione vecchia del sito ignora il quarto. Alzare il numero di versione
+ * avrebbe fatto rifiutare tutti i collegamenti gia' in giro, per aggiungere
+ * roba in fondo - che e' proprio il caso che il formato era fatto per reggere.
+ */
+export const CAMPI_CONDIZIONI = [
+  'count', 'wiring', 'electrical',
+  'powerW', 'roomPreset', 'tolCedevolezzaPct', 'tolMotorePct',
+] as const;
+
 export const CAMPI_MISURE = [
   'shape', 'wallThicknessMm', 'damping', 'absorber', 'placement',
   'absorberDensityKgM3', 'liningThicknessMm', 'useGoldenRatio', 'fixedWidthMm',
@@ -80,9 +103,16 @@ function leggi(testo: string, predefinito: unknown): unknown {
  * chiusi — e nessuno dei due viene riscritto quando l'indirizzo passa da una
  * chat o da un programma di posta.
  */
-export function scriviProgetto(driver: Dizionario, cassa: Dizionario, misure: Dizionario): string {
+export function scriviProgetto(
+  driver: Dizionario, cassa: Dizionario, misure: Dizionario, condizioni: Dizionario = {},
+): string {
   const gruppo = (campi: readonly string[], d: Dizionario) => campi.map(k => scrivi(d[k])).join(',');
-  const corpo = [gruppo(CAMPI_DRIVER, driver), gruppo(CAMPI_CASSA, cassa), gruppo(CAMPI_MISURE, misure)].join(';');
+  const corpo = [
+    gruppo(CAMPI_DRIVER, driver),
+    gruppo(CAMPI_CASSA, cassa),
+    gruppo(CAMPI_MISURE, misure),
+    gruppo(CAMPI_CONDIZIONI, condizioni),
+  ].join(';');
   return `${VERSIONE};${corpo}`;
 }
 
@@ -90,12 +120,14 @@ export interface ProgettoLetto {
   driver: Dizionario;
   cassa: Dizionario;
   misure: Dizionario;
+  condizioni: Dizionario;
 }
 
 /** null se il collegamento non è leggibile: chi chiama tiene i suoi valori */
 export function leggiProgetto(
   testo: string,
   predDriver: Dizionario, predCassa: Dizionario, predMisure: Dizionario,
+  predCondizioni: Dizionario = {},
 ): ProgettoLetto | null {
   const parti = testo.split(';');
   if (parti.length < 4) return null;
@@ -114,6 +146,9 @@ export function leggiProgetto(
     driver: gruppo(CAMPI_DRIVER, parti[1], predDriver),
     cassa: gruppo(CAMPI_CASSA, parti[2], predCassa),
     misure: gruppo(CAMPI_MISURE, parti[3], predMisure),
+    // un collegamento fatto prima che questo gruppo esistesse non ce l'ha:
+    // i predefiniti bastano, e il progetto si apre lo stesso
+    condizioni: gruppo(CAMPI_CONDIZIONI, parti[4] ?? '', predCondizioni),
   };
 }
 

@@ -28,6 +28,8 @@ const DEFAULT_DRIVER: TSInput = {
   pe: 400, impedance: 8,
 };
 
+const DEFAULT_CONFIG: DriverConfig = { count: 1, wiring: 'single' };
+
 const DEFAULT_ENCLOSURE: EnclosureSettings = {
   enclosure: 'vented',
   alignment: 'B4',
@@ -98,7 +100,7 @@ export function CabinetDesigner() {
   // scelta di progetto. Tutto il resto si', perche' compilarlo e' meta' del
   // lavoro e perderlo per un aggiornamento della pagina e' inaccettabile.
   const [tsInput, setTsInput, scordaDriver] = useProgettoSalvato<TSInput>('driver', DEFAULT_DRIVER);
-  const [driverConfig, setDriverConfig, scordaConfig] = useProgettoSalvato<DriverConfig>('config', { count: 1, wiring: 'single' });
+  const [driverConfig, setDriverConfig, scordaConfig] = useProgettoSalvato<DriverConfig>('config', DEFAULT_CONFIG);
   const [enclosure, setEnclosure, scordaCassa] = useProgettoSalvato<EnclosureSettings>('cassa', DEFAULT_ENCLOSURE);
   const [dimensions, setDimensions, scordaMisure] = useProgettoSalvato<DimensionSettings>('misure', DEFAULT_DIMENSIONS);
   const [response, setResponse, scordaGrafici] = useProgettoSalvato<ResponseSettings>('grafici', DEFAULT_RESPONSE);
@@ -122,6 +124,17 @@ export function CabinetDesigner() {
       DEFAULT_DRIVER as unknown as Record<string, unknown>,
       DEFAULT_ENCLOSURE as unknown as Record<string, unknown>,
       DEFAULT_DIMENSIONS as unknown as Record<string, unknown>,
+      {
+        ...DEFAULT_CONFIG,
+        // `electrical` e' facoltativo e nei predefiniti non c'e': senza una
+        // chiave presente il lettore salta il campo, e un collegamento fatto
+        // con i driver in serie arriverebbe in parallelo
+        electrical: DEFAULT_CONFIG.electrical ?? 'parallel',
+        powerW: DEFAULT_RESPONSE.powerW,
+        roomPreset: DEFAULT_RESPONSE.roomPreset,
+        tolCedevolezzaPct: DEFAULT_RESPONSE.tolCedevolezzaPct,
+        tolMotorePct: DEFAULT_RESPONSE.tolMotorePct,
+      } as unknown as Record<string, unknown>,
     );
     window.history.replaceState(null, '', window.location.pathname);
     if (!letto) {
@@ -131,6 +144,22 @@ export function CabinetDesigner() {
     setTsInput(letto.driver as unknown as TSInput);
     setEnclosure(letto.cassa as unknown as EnclosureSettings);
     setDimensions(letto.misure as unknown as DimensionSettings);
+    // il quarto gruppo tiene insieme cose di due schede diverse: si rimette
+    // ognuna al posto suo
+    const cond = letto.condizioni as Record<string, unknown>;
+    setDriverConfig(c => ({
+      ...c,
+      count: cond.count as number,
+      wiring: cond.wiring as DriverConfig['wiring'],
+      electrical: cond.electrical as DriverConfig['electrical'],
+    }));
+    setResponse(r => ({
+      ...r,
+      powerW: cond.powerW as number,
+      roomPreset: cond.roomPreset as ResponseSettings['roomPreset'],
+      tolCedevolezzaPct: cond.tolCedevolezzaPct as number,
+      tolMotorePct: cond.tolMotorePct as number,
+    }));
     setAvvisoLink('Progetto aperto da un collegamento.');
   }, []);
 
@@ -139,6 +168,13 @@ export function CabinetDesigner() {
       tsInput as unknown as Record<string, unknown>,
       enclosure as unknown as Record<string, unknown>,
       dimensions as unknown as Record<string, unknown>,
+      {
+        ...driverConfig,
+        powerW: response.powerW,
+        roomPreset: response.roomPreset,
+        tolCedevolezzaPct: response.tolCedevolezzaPct,
+        tolMotorePct: response.tolMotorePct,
+      } as unknown as Record<string, unknown>,
     ));
     try {
       await navigator.clipboard.writeText(url);
