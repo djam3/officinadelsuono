@@ -128,31 +128,35 @@ export function Cassa3D({
       cerchioDriver.push([Math.cos(a) * rD, cyD + Math.sin(a) * rD, hd]);
     }
 
-    // ── il cono, incassato ──
+    // Il cono NON si costruisce a spicchi.
+    //
+    // Un cono di rivoluzione visto attraverso il suo foro ha per sagoma
+    // l'ellisse del foro e basta: tagliarlo in quaranta facce serve solo a
+    // farne vedere le giunzioni. Si disegna a parte, dopo il guscio, come una
+    // sfumatura dentro quella sagoma — che è poi quello che un programma di
+    // rendering produce quando la superficie è liscia.
+    //
+    // I contorni servono al disegno: il bordo del foro e il cerchio di gola.
+    const golaR = rD * 0.26;
+    const cerchioGola: V3[] = [];
     for (let i = 0; i < N; i++) {
-      const a0 = (i / N) * 2 * Math.PI, a1 = ((i + 1) / N) * 2 * Math.PI;
-      facce.push({
-        p: [
-          [Math.cos(a0) * rD, cyD + Math.sin(a0) * rD, hd - t * 0.4],
-          [Math.cos(a1) * rD, cyD + Math.sin(a1) * rD, hd - t * 0.4],
-          [Math.cos(a1) * rD * 0.18, cyD + Math.sin(a1) * rD * 0.18, hd - rD * 0.42],
-          [Math.cos(a0) * rD * 0.18, cyD + Math.sin(a0) * rD * 0.18, hd - rD * 0.42],
-        ],
-        colore: CONO,
-        incasso: 0.28,
-      });
+      const a = (i / N) * 2 * Math.PI;
+      cerchioGola.push([Math.cos(a) * golaR, cyD + Math.sin(a) * golaR, hd - rD * 0.40]);
     }
-    // cupola centrale
+
+    // spessore del pannello sul bordo del foro: è il dettaglio che dice
+    // quanto è grosso il legno, e si vede solo quando la cassa è di tre quarti
     for (let i = 0; i < N; i++) {
       const a0 = (i / N) * 2 * Math.PI, a1 = ((i + 1) / N) * 2 * Math.PI;
       facce.push({
         p: [
-          [Math.cos(a0) * rD * 0.18, cyD + Math.sin(a0) * rD * 0.18, hd - rD * 0.42],
-          [Math.cos(a1) * rD * 0.18, cyD + Math.sin(a1) * rD * 0.18, hd - rD * 0.42],
-          [0, cyD, hd - rD * 0.28],
+          [Math.cos(a0) * rD, cyD + Math.sin(a0) * rD, hd],
+          [Math.cos(a1) * rD, cyD + Math.sin(a1) * rD, hd],
+          [Math.cos(a1) * rD, cyD + Math.sin(a1) * rD, hd - t],
+          [Math.cos(a0) * rD, cyD + Math.sin(a0) * rD, hd - t],
         ],
-        colore: ACCENTO,
-        incasso: 0.25,
+        colore: PANNELLO_FIANCO,
+        incasso: 0.45,
       });
     }
 
@@ -346,6 +350,71 @@ export function Cassa3D({
         }
       }
 
+      // ── il driver: sfumatura dentro la sagoma del foro ──
+      //
+      // Si disegna dopo il guscio perché deve stare sopra il pannello, e solo
+      // se il frontale è rivolto verso di noi: altrimenti comparirebbe sul
+      // retro come una macchia.
+      {
+        const nF = ruotaX(ruotaY([0, 0, 1], yaw), pitch);
+        if (nF[2] > 0.02) {
+          const foro = cerchioDriver.map(proietta);
+          const gola = cerchioGola.map(proietta);
+          const cen = gola.reduce((s2, q) => [s2[0] + q[0] / gola.length, s2[1] + q[1] / gola.length], [0, 0]);
+          const raggio = Math.max(...foro.map(q => Math.hypot(q[0] - cen[0], q[1] - cen[1])));
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(foro[0][0], foro[0][1]);
+          for (let i = 1; i < foro.length; i++) ctx.lineTo(foro[i][0], foro[i][1]);
+          ctx.closePath();
+          ctx.clip();
+
+          // la luce entra da sinistra-alto: il centro della sfumatura le va incontro
+          const gx = cen[0] - raggio * 0.22, gy = cen[1] - raggio * 0.22;
+          const g = ctx.createRadialGradient(gx, gy, raggio * 0.04, gx, gy, raggio * 1.15);
+          g.addColorStop(0, 'rgb(74,100,126)');
+          g.addColorStop(0.55, 'rgb(38,54,72)');
+          g.addColorStop(1, 'rgb(16,26,38)');
+          ctx.fillStyle = g;
+          ctx.fillRect(cen[0] - raggio * 1.4, cen[1] - raggio * 1.4, raggio * 2.8, raggio * 2.8);
+
+          // Vignettatura sul bordo, tutt'intorno.
+          //
+          // Con la sola sfumatura direzionale il cono leggeva convesso, come
+          // una bolla: e' l'ombra che si scurisce verso il perimetro a dire
+          // che la superficie e' INCASSATA e non gonfiata.
+          const v = ctx.createRadialGradient(cen[0], cen[1], raggio * 0.35, cen[0], cen[1], raggio);
+          v.addColorStop(0, 'rgba(0,0,0,0)');
+          v.addColorStop(1, 'rgba(0,0,0,0.55)');
+          ctx.fillStyle = v;
+          ctx.fillRect(cen[0] - raggio * 1.4, cen[1] - raggio * 1.4, raggio * 2.8, raggio * 2.8);
+          ctx.restore();
+
+          // la cupola, con il suo riflesso
+          ctx.beginPath();
+          ctx.moveTo(gola[0][0], gola[0][1]);
+          for (let i = 1; i < gola.length; i++) ctx.lineTo(gola[i][0], gola[i][1]);
+          ctx.closePath();
+          const rg = Math.max(...gola.map(q => Math.hypot(q[0] - cen[0], q[1] - cen[1])));
+          const gc = ctx.createRadialGradient(cen[0] - rg * 0.35, cen[1] - rg * 0.4, rg * 0.05, cen[0], cen[1], rg * 1.1);
+          gc.addColorStop(0, '#A8E4F7');
+          gc.addColorStop(0.5, '#6BBFDD');
+          gc.addColorStop(1, '#245C74');
+          ctx.fillStyle = gc;
+          ctx.fill();
+
+          // il cerchio del bordo, che sul pannello non c'era
+          ctx.beginPath();
+          ctx.moveTo(foro[0][0], foro[0][1]);
+          for (let i = 1; i < foro.length; i++) ctx.lineTo(foro[i][0], foro[i][1]);
+          ctx.closePath();
+          ctx.strokeStyle = TRATTO;
+          ctx.lineWidth = 1.1;
+          ctx.stroke();
+        }
+      }
+
       // ── quote, come su una tavola ──
       if (quote) {
         ctx.font = '500 11px "IBM Plex Mono", monospace';
@@ -422,11 +491,34 @@ export function Cassa3D({
       if (cv.hasPointerCapture(e.pointerId)) cv.releasePointerCapture(e.pointerId);
     };
 
+    // Con le frecce, e senza mouse.
+    //
+    // Un oggetto che si gira solo trascinando e' inutilizzabile per chi naviga
+    // da tastiera, e finora l'unico modo di vedere il retro della cassa era
+    // avere un puntatore. Il canvas prende il fuoco e risponde alle frecce.
+    const tasti = (e: KeyboardEvent) => {
+      const passo = e.shiftKey ? 0.35 : 0.12;
+      switch (e.key) {
+        case 'ArrowLeft': vista.current.yaw += passo; break;
+        case 'ArrowRight': vista.current.yaw -= passo; break;
+        case 'ArrowUp': vista.current.pitch = Math.min(0.9, vista.current.pitch + passo * 0.7); break;
+        case 'ArrowDown': vista.current.pitch = Math.max(-0.9, vista.current.pitch - passo * 0.7); break;
+        case 'Home': vista.current.yaw = -0.62; vista.current.pitch = 0.30; break;
+        default: return;
+      }
+      e.preventDefault();
+      // fermare l'oscillazione: chi sta guardando da una certa parte non vuole
+      // che l'oggetto gli scappi
+      vista.current.vel = 0;
+    };
+    cv.addEventListener('keydown', tasti);
+
     cv.addEventListener('pointerdown', giu);
     cv.addEventListener('pointermove', muovi);
     cv.addEventListener('pointerup', su);
     cv.addEventListener('pointercancel', su);
     return () => {
+      cv.removeEventListener('keydown', tasti);
       cv.removeEventListener('pointerdown', giu);
       cv.removeEventListener('pointermove', muovi);
       cv.removeEventListener('pointerup', su);
@@ -439,7 +531,12 @@ export function Cassa3D({
       ref={ref}
       className={`w-full block touch-none ${trascina ? 'cursor-grabbing' : 'cursor-grab'} ${className}`}
       style={{ height: altezzaPx }}
-      aria-label={`Vista tridimensionale della cassa: ${Math.round(widthMm)} per ${Math.round(heightMm)} per ${Math.round(depthMm)} millimetri. Trascina per ruotarla.`}
+      tabIndex={0}
+      aria-label={
+        `Vista tridimensionale della cassa: ${Math.round(widthMm)} per ${Math.round(heightMm)} per `
+        + `${Math.round(depthMm)} millimetri, spessore ${wallMm} millimetri. `
+        + 'Trascina o usa le frecce per ruotarla; Home rimette la vista di tre quarti.'
+      }
       role="img"
     />
   );

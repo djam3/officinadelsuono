@@ -9,6 +9,7 @@ const GRAPHITE = '#8EA8C2';
 const PAPER = '#DCE9F5';
 /** il caldo e' riservato agli avvisi e ai limiti: non e' un colore di serie */
 const SEGNALE = '#F0B94A';
+const INK = '#0B1826';
 
 export type FieldStatus = 'ok' | 'error' | 'unknown';
 
@@ -353,13 +354,28 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
       })}
       {/* etichetta Y */}
       {yLabel && <text x={padL - 30} y={padT + 6} fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={GRAPHITE} transform={`rotate(-90 ${padL - 30} ${H / 2})`} textAnchor="middle">{yLabel}{yUnit ? ` (${yUnit})` : ''}</text>}
-      {/* legenda */}
+      {/* Legenda, con il suo fondo.
+          Senza, le scritte finivano sopra le curve e non si leggeva ne' l'una
+          ne' l'altra cosa: un rettangolo del colore della pagina, appena
+          opaco, le separa senza aggiungere un riquadro in piu' al disegno. */}
       {series.length > 1 && (
         <g>
+          {(() => {
+            // larghezza dal nome piu' lungo: con un valore fisso le etichette
+            // piu' lunghe uscivano dal riquadro
+            const larg = Math.max(...series.map(x => x.name.length)) * 5.4 + 26;
+            return (
+              <rect
+                x={W - padR - larg - 4} y={padT - 4}
+                width={larg} height={series.length * 13 + 8}
+                fill={INK} fillOpacity="0.85" stroke={PAPER} strokeOpacity="0.10"
+              />
+            );
+          })()}
           {series.map((s, i) => (
-            <g key={i} transform={`translate(${W - padR - 110}, ${padT + 4 + i * 13})`}>
+            <g key={i} transform={`translate(${W - padR - Math.max(...series.map(x => x.name.length)) * 5.4 - 18}, ${padT + 4 + i * 13})`}>
               <rect width="10" height="3" y="3" fill={s.color} />
-              <text x="14" y="7" fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={GRAPHITE}>{s.name}</text>
+              <text x="14" y="7" fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={PAPER} fillOpacity="0.85">{s.name}</text>
             </g>
           ))}
         </g>
@@ -418,8 +434,15 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
 }
 
 /**
- * Colori delle curve, in ordine di importanza. Il primo e' l'accento, poi le
- * linee tecniche; il caldo sta in fondo perche' nei grafici marca i limiti
- * (Xmax, soglie) e deve restare distinguibile da tutto il resto.
+ * Colori delle curve.
+ *
+ * Devono distinguersi FRA LORO, che è un requisito diverso dall'andare
+ * d'accordo col tema. Al secondo posto c'era il colore delle quote, che su
+ * questa palette è un altro azzurro: nei grafici a tre serie due curve su tre
+ * risultavano quasi uguali, e capire quale fosse quale richiedeva di andare a
+ * leggere la legenda ogni volta. Ora le tinte cambiano TONO, non solo
+ * luminosità: azzurro, terra, viola, verde.
+ *
+ * L'ultimo, l'ambra, resta riservato alle soglie e ai limiti.
  */
-export const PLOT_COLORS = [ACCENT, BLUEPRINT, '#9B8FD6', '#6FBF8F', PAPER, SEGNALE];
+export const PLOT_COLORS = [ACCENT, '#C9A063', '#A78BE0', '#5FC08C', PAPER, SEGNALE];
