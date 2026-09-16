@@ -94,14 +94,6 @@ export function TolleranzaSection({ ts, design, tipo, cedevolezzaPct, motorePct,
         />
       </div>
 
-      <p className="text-[11px] text-graphite mt-3 leading-relaxed">
-        Questi due numeri stanno sulla scheda del driver quando il costruttore li dichiara: se ci sono, usa
-        quelli. I valori proposti qui sono solo un punto di partenza, non una misura, e il calcolatore non
-        ha modo di sapere quanto vale davvero per il tuo modello. Le due tolleranze sono separate perché
-        sono due cause fisiche indipendenti — la sospensione e il magnete — e fanno cose diverse: la prima
-        muove Vas, Fs e i Q tutti insieme, la seconda tocca il solo Qes, e col quadrato.
-      </p>
-
       {!banda && (
         <p className="text-sm text-graphite italic mt-4">
           {vbL <= 0
@@ -121,24 +113,28 @@ export function TolleranzaSection({ ts, design, tipo, cedevolezzaPct, motorePct,
             />
           </div>
 
+          {/* Su un telefono sei colonne non ci stanno. Invece di lasciarle
+              scorrere di lato - dove nessuno le cerca - l'unita' di misura sale
+              nell'intestazione e il Qtc, che e' comunque il Qts moltiplicato
+              per il carico della cassa, compare solo da tablet in su. */}
           <div className="overflow-x-auto mt-5">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13px] sm:text-sm">
               <thead>
-                <tr className="text-[11px] uppercase tracking-wider text-graphite-dim">
-                  <th className="text-left font-normal py-2 pr-4">Esemplare</th>
-                  <th className="text-right font-normal py-2 px-3">Fs</th>
-                  <th className="text-right font-normal py-2 px-3">Qts</th>
+                <tr className="text-[10px] sm:text-[11px] uppercase tracking-wider text-graphite-dim">
+                  <th className="text-left font-normal py-2 pr-3">Esemplare</th>
+                  <th className="text-right font-normal py-2 px-1.5 sm:px-2">Fs<span className="text-graphite-dim/70">&nbsp;Hz</span></th>
+                  <th className="text-right font-normal py-2 px-1.5 sm:px-2">Qts</th>
                   {banda.varianti[0].qtcEff !== undefined && (
-                    <th className="text-right font-normal py-2 px-3">Qtc</th>
+                    <th className="hidden sm:table-cell text-right font-normal py-2 px-1.5 sm:px-2">Qtc</th>
                   )}
-                  <th className="text-right font-normal py-2 px-3">F3</th>
-                  <th className="text-right font-normal py-2 pl-3">Gobba</th>
+                  <th className="text-right font-normal py-2 px-1.5 sm:px-2">F3<span className="text-graphite-dim/70">&nbsp;Hz</span></th>
+                  <th className="text-right font-normal py-2 pl-2">Gobba<span className="hidden sm:inline text-graphite-dim/70"> dB</span></th>
                 </tr>
               </thead>
               <tbody>
                 {banda.varianti.map(v => (
                   <tr key={v.nome} className="border-t border-paper/10">
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-3">
                       <span className="inline-flex items-center gap-2">
                         <span
                           aria-hidden
@@ -147,16 +143,16 @@ export function TolleranzaSection({ ts, design, tipo, cedevolezzaPct, motorePct,
                         />
                         <span className="text-paper">{v.nome}</span>
                       </span>
-                      <span className="block text-[11px] text-graphite-dim">{v.nota}</span>
+                      <span className="block text-[11px] text-graphite-dim leading-snug">{v.nota}</span>
                     </td>
-                    <td className="text-right py-2 px-3 font-mono">{v.fsHz.toFixed(1)} Hz</td>
-                    <td className="text-right py-2 px-3 font-mono">{v.qts.toFixed(3)}</td>
+                    <td className="text-right py-2 px-1.5 sm:px-2 font-mono">{v.fsHz.toFixed(1)}</td>
+                    <td className="text-right py-2 px-1.5 sm:px-2 font-mono">{v.qts.toFixed(3)}</td>
                     {v.qtcEff !== undefined && (
-                      <td className="text-right py-2 px-3 font-mono">{v.qtcEff.toFixed(3)}</td>
+                      <td className="hidden sm:table-cell text-right py-2 px-1.5 sm:px-2 font-mono">{v.qtcEff.toFixed(3)}</td>
                     )}
-                    <td className="text-right py-2 px-3 font-mono">{v.f3Hz.toFixed(1)} Hz</td>
-                    <td className="text-right py-2 pl-3 font-mono">
-                      {v.piccoDb < 0.05 ? '—' : `+${v.piccoDb.toFixed(2)} dB`}
+                    <td className="text-right py-2 px-1.5 sm:px-2 font-mono">{v.f3Hz.toFixed(1)}</td>
+                    <td className="text-right py-2 pl-2 font-mono">
+                      {v.piccoDb < 0.05 ? '—' : `+${v.piccoDb.toFixed(2)}`}
                     </td>
                   </tr>
                 ))}
@@ -180,6 +176,13 @@ export function TolleranzaSection({ ts, design, tipo, cedevolezzaPct, motorePct,
             </span>
           </div>
           <p className="text-graphite leading-relaxed text-[15px] mt-3 max-w-3xl">{banda.commento}</p>
+      <p className="text-[11px] text-graphite mt-3 leading-relaxed">
+        Questi due numeri stanno sulla scheda del driver quando il costruttore li dichiara: se ci sono, usa
+        quelli. I valori proposti qui sono solo un punto di partenza, non una misura, e il calcolatore non
+        ha modo di sapere quanto vale davvero per il tuo modello. Le due tolleranze sono separate perché
+        sono due cause fisiche indipendenti — la sospensione e il magnete — e fanno cose diverse: la prima
+        muove Vas, Fs e i Q tutti insieme, la seconda tocca il solo Qes, e col quadrato.
+      </p>
         </>
       )}
     </Section>

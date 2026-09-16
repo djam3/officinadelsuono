@@ -337,10 +337,32 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
   yMin?: number; yMax?: number; decimals?: number;
 }) {
   const svgRef = React.useRef<SVGSVGElement>(null);
+  const contRef = React.useRef<HTMLDivElement>(null);
   const [cursorF, setCursorF] = React.useState<number | null>(null);
   const [pinned, setPinned] = React.useState(false);
 
-  const W = 560, H = height, padL = 44, padR = 12, padT = 12, padB = 28;
+  // Il disegno si misura in unita' di viewBox, e il viewBox viene scalato fino
+  // a riempire la colonna: se le unita' non corrispondono ai pixel veri, tutte
+  // le scritte vengono scalate con lui. Con una larghezza fissa di 560 su un
+  // telefono da 375 il fattore e' 0,55 e i 9 px delle etichette diventano 5:
+  // gli assi c'erano ma non si leggevano.
+  //
+  // Misurando la colonna e usando QUELLA come larghezza del viewBox il fattore
+  // torna 1 a qualunque dimensione: il grafico e' alto esattamente i pixel
+  // chiesti e i 9 px sono 9 px, sul telefono come sul portatile.
+  const [larghezza, setLarghezza] = React.useState(560);
+  React.useLayoutEffect(() => {
+    const el = contRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(voci => {
+      const w = Math.round(voci[0].contentRect.width);
+      if (w > 0) setLarghezza(Math.max(260, Math.min(900, w)));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const W = larghezza, H = height, padL = 44, padR = 12, padT = 12, padB = 28;
   const allPts = series.flatMap(s => s.points).filter(p => isFinite(p.v));
   if (allPts.length === 0) return <div className="text-xs text-graphite-dim italic">—</div>;
 
@@ -380,9 +402,11 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
       }
     }
   }
-  // quando sono tante, l'etichetta resta alle sole decadi: la riga serve
-  // comunque a leggere la posizione, il numero sotto no
-  const etichettaOgniTacca = xTicks.length <= 12;
+  // quando non ci starebbero, l'etichetta resta alle sole decadi: la riga
+  // serve comunque a leggere la posizione, il numero sotto no. Quanto ci sta
+  // dipende dalla larghezza vera, non da un numero deciso a priori: 34 px e'
+  // il passo minimo perche' due numeri non si tocchino a 9 px di corpo.
+  const etichettaOgniTacca = xTicks.length <= Math.floor((W - padL - padR) / 34);
   const fmtHz = (f: number) => (f >= 1000 ? `${f / 1000}k` : String(Math.round(f * 10) / 10));
   // tick Y
   const yticks = 4;
@@ -419,6 +443,44 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
     }
   };
 
+  // ── dove mettere la legenda ───────────────────────────────────────────────
+  //
+  // In alto a destra, sempre, era la scelta comoda: su una risposta in
+  // frequenza e' esattamente dove passa la banda passante, e il riquadro
+  // copriva la parte piatta della curva - cioe' l'unica zona in cui si
+  // guardava se fosse davvero piatta.
+  //
+  // Non serve niente di sofisticato: si contano i punti delle curve che
+  // cadrebbero dentro il riquadro in ciascuno dei quattro angoli e si sceglie
+  // quello piu' vuoto. A parita', vince l'alto a destra, che resta la
+  // posizione attesa.
+  const legenda = (() => {
+    const w = Math.max(...series.map(x => x.name.length)) * 5.4 + 26;
+    const h = series.length * 13 + 8;
+    const m = 4;
+    const angoli = [
+      { x: W - padR - w - m, y: padT - m + 4 },         // alto destra
+      { x: padL + m, y: padT - m + 4 },                  // alto sinistra
+      { x: W - padR - w - m, y: H - padB - h - m },      // basso destra
+      { x: padL + m, y: H - padB - h - m },              // basso sinistra
+    ];
+    let scelto = angoli[0];
+    let minimo = Infinity;
+    for (const a of angoli) {
+      let dentro = 0;
+      for (const s of series) {
+        for (const p of s.points) {
+          if (!isFinite(p.v)) continue;
+          const x = xOf(p.f), y = yOf(p.v);
+          if (x >= a.x - 3 && x <= a.x + w + 3 && y >= a.y - 3 && y <= a.y + h + 3) dentro++;
+        }
+      }
+      if (dentro < minimo) { minimo = dentro; scelto = a; }
+      if (dentro === 0) break;
+    }
+    return { ...scelto, w, h };
+  })();
+
   // le linee di riferimento (2 soli punti) non entrano nella lettura
   const readable = series.filter(s => s.points.length > 2);
   const readout = cursorF !== null
@@ -427,7 +489,7 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
   const cursorHz = readout.length ? readout[0].point.f : cursorF;
 
   return (
-    <div>
+    <div ref={contRef}>
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${H}`}
@@ -475,20 +537,13 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
           opaco, le separa senza aggiungere un riquadro in piu' al disegno. */}
       {series.length > 1 && (
         <g>
-          {(() => {
-            // larghezza dal nome piu' lungo: con un valore fisso le etichette
-            // piu' lunghe uscivano dal riquadro
-            const larg = Math.max(...series.map(x => x.name.length)) * 5.4 + 26;
-            return (
-              <rect
-                x={W - padR - larg - 4} y={padT - 4}
-                width={larg} height={series.length * 13 + 8}
-                fill={INK} fillOpacity="0.85" stroke={PAPER} strokeOpacity="0.10"
-              />
-            );
-          })()}
+          <rect
+            x={legenda.x} y={legenda.y}
+            width={legenda.w} height={legenda.h}
+            fill={INK} fillOpacity="0.85" stroke={PAPER} strokeOpacity="0.10"
+          />
           {series.map((s, i) => (
-            <g key={i} transform={`translate(${W - padR - Math.max(...series.map(x => x.name.length)) * 5.4 - 18}, ${padT + 4 + i * 13})`}>
+            <g key={i} transform={`translate(${legenda.x + 6}, ${legenda.y + 8 + i * 13})`}>
               <rect width="10" height="3" y="3" fill={s.color} />
               <text x="14" y="7" fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={PAPER} fillOpacity="0.85">{s.name}</text>
             </g>
