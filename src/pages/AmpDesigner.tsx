@@ -196,7 +196,7 @@ export function AmpDesigner() {
           </div>
         </div>
 
-        <div className="mt-6 space-y-5">
+        <div className="mt-6 space-y-5" role="tabpanel" id={`pannello-${tab}`} aria-labelledby={`scheda-${tab}`}>
           {tab === 'ampli' && (
             <div className="grid lg:grid-cols-2 gap-5">
               <Section title="Amplificatore">

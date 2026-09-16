@@ -109,7 +109,7 @@ export function DriverTab({
     const { status, message } = statusOf(key);
     return (
       <NumField
-        label={label + (isDerived(key) ? ' ·calcolato' : '')}
+        label={label + (isDerived(key) ? ' · calcolato' : '')}
         unit={unit}
         value={shown(key)}
         onChange={set(key)}

@@ -326,7 +326,7 @@ export function CabinetDesigner() {
             </p>
           )}
 
-          <div className="p-5 md:p-6">
+          <div className="p-5 md:p-6" role="tabpanel" id={`pannello-${tab}`} aria-labelledby={`scheda-${tab}`}>
             {tab === 'driver' && (
               <DriverTab
                 input={tsInput}

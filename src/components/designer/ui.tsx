@@ -44,6 +44,22 @@ export function InfoLink({ id }: { id?: string }) {
   );
 }
 
+/**
+ * Campo numerico.
+ *
+ * L'etichetta e il campo sono legati per ID, non per annidamento.
+ *
+ * Prima il campo stava DENTRO la `<label>` insieme alla ⓘ e al suggerimento,
+ * e il legame implicito funzionava — ma il nome che ne usciva era tutto quello
+ * che c'era dentro: «Qts Che cos'è Qts: apre la scheda in una nuova pagina
+ * 0.2–0.5 per un woofer». Chi usa un lettore di schermo si sentiva leggere
+ * mezza pagina a ogni campo. E un collegamento dentro un'etichetta è
+ * ambiguo anche col mouse: il clic vale per il collegamento o per il campo?
+ *
+ * Ora l'etichetta e' la sola etichetta, la ⓘ le sta accanto e non dentro, e il
+ * suggerimento arriva come DESCRIZIONE — che i lettori annunciano dopo il
+ * nome, e solo se chi ascolta vuole.
+ */
 export function NumField({
   label, value, onChange, unit, step = 'any', min, placeholder, hint, status, statusMessage, infoId,
 }: {
@@ -54,37 +70,53 @@ export function NumField({
   infoId?: string;
 }) {
   const style = STATUS_STYLE[status ?? 'unknown'];
+  const id = React.useId();
+  const idAiuto = `${id}-aiuto`;
+  const idErrore = `${id}-errore`;
+  const descritto = [
+    hint ? idAiuto : null,
+    status === 'error' && statusMessage ? idErrore : null,
+  ].filter(Boolean).join(' ') || undefined;
+
   return (
-    <label className="block">
-      <span className="text-xs text-graphite font-medium flex items-center justify-between gap-2">
+    <div className="block">
+      <div className="text-xs text-graphite font-medium flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 min-w-0">
           {status && (
             <span
               title={statusMessage}
               className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`}
+              role="img"
               aria-label={status === 'ok' ? 'parametro coerente' : status === 'error' ? 'parametro incongruente' : 'non verificabile'}
             />
           )}
-          <span className="truncate">{label}</span>
+          <label htmlFor={id} className="truncate cursor-pointer">{label}</label>
           <InfoLink id={infoId} />
         </span>
-        {unit && <span className="text-graphite-dim shrink-0">{unit}</span>}
-      </span>
+        {unit && <span className="text-graphite-dim shrink-0" aria-hidden="true">{unit}</span>}
+      </div>
       <input
+        id={id}
         type="number"
+        inputMode="decimal"
         value={value}
         step={step}
         min={min}
         placeholder={placeholder}
         title={statusMessage}
+        aria-describedby={descritto}
+        aria-invalid={status === 'error' || undefined}
+        // l'unita' di misura sta scritta a destra dell'etichetta: a voce non
+        // si vedrebbe, e senza si sbaglia scala
+        aria-label={unit ? `${label} in ${unit}` : undefined}
         onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-        className={`mt-1 w-full bg-ink border rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#7FD8F5] transition-colors ${status ? style.border : 'border-paper/10'}`}
+        className={`mt-1 w-full bg-ink border rounded-none px-3 py-2 text-sm focus:border-[#7FD8F5] transition-colors ${status ? style.border : 'border-paper/10'}`}
       />
       {status === 'error' && statusMessage && (
-        <span className="text-[10px] text-red-400/90 mt-1 block leading-relaxed">{statusMessage}</span>
+        <span id={idErrore} className="text-[10px] text-red-400/90 mt-1 block leading-relaxed">{statusMessage}</span>
       )}
-      {hint && <span className="text-[10px] text-graphite-dim mt-0.5 block">{hint}</span>}
-    </label>
+      {hint && <span id={idAiuto} className="text-[10px] text-graphite-dim mt-0.5 block">{hint}</span>}
+    </div>
   );
 }
 
@@ -95,20 +127,22 @@ export function SelectField({
   options: { value: string; label: string }[];
   infoId?: string;
 }) {
+  const id = React.useId();
   return (
-    <label className="block">
-      <span className="text-xs text-graphite font-medium flex items-center gap-1.5">
-        {label}
+    <div className="block">
+      <div className="text-xs text-graphite font-medium flex items-center gap-1.5">
+        <label htmlFor={id} className="cursor-pointer">{label}</label>
         <InfoLink id={infoId} />
-      </span>
+      </div>
       <select
+        id={id}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="mt-1 w-full bg-ink border border-paper/10 rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#7FD8F5] transition-colors"
+        className="mt-1 w-full bg-ink border border-paper/10 rounded-none px-3 py-2 text-sm focus:border-[#7FD8F5] transition-colors"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
-    </label>
+    </div>
   );
 }
 
@@ -177,28 +211,73 @@ export function ActionButton({ children, onClick, variant = 'ghost', disabled, t
   );
 }
 
+/**
+ * La barra delle schede.
+ *
+ * Erano pulsanti che si comportavano da schede senza dirlo: chi usa un lettore
+ * di schermo sentiva «pulsante Driver, pulsante Cassa…» senza sapere che sono
+ * alternative fra loro, quante sono, ne' quale e' attiva. E con la tastiera si
+ * passava da una all'altra con il tabulatore, mentre la convenzione per le
+ * schede sono le FRECCE — il tabulatore deve saltare tutto il gruppo e portare
+ * al contenuto.
+ *
+ * Qui sono dichiarate per quello che sono, e le frecce funzionano.
+ */
 export function TabBar<T extends string>({ tabs, active, onChange }: {
   tabs: { id: T; label: string; icon?: React.ReactNode }[];
   active: T;
   onChange: (id: T) => void;
 }) {
+  const rif = React.useRef<Record<string, HTMLButtonElement | null>>({});
+
+  const tasti = (e: React.KeyboardEvent) => {
+    const i = tabs.findIndex(t => t.id === active);
+    let j = i;
+    if (e.key === 'ArrowRight') j = (i + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') j = (i - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') j = 0;
+    else if (e.key === 'End') j = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    onChange(tabs[j].id);
+    // il fuoco segue la scheda: altrimenti si continuerebbe a comandare da
+    // una scheda che non e' piu' quella aperta
+    rif.current[tabs[j].id]?.focus();
+  };
+
   return (
-    <div className="flex gap-1 overflow-x-auto border-b border-paper/10 -mx-1 px-1">
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          type="button"
-          onClick={() => onChange(tab.id)}
-          className={`shrink-0 px-4 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
-            active === tab.id
-              ? 'text-marker border-marker'
-              : 'text-graphite border-transparent hover:text-paper/90'
-          }`}
-        >
-          {tab.icon}
-          {tab.label}
-        </button>
-      ))}
+    <div
+      role="tablist"
+      aria-label="Fasi del progetto"
+      onKeyDown={tasti}
+      className="flex gap-1 overflow-x-auto border-b border-paper/10 -mx-1 px-1"
+    >
+      {tabs.map(tab => {
+        const attiva = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            ref={el => { rif.current[tab.id] = el; }}
+            type="button"
+            role="tab"
+            id={`scheda-${tab.id}`}
+            aria-selected={attiva}
+            aria-controls={`pannello-${tab.id}`}
+            // solo la scheda attiva sta nel giro del tabulatore: dentro un
+            // gruppo di schede ci si muove con le frecce
+            tabIndex={attiva ? 0 : -1}
+            onClick={() => onChange(tab.id)}
+            className={`shrink-0 px-4 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 flex items-center gap-2 ${
+              attiva
+                ? 'text-marker border-marker'
+                : 'text-graphite border-transparent hover:text-paper/90'
+            }`}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
