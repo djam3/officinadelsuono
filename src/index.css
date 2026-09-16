@@ -4,39 +4,52 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    OFFICINA DEL SUONO — tema "tavola di disegno"
    ───────────────────────────────────────────────────────────────────────────
-   Il sito è un banco da lavoro: fondo grafite caldo, griglia millimetrata,
-   linee sottili e precise, quote invece di ornamenti. Niente glow, niente
-   vetri smerigliati, niente gradienti animati: un disegno tecnico non brilla,
-   misura.
+   Il sito è un banco da lavoro: griglia millimetrata, linee sottili e precise,
+   quote invece di ornamenti. Niente glow, niente vetri smerigliati, niente
+   gradienti animati: un disegno tecnico non brilla, misura.
 
-   Tre inchiostri e un pennarello:
-     paper      il tratto principale, bianco carta
+   PERCHÉ IL REGISTRO È FREDDO. La prima versione era calda — fondo sepia e
+   accento arancione — e diceva "falegnameria". Ma quello che si fa qui è
+   misura e geometria: il registro giusto è quello di uno strumento, non del
+   banco da lavoro. Il fondo ha ora una dominante blu, come una tavola sotto
+   luce fredda, e l'accento è il verde-azzurro di una traccia su schermo.
+
+   E UNA RAGIONE FUNZIONALE, NON SOLO DI GUSTO. Con l'accento arancione, gli
+   avvisi ambra gli finivano addosso: due caldi vicini che si contendevano lo
+   sguardo, e l'avviso perdeva. Ora il caldo nell'interfaccia è UNO SOLO ed è
+   riservato agli avvisi, che così si vedono davvero. Il legno resta caldo nei
+   disegni, perché lì è materiale e non interfaccia.
+
+   Tre inchiostri e un segno:
+     paper      il tratto principale, bianco carta sotto luce fredda
      graphite   il tratto secondario, mina di matita
      blueprint  le linee tecniche — quote, assi, riferimenti
-     marker     l'accento, il segno che il falegname fa dove va tagliato
+     marker     l'accento: il verde-azzurro degli strumenti di misura
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @theme {
   /* piani del banco */
-  --color-ink: #0D0C0A;
-  --color-ink-2: #141210;
-  --color-ink-3: #1C1916;
-  --color-ink-4: #272320;
+  --color-ink: #0A0D11;
+  --color-ink-2: #11161D;
+  --color-ink-3: #19212A;
+  --color-ink-4: #232D39;
 
   /* inchiostri */
-  --color-paper: #EDE7DA;
-  --color-graphite: #948E82;
-  --color-graphite-dim: #5E5951;
-  --color-blueprint: #6FA8C7;
-  --color-mdf: #B98A52;
-  --color-marker: #FF5F00;
-  --color-marker-dim: #B94600;
+  --color-paper: #E4EAF0;
+  --color-graphite: #8895A5;
+  --color-graphite-dim: #5A6675;
+  --color-blueprint: #6E90B4;
+  --color-mdf: #C08A4E;
+  --color-marker: #35CFC0;
+  --color-marker-dim: #1E8E85;
+  /* l'unico caldo dell'interfaccia, e vale solo per gli avvisi */
+  --color-segnale: #E8A83C;
 
   /* alias di compatibilità con i componenti già scritti */
-  --color-brand-dark: #0D0C0A;
-  --color-brand-orange: #FF5F00;
-  --color-brand-orange-light: #FF8A3D;
-  --color-brand-amber: #B98A52;
+  --color-brand-dark: #0A0D11;
+  --color-brand-orange: #35CFC0;
+  --color-brand-orange-light: #5FE3D6;
+  --color-brand-amber: #C08A4E;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Archivo", "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -53,8 +66,8 @@ html {
 }
 
 body {
-  background-color: #0D0C0A;
-  color: #EDE7DA;
+  background-color: #0A0D11;
+  color: #E4EAF0;
   margin: 0;
   padding: 0;
   overflow-x: hidden;
@@ -62,7 +75,7 @@ body {
 }
 
 #root {
-  background-color: #0D0C0A;
+  background-color: #0A0D11;
   overflow-x: hidden;
 }
 
@@ -98,10 +111,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
    percepibile, quello grosso ogni cinque quadretti. */
 .blueprint-grid {
   background-image:
-    linear-gradient(to right, rgba(237, 231, 218, 0.028) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(237, 231, 218, 0.028) 1px, transparent 1px),
-    linear-gradient(to right, rgba(237, 231, 218, 0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(237, 231, 218, 0.055) 1px, transparent 1px);
+    linear-gradient(to right, rgba(228, 234, 240, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(228, 234, 240, 0.028) 1px, transparent 1px),
+    linear-gradient(to right, rgba(228, 234, 240, 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(228, 234, 240, 0.055) 1px, transparent 1px);
   background-size: 16px 16px, 16px 16px, 80px 80px, 80px 80px;
   background-position: -1px -1px;
 }
@@ -118,7 +131,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 .tavola {
   position: relative;
   background: rgba(20, 18, 16, 0.72);
-  border: 1px solid rgba(237, 231, 218, 0.10);
+  border: 1px solid rgba(228, 234, 240, 0.10);
 }
 
 .tavola::before,
@@ -128,17 +141,17 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   width: 9px;
   height: 9px;
   pointer-events: none;
-  border-color: rgba(111, 168, 199, 0.55);
+  border-color: rgba(110, 144, 180, 0.55);
 }
 .tavola::before { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
 .tavola::after { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
 
 .tavola-hover:hover {
-  border-color: rgba(255, 95, 0, 0.38);
+  border-color: rgba(53, 207, 192, 0.38);
 }
 .tavola-hover:hover::before,
 .tavola-hover:hover::after {
-  border-color: rgba(255, 95, 0, 0.75);
+  border-color: rgba(53, 207, 192, 0.75);
 }
 
 /* ═══ ANNOTAZIONE ══════════════════════════════════════════════════════════
@@ -158,10 +171,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
    Divisore con le tacche, come il bordo di un righello da disegno. */
 .righello {
   height: 11px;
-  border-top: 1px solid rgba(237, 231, 218, 0.16);
+  border-top: 1px solid rgba(228, 234, 240, 0.16);
   background-image: repeating-linear-gradient(
     to right,
-    rgba(237, 231, 218, 0.16) 0 1px,
+    rgba(228, 234, 240, 0.16) 0 1px,
     transparent 1px 16px
   );
   background-size: 100% 5px;
@@ -171,10 +184,10 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 
 .righello-fitto {
   height: 14px;
-  border-top: 1px solid rgba(237, 231, 218, 0.2);
+  border-top: 1px solid rgba(228, 234, 240, 0.2);
   background-image:
-    repeating-linear-gradient(to right, rgba(237, 231, 218, 0.28) 0 1px, transparent 1px 80px),
-    repeating-linear-gradient(to right, rgba(237, 231, 218, 0.14) 0 1px, transparent 1px 16px);
+    repeating-linear-gradient(to right, rgba(228, 234, 240, 0.28) 0 1px, transparent 1px 80px),
+    repeating-linear-gradient(to right, rgba(228, 234, 240, 0.14) 0 1px, transparent 1px 16px);
   background-size: 100% 9px, 100% 5px;
   background-repeat: no-repeat;
 }
@@ -184,7 +197,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 .quota {
   position: relative;
   height: 1px;
-  background: rgba(111, 168, 199, 0.45);
+  background: rgba(110, 144, 180, 0.45);
 }
 .quota::before,
 .quota::after {
@@ -196,13 +209,13 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   border-top: 3.5px solid transparent;
   border-bottom: 3.5px solid transparent;
 }
-.quota::before { left: 0; border-right: 6px solid rgba(111, 168, 199, 0.7); }
-.quota::after { right: 0; border-left: 6px solid rgba(111, 168, 199, 0.7); }
+.quota::before { left: 0; border-right: 6px solid rgba(110, 144, 180, 0.7); }
+.quota::after { right: 0; border-left: 6px solid rgba(110, 144, 180, 0.7); }
 
 /* estensioni verticali agli estremi della quota */
 .quota-ext {
-  border-left: 1px solid rgba(111, 168, 199, 0.35);
-  border-right: 1px solid rgba(111, 168, 199, 0.35);
+  border-left: 1px solid rgba(110, 144, 180, 0.35);
+  border-right: 1px solid rgba(110, 144, 180, 0.35);
 }
 
 /* ═══ TITOLI ═══════════════════════════════════════════════════════════════ */
@@ -217,7 +230,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 /* titolo cavo, come una lettera tracciata a matita e non ancora campita */
 .titolo-tracciato {
   color: transparent;
-  -webkit-text-stroke: 1.5px rgba(237, 231, 218, 0.42);
+  -webkit-text-stroke: 1.5px rgba(228, 234, 240, 0.42);
 }
 
 /* ═══ PULSANTI ═════════════════════════════════════════════════════════════ */
@@ -228,14 +241,14 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   letter-spacing: 0.16em;
   text-transform: uppercase;
   background: var(--color-marker);
-  color: #0D0C0A;
+  color: #0A0D11;
   border: 1px solid var(--color-marker);
   padding: 0.85rem 1.6rem;
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
 }
-.btn-marker:hover { background: #FF7A2B; border-color: #FF7A2B; }
+.btn-marker:hover { background: #5FE3D6; border-color: #5FE3D6; }
 
 .btn-tratto {
   font-family: var(--font-mono);
@@ -245,7 +258,7 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   text-transform: uppercase;
   background: transparent;
   color: var(--color-paper);
-  border: 1px solid rgba(237, 231, 218, 0.22);
+  border: 1px solid rgba(228, 234, 240, 0.22);
   padding: 0.85rem 1.6rem;
   display: inline-flex;
   align-items: center;
@@ -256,16 +269,16 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 /* ═══ TEXTURE MDF ══════════════════════════════════════════════════════════
    Venatura appena accennata del pannello, per le superfici "legno". */
 .mdf {
-  background-color: #1C1916;
+  background-color: #19212A;
   background-image:
     repeating-linear-gradient(
       92deg,
-      rgba(185, 138, 82, 0.035) 0 2px,
+      rgba(192, 138, 78, 0.035) 0 2px,
       transparent 2px 7px
     ),
     repeating-linear-gradient(
       88deg,
-      rgba(185, 138, 82, 0.02) 0 1px,
+      rgba(192, 138, 78, 0.02) 0 1px,
       transparent 1px 11px
     );
 }
@@ -294,17 +307,17 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
 
 /* ─── Scrollbar ─────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #0D0C0A; }
+::-webkit-scrollbar-track { background: #0A0D11; }
 ::-webkit-scrollbar-thumb {
-  background: #272320;
-  border: 2px solid #0D0C0A;
+  background: #232D39;
+  border: 2px solid #0A0D11;
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-marker-dim); }
 
 /* ─── Selezione ─────────────────────────────────────────────────── */
 ::selection {
-  background: rgba(255, 95, 0, 0.28);
-  color: #EDE7DA;
+  background: rgba(53, 207, 192, 0.28);
+  color: #E4EAF0;
 }
 
 /* ─── Campi numerici senza frecce ───────────────────────────────── */

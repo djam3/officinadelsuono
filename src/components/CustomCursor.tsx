@@ -122,7 +122,7 @@ export function CustomCursor() {
 
   const seguiX: MotionValue<number> = menoMovimento ? x : xMolla;
   const seguiY: MotionValue<number> = menoMovimento ? y : yMolla;
-  const colore = suElementoAttivo ? '#FF5F00' : '#6FA8C7';
+  const colore = suElementoAttivo ? '#35CFC0' : '#6E90B4';
 
   return (
     <motion.div
@@ -159,7 +159,7 @@ export function CustomCursor() {
             <rect x="-6.5" y="-6.5" width="13" height="13" fill="none" opacity="0.55" />
           )}
         </g>
-        <circle cx="0" cy="0" r="1.1" fill="#FF5F00" />
+        <circle cx="0" cy="0" r="1.1" fill="#35CFC0" />
       </svg>
     </motion.div>
   );

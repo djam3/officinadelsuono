@@ -25,11 +25,11 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
       >
         <defs>
           <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#A1A1AA" stopOpacity="0.7" />
+            <stop offset="0%" stopColor="#E4EAF0" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#8895A5" stopOpacity="0.7" />
           </linearGradient>
           <linearGradient id="barGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#FB923C" />
+            <stop offset="0%" stopColor="#35CFC0" />
             <stop offset="100%" stopColor="#F27D26" />
           </linearGradient>
           <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
@@ -58,7 +58,7 @@ export function Logo({ className = "w-10 h-10" }: { className?: string }) {
           cx="50"
           cy="50"
           r="36"
-          stroke="#FFFFFF"
+          stroke="#E4EAF0"
           strokeWidth="0.5"
           strokeOpacity="0.15"
           strokeDasharray="2 3"

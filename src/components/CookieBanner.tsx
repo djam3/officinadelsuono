@@ -101,7 +101,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                 <div className="mt-6 flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={acceptAll}
-                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#FF7A2B] transition-all  text-sm uppercase tracking-wider"
+                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#5FE3D6] transition-all  text-sm uppercase tracking-wider"
                   >
                     Accetta tutti
                   </button>
@@ -211,7 +211,7 @@ export function CookieBanner({ onNavigate }: CookieBannerProps) {
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={saveCustom}
-                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#FF7A2B] transition-all  text-sm uppercase tracking-wider flex items-center justify-center gap-2"
+                    className="flex-1 px-6 py-3 bg-marker text-ink rounded-none font-bold hover:bg-[#5FE3D6] transition-all  text-sm uppercase tracking-wider flex items-center justify-center gap-2"
                   >
                     <Check className="w-4 h-4" />
                     Salva preferenze

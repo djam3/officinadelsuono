@@ -2,11 +2,13 @@
 import React from 'react';
 import { GLOSSARY_BY_ID, glossaryUrl } from '../../data/glossary';
 
-const ACCENT = '#FF5F00';
+const ACCENT = '#35CFC0';
 /** inchiostri della tavola, gli stessi definiti in index.css */
-const BLUEPRINT = '#6FA8C7';
-const GRAPHITE = '#948E82';
-const PAPER = '#EDE7DA';
+const BLUEPRINT = '#6E90B4';
+const GRAPHITE = '#8895A5';
+const PAPER = '#E4EAF0';
+/** il caldo e' riservato agli avvisi e ai limiti: non e' un colore di serie */
+const SEGNALE = '#E8A83C';
 
 export type FieldStatus = 'ok' | 'error' | 'unknown';
 
@@ -34,7 +36,7 @@ export function InfoLink({ id }: { id?: string }) {
       onClick={e => e.stopPropagation()}
       title={`${entry.symbol} — ${entry.summary}`}
       aria-label={`Che cos'è ${entry.symbol}: apre la scheda in una nuova pagina`}
-      className="shrink-0 w-4 h-4 rounded-full border border-paper/15 text-graphite hover:text-[#FF5F00] hover:border-[#FF5F00]/60 transition-colors flex items-center justify-center text-[9px] font-black leading-none"
+      className="shrink-0 w-4 h-4 rounded-full border border-paper/15 text-graphite hover:text-[#35CFC0] hover:border-[#35CFC0]/60 transition-colors flex items-center justify-center text-[9px] font-black leading-none"
     >
       i
     </a>
@@ -75,7 +77,7 @@ export function NumField({
         placeholder={placeholder}
         title={statusMessage}
         onChange={e => onChange(e.target.value === '' ? '' : Number(e.target.value))}
-        className={`mt-1 w-full bg-ink border rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#FF5F00] transition-colors ${status ? style.border : 'border-paper/10'}`}
+        className={`mt-1 w-full bg-ink border rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#35CFC0] transition-colors ${status ? style.border : 'border-paper/10'}`}
       />
       {status === 'error' && statusMessage && (
         <span className="text-[10px] text-red-400/90 mt-1 block leading-relaxed">{statusMessage}</span>
@@ -101,7 +103,7 @@ export function SelectField({
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="mt-1 w-full bg-ink border border-paper/10 rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#FF5F00] transition-colors"
+        className="mt-1 w-full bg-ink border border-paper/10 rounded-none px-3 py-2 text-sm focus:outline-none focus:border-[#35CFC0] transition-colors"
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -113,7 +115,7 @@ export function Stat({ label, value, unit, accent }: { label: string; value: str
   return (
     <div className="bg-ink/60 border border-paper/[0.06] rounded-none p-3">
       <div className="text-[10px] text-graphite uppercase tracking-wider">{label}</div>
-      <div className={`text-lg font-black ${accent ? 'text-[#FF5F00]' : 'text-white'}`}>
+      <div className={`text-lg font-black ${accent ? 'text-[#35CFC0]' : 'text-white'}`}>
         {value}{unit && <span className="text-xs font-normal text-graphite ml-1">{unit}</span>}
       </div>
     </div>
@@ -165,7 +167,7 @@ export function ActionButton({ children, onClick, variant = 'ghost', disabled, t
 }) {
   const base = 'px-3 py-1.5 rounded-none text-xs font-bold uppercase tracking-wider transition-all disabled:opacity-40 disabled:cursor-not-allowed';
   const styles = variant === 'primary'
-    ? 'bg-marker text-white hover:bg-orange-600'
+    ? 'bg-marker text-ink hover:bg-marker/85'
     : 'bg-paper/5 text-paper/90 hover:bg-paper/10 hover:text-white border border-paper/10';
   return (
     <button type="button" onClick={onClick} disabled={disabled} title={title} className={`${base} ${styles}`}>
@@ -222,7 +224,7 @@ export function CheckField({ label, checked, onChange, hint, infoId }: {
         type="checkbox"
         checked={checked}
         onChange={e => onChange(e.target.checked)}
-        className="mt-0.5 w-4 h-4 accent-[#FF5F00] cursor-pointer"
+        className="mt-0.5 w-4 h-4 accent-[#35CFC0] cursor-pointer"
       />
       <span>
         <span className="text-xs text-paper/90 group-hover:text-white transition-colors inline-flex items-center gap-1.5">
@@ -380,7 +382,7 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
                 cy={yOf(r.point.v)}
                 r="3.5"
                 fill={r.color}
-                stroke="#0D0C0A"
+                stroke="#0A0D11"
                 strokeWidth="1.5"
               />
             )
@@ -415,4 +417,9 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
   );
 }
 
-export const PLOT_COLORS = [ACCENT, BLUEPRINT, '#B98A52', '#8FBF7F', PAPER];
+/**
+ * Colori delle curve, in ordine di importanza. Il primo e' l'accento, poi le
+ * linee tecniche; il caldo sta in fondo perche' nei grafici marca i limiti
+ * (Xmax, soglie) e deve restare distinguibile da tutto il resto.
+ */
+export const PLOT_COLORS = [ACCENT, BLUEPRINT, '#9B8FD6', '#6FBF8F', PAPER, SEGNALE];

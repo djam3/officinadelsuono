@@ -11,10 +11,10 @@
 
 import { PORT_TYPES, type PortGeometry } from '../../utils/audio';
 
-const ORANGE = '#FF5F00';
-const WALL = '#52525b';    // pareti della cassa
-const DIM = '#8aa0b8';     // quote
-const LABEL = '#a1a1aa';
+const ACCENTO = '#35CFC0';
+const WALL = '#3A4654';    // pareti della cassa
+const DIM = '#6E90B4';     // quote
+const LABEL = '#8895A5';
 
 interface Props {
   geometry: PortGeometry;
@@ -73,7 +73,7 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
       return (
         <g>
           {isFlared && <circle cx={cx} cy={cy} r={r} fill="none" stroke={WALL} strokeWidth={1} strokeDasharray="3 3" />}
-          <circle cx={cx} cy={cy} r={isFlared ? r * 0.72 : r} fill={`${ORANGE}12`} stroke={ORANGE} strokeWidth={2} />
+          <circle cx={cx} cy={cy} r={isFlared ? r * 0.72 : r} fill={`${ACCENTO}12`} stroke={ACCENTO} strokeWidth={2} />
           <DimH x1={cx - (isFlared ? r * 0.72 : r)} x2={cx + (isFlared ? r * 0.72 : r)} y={boxY + boxMax + 22} label={`Ø${d} mm`} />
           {isFlared && <text x={cx} y={boxY - 8} textAnchor="middle" fontSize="8" fill={LABEL}>bocca svasata</text>}
         </g>
@@ -91,9 +91,9 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
           <rect x={ox - 9} y={oy - lb} width={9} height={lb + 9} fill="url(#woodHatch)" />
           <rect x={ox} y={oy} width={la} height={9} fill="url(#woodHatch)" />
           {/* luce del condotto */}
-          <path d={`M${ox},${oy} L${ox + la},${oy} L${ox},${oy - lb} Z`} fill={`${ORANGE}12`} stroke={ORANGE} strokeWidth={1} />
+          <path d={`M${ox},${oy} L${ox + la},${oy} L${ox},${oy - lb} Z`} fill={`${ACCENTO}12`} stroke={ACCENTO} strokeWidth={1} />
           {/* il pannello diagonale: l'unico pezzo da costruire */}
-          <line x1={ox + la} y1={oy} x2={ox} y2={oy - lb} stroke={ORANGE} strokeWidth={3} />
+          <line x1={ox + la} y1={oy} x2={ox} y2={oy - lb} stroke={ACCENTO} strokeWidth={3} />
           <DimH x1={ox} x2={ox + la} y={oy + 28} label={`${Math.round(a)} mm`} />
           <DimV y1={oy - lb} y2={oy} x={ox - 16} label={`${Math.round(b)}`} />
         </g>
@@ -112,12 +112,12 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
         {shared >= 1 && <rect x={ox} y={oy + lh} width={lw} height={9} fill="url(#woodHatch)" />}
         {shared >= 2 && <rect x={ox - 9} y={oy} width={9} height={lh + 9} fill="url(#woodHatch)" />}
         {/* luce */}
-        <rect x={ox} y={oy} width={lw} height={lh} fill={`${ORANGE}12`} stroke={ORANGE} strokeWidth={1} />
+        <rect x={ox} y={oy} width={lw} height={lh} fill={`${ACCENTO}12`} stroke={ACCENTO} strokeWidth={1} />
         {/* pannelli da costruire, in tratto spesso */}
-        <line x1={ox} y1={oy} x2={ox + lw} y2={oy} stroke={ORANGE} strokeWidth={3} />
-        {shared < 1 && <line x1={ox} y1={oy + lh} x2={ox + lw} y2={oy + lh} stroke={ORANGE} strokeWidth={3} />}
-        {shared < 2 && <line x1={ox} y1={oy} x2={ox} y2={oy + lh} stroke={ORANGE} strokeWidth={3} />}
-        <line x1={ox + lw} y1={oy} x2={ox + lw} y2={oy + lh} stroke={ORANGE} strokeWidth={3} />
+        <line x1={ox} y1={oy} x2={ox + lw} y2={oy} stroke={ACCENTO} strokeWidth={3} />
+        {shared < 1 && <line x1={ox} y1={oy + lh} x2={ox + lw} y2={oy + lh} stroke={ACCENTO} strokeWidth={3} />}
+        {shared < 2 && <line x1={ox} y1={oy} x2={ox} y2={oy + lh} stroke={ACCENTO} strokeWidth={3} />}
+        <line x1={ox + lw} y1={oy} x2={ox + lw} y2={oy + lh} stroke={ACCENTO} strokeWidth={3} />
         <DimH x1={ox} x2={ox + lw} y={oy + lh + 30} label={`${Math.round(w)} mm`} />
         <DimV y1={oy} y2={oy + lh} x={ox - 14} label={`${Math.round(h)}`} />
       </g>
@@ -157,29 +157,29 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
           {/* il condotto sporge all'esterno quando le bocche sono libere */}
           {freeEnds && (
             <>
-              <line x1={baffleX - 24} y1={y0} x2={x0} y2={y0} stroke={ORANGE} strokeWidth={2} />
-              <line x1={baffleX - 24} y1={y1} x2={x0} y2={y1} stroke={ORANGE} strokeWidth={2} />
+              <line x1={baffleX - 24} y1={y0} x2={x0} y2={y0} stroke={ACCENTO} strokeWidth={2} />
+              <line x1={baffleX - 24} y1={y1} x2={x0} y2={y1} stroke={ACCENTO} strokeWidth={2} />
             </>
           )}
           {/* pareti del condotto */}
-          <line x1={x0} y1={y0} x2={x0 + len} y2={y0} stroke={ORANGE} strokeWidth={2} />
-          <line x1={x0} y1={y1} x2={x0 + len} y2={y1} stroke={ORANGE} strokeWidth={2} />
-          <rect x={x0} y={y0} width={len} height={ductH} fill={`${ORANGE}0e`} />
+          <line x1={x0} y1={y0} x2={x0 + len} y2={y0} stroke={ACCENTO} strokeWidth={2} />
+          <line x1={x0} y1={y1} x2={x0 + len} y2={y1} stroke={ACCENTO} strokeWidth={2} />
+          <rect x={x0} y={y0} width={len} height={ductH} fill={`${ACCENTO}0e`} />
 
           {/* trattamento delle bocche */}
           {flared && (
             <>
-              <path d={`M${x0},${y0} q-16,0 -22,-11`} fill="none" stroke={ORANGE} strokeWidth={2} />
-              <path d={`M${x0},${y1} q-16,0 -22,11`} fill="none" stroke={ORANGE} strokeWidth={2} />
-              <path d={`M${x0 + len},${y0} q16,0 22,-11`} fill="none" stroke={ORANGE} strokeWidth={2} />
-              <path d={`M${x0 + len},${y1} q16,0 22,11`} fill="none" stroke={ORANGE} strokeWidth={2} />
+              <path d={`M${x0},${y0} q-16,0 -22,-11`} fill="none" stroke={ACCENTO} strokeWidth={2} />
+              <path d={`M${x0},${y1} q-16,0 -22,11`} fill="none" stroke={ACCENTO} strokeWidth={2} />
+              <path d={`M${x0 + len},${y0} q16,0 22,-11`} fill="none" stroke={ACCENTO} strokeWidth={2} />
+              <path d={`M${x0 + len},${y1} q16,0 22,11`} fill="none" stroke={ACCENTO} strokeWidth={2} />
             </>
           )}
           {(geometry.type === 'circular-flanged' || doubleFlange) && (
-            <line x1={x0} y1={y0 - 7} x2={x0} y2={y1 + 7} stroke={ORANGE} strokeWidth={3} />
+            <line x1={x0} y1={y0 - 7} x2={x0} y2={y1 + 7} stroke={ACCENTO} strokeWidth={3} />
           )}
           {doubleFlange && (
-            <line x1={x0 + len} y1={y0 - 7} x2={x0 + len} y2={y1 + 7} stroke={ORANGE} strokeWidth={3} />
+            <line x1={x0 + len} y1={y0 - 7} x2={x0 + len} y2={y1 + 7} stroke={ACCENTO} strokeWidth={3} />
           )}
 
           <DimH x1={x0} x2={x0 + len} y={y1 + 34} label={`${Math.round(lengthMm)} mm`} />
@@ -213,11 +213,11 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
         {/* asse del condotto */}
         <path
           d={`M${x0},${yBottom} L${xTurn},${yBottom} L${xTurn},${yTop}${segs.length > 2 ? ` L${bx + boxW - 24},${yTop}` : ''}`}
-          fill="none" stroke={ORANGE} strokeWidth={ductH * 0.6} strokeLinejoin="round" strokeLinecap="butt" opacity={0.28}
+          fill="none" stroke={ACCENTO} strokeWidth={ductH * 0.6} strokeLinejoin="round" strokeLinecap="butt" opacity={0.28}
         />
         <path
           d={`M${x0},${yBottom} L${xTurn},${yBottom} L${xTurn},${yTop}${segs.length > 2 ? ` L${bx + boxW - 24},${yTop}` : ''}`}
-          fill="none" stroke={ORANGE} strokeWidth={2} strokeLinejoin="round"
+          fill="none" stroke={ACCENTO} strokeWidth={2} strokeLinejoin="round"
         />
 
         {/* quote dei tratti */}
@@ -239,7 +239,7 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
       {/* intestazioni delle due viste */}
       <text x={boxX} y={22} fontSize="9" fill={LABEL} fontWeight="bold">SEZIONE DELLA LUCE</text>
       <text x={lx} y={22} fontSize="9" fill={LABEL} fontWeight="bold">SVILUPPO</text>
-      <line x1={lx - 14} y1={30} x2={lx - 14} y2={H - 16} stroke="#27272a" strokeWidth={1} />
+      <line x1={lx - 14} y1={30} x2={lx - 14} y2={H - 16} stroke="#19212A" strokeWidth={1} />
 
       {crossSection()}
       {longitudinal()}
@@ -248,7 +248,7 @@ export function PortDrawing({ geometry, lengthMm, segments }: Props) {
       <g transform={`translate(${24}, ${H - 8})`}>
         <rect width="14" height="4" y="-4" fill="url(#woodHatch)" />
         <text x="19" y="0" fontSize="8" fill={LABEL}>parete della cassa</text>
-        <line x1="118" y1="-2" x2="132" y2="-2" stroke={ORANGE} strokeWidth={3} />
+        <line x1="118" y1="-2" x2="132" y2="-2" stroke={ACCENTO} strokeWidth={3} />
         <text x="137" y="0" fontSize="8" fill={LABEL}>pannello da costruire</text>
       </g>
     </svg>
