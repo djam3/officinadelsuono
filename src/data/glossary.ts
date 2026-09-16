@@ -130,7 +130,7 @@ export const GLOSSARY: GlossaryEntry[] = [
         },
       },
     ],
-    related: ['qes', 'qms', 'fs', 'alignment'],
+    related: ['qes', 'qms', 'fs', 'alignment', 'tolleranza'],
     sources: [
       'Small, Vented-Box Loudspeaker Systems Part 1, JAES 1973',
       'Il valore esatto del B4 e cos(3π/8) = 0,3827, verificato sul motore di calcolo',
@@ -218,7 +218,7 @@ export const GLOSSARY: GlossaryEntry[] = [
         },
       },
     ],
-    related: ['cms', 'sd', 'alpha', 'vb'],
+    related: ['cms', 'sd', 'alpha', 'vb', 'tolleranza'],
     sources: [
       'Small, Closed-Box Loudspeaker Systems Part 1, JAES 1972',
     ],
@@ -242,9 +242,65 @@ export const GLOSSARY: GlossaryEntry[] = [
         ],
       },
     ],
-    related: ['vas', 'mms', 'fs', 'sd'],
+    related: ['vas', 'mms', 'fs', 'sd', 'tolleranza'],
     sources: [
       'Thiele/Small, relazioni fondamentali',
+    ],
+  },
+  {
+    id: 'tolleranza', symbol: 'Tolleranza', unit: '±%', category: 'driver',
+    title: 'Dispersione di produzione dei parametri',
+    summary: 'I parametri di scheda sono la media di una produzione, non la misura del tuo esemplare.',
+    blocks: [
+      {
+        paragraphs: [
+          'Fs, Vas e Qts sono il risultato di una misura fatta su alcuni esemplari e poi dichiarata per tutti. Fra un pezzo e l’altro dello stesso modello quei valori cambiano, e non per un difetto: la sospensione è un componente meccanico stampato, e la sua cedevolezza ha una dispersione come qualsiasi altra lavorazione. Lo stesso vale per il magnete e per la larghezza del traferro, che decidono il Bl.',
+          'A questo si somma una deriva che non è dispersione ma succede a tutti nello stesso verso: nelle prime ore di funzionamento la sospensione si ammorbidisce. Il rodaggio, nei conti, è una variazione di cedevolezza come le altre.',
+          'Il calcolatore non ha un valore proprio per la tolleranza e non ne prende nessuno da terzi: quando il costruttore la dichiara, sta sulla scheda del driver, ed è quello il numero da usare.',
+        ],
+      },
+      {
+        heading: 'I parametri non variano uno per uno',
+        paragraphs: [
+          'È l’errore più comune quando si prova a stimare a mano il margine di un progetto: si prende Fs e la si sposta del 10%, poi si prende Vas e la si sposta di un altro 10%, come se fossero indipendenti. Non lo sono. Discendono dalle stesse grandezze fisiche, e una variazione della sola cedevolezza li muove tutti insieme con rapporti fissati.',
+        ],
+        formula: {
+          expr: 'Vas ∝ Cms     Fs ∝ 1/√Cms     Qms ∝ Fs     Qes ∝ Fs/Bl²',
+          caption: 'una sospensione più morbida del 20% dà Vas +20%, Fs −8,7% e tutti i Q −8,7%',
+        },
+      },
+      {
+        paragraphs: [
+          'La seconda sorgente è indipendente dalla prima ed è il motore. Il Bl non compare né in Fs né in Vas, e nemmeno in Qms che è puramente meccanico: sposta il solo Qes, e con il quadrato. Un motore più forte del 5% dà un Qes più basso del 9,3%. È il motivo per cui il Qts è il parametro che balla di più — raccoglie le due variazioni insieme.',
+          'Un driver in cui si muove Fs ma non Vas non esiste, e una stima fatta così dà un margine più largo del vero in un verso e più stretto nell’altro.',
+        ],
+      },
+      {
+        heading: 'La cassa piccola si difende da sola',
+        paragraphs: [
+          'In cassa chiusa c’è un risultato esatto che vale la pena conoscere. La risonanza e lo smorzamento del sistema sono Fc² = Fs²(1 + Vas/Vb) e Qtc² = Qts²(1 + Vas/Vb). Sotto una variazione di sola cedevolezza i prodotti Fs²·Vas e Qts²·Vas sono invarianti — Fs² va come 1/Cms e Vas come Cms, e il prodotto resta dov’è. Il secondo addendo di entrambe le formule, quindi, non si muove affatto.',
+          'Più la cassa è piccola più quel termine domina, e più la tolleranza della sospensione si annulla da sola: con ±15% di cedevolezza, sullo stesso driver, lo scarto su Fc passa dal 12,5% in una cassa da 200 litri all’1,0% in una da 3 litri. È l’unico caso in cui rimpicciolire la cassa migliora qualcosa oltre all’ingombro.',
+          'La tolleranza del motore invece non si annulla a nessun volume, perché non tocca Vas: nella stessa prova lo scarto su Qtc resta il 18,7% sia a 3 litri sia a 200.',
+        ],
+        callout: {
+          kind: 'nota',
+          text: 'Nel reflex non vale niente di simile: il condotto è accordato su una cassa di volume fisso, e se il driver cambia l’accordo resta dov’è mentre il sistema gli si muove intorno. Lì l’unica difesa è scegliere una combinazione di volume e accordo che il calcolatore mostra come stabile.',
+        },
+      },
+      {
+        heading: 'Dove si sbaglia',
+        list: [
+          'Progettare sul limite. Un allineamento che sta in piedi solo con i valori esatti di scheda è un allineamento sbagliato: non esiste un esemplare con quei valori esatti.',
+          'Misurare il driver appena tolto dalla scatola e poi non rimisurarlo. Dopo il rodaggio la Fs è più bassa, e la cassa è già tagliata.',
+          'Misurare d’inverno in un locale freddo. Una sospensione fredda è più rigida e la Fs misurata sale: è la stessa variazione di cedevolezza, di origine termica.',
+          'Prendere la tolleranza da un database invece che dalla scheda. I database raccolgono misure di esemplari singoli, che sono un campione di uno.',
+        ],
+      },
+    ],
+    related: ['cms', 'bl', 'qts', 'vas', 'fs', 'qtc'],
+    sources: [
+      'Thiele/Small, relazioni fondamentali fra Cms, Mms, Bl e i parametri dichiarati',
+      'Small, Closed-Box Loudspeaker Systems Part 1, JAES 1972 (Fc e Qtc dal rapporto Vas/Vb)',
     ],
   },
   {
@@ -495,7 +551,7 @@ export const GLOSSARY: GlossaryEntry[] = [
         },
       },
     ],
-    related: ['qes', 'mms', 're'],
+    related: ['qes', 'mms', 're', 'tolleranza'],
     sources: [
       'Small, Direct-Radiator Loudspeaker System Analysis, JAES 1972',
     ],

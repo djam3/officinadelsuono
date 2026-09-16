@@ -12,7 +12,7 @@
  */
 
 import * as React from 'react';
-import { NumField, Section, Plot, PLOT_COLORS, type Series } from './ui';
+import { NumField, Section, Plot, PLOT_COLORS, InfoLink, type Series } from './ui';
 import { bandaTolleranza } from '../../utils/audio/tolleranza';
 import type { CurvePoint, DesignResult, TSParams } from '../../utils/audio';
 
@@ -75,6 +75,7 @@ export function TolleranzaSection({ ts, design, tipo, cedevolezzaPct, motorePct,
     <Section
       title="Se il driver non è quello della scheda"
       subtitle="Stessa cassa, esemplari diversi: quanto cambia la risposta dentro la tolleranza di produzione."
+      right={<InfoLink id="tolleranza" />}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <NumField

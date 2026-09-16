@@ -7,7 +7,7 @@
  * corso.
  */
 
-import { useMemo, useState, type MouseEvent } from 'react';
+import { useEffect, useMemo, useState, type MouseEvent } from 'react';
 import { ArrowLeft, BookOpen, Info, Link2, AlertTriangle, Search, X } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import {
@@ -209,10 +209,33 @@ function Indice({ naviga }: { naviga?: Naviga }) {
     url: '/glossario',
   });
 
-  const [cerca, setCerca] = useState('');
+  // La ricerca parte da quello che c'e' nell'indirizzo: cosi' un risultato si
+  // puo' mandare a qualcuno com'e', e un collegamento puo' portare dritto alla
+  // parola giusta invece che in cima a un elenco di sessanta voci.
+  const [cerca, setCerca] = useState(() => {
+    try {
+      return new URLSearchParams(window.location.search).get('q') ?? '';
+    } catch {
+      return '';
+    }
+  });
 
-  // cinquantanove schede sono troppe per scorrerle, e chi arriva qui cerca
-  // quasi sempre una cosa sola. Il come sta in cercaGlossario.
+  // e ci torna dentro a ogni battuta, con replaceState: la ricerca non e' una
+  // navigazione, e riempire la cronologia di una voce per lettera renderebbe
+  // inutilizzabile il tasto «indietro».
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (cerca.trim()) url.searchParams.set('q', cerca);
+      else url.searchParams.delete('q');
+      window.history.replaceState(null, '', url.toString());
+    } catch {
+      // senza indirizzo scrivibile la ricerca funziona lo stesso
+    }
+  }, [cerca]);
+
+  // le schede sono troppe per scorrerle tutte, e chi arriva qui cerca quasi
+  // sempre una cosa sola. Il come sta in cercaGlossario.
   const trovate = useMemo(() => (cerca.trim() ? cercaGlossario(cerca) : null), [cerca]);
 
   return (
