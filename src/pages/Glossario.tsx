@@ -16,7 +16,7 @@ import {
 } from '../data/glossary';
 import { Annot, Griglia, Righello } from '../components/blueprint';
 
-const ORDER: GlossaryCategory[] = ['driver', 'cassa', 'condotto', 'reti', 'materiali', 'costruzione'];
+const ORDER: GlossaryCategory[] = ['driver', 'cassa', 'condotto', 'reti', 'impianto', 'materiali', 'costruzione'];
 
 export type Naviga = (page: string, param?: string) => void;
 

@@ -9,13 +9,14 @@
  * la ⓘ accanto a ogni campo trova la sua scheda senza tabelle di conversione.
  */
 
-export type GlossaryCategory = 'driver' | 'cassa' | 'condotto' | 'reti' | 'materiali' | 'costruzione';
+export type GlossaryCategory = 'driver' | 'cassa' | 'condotto' | 'reti' | 'impianto' | 'materiali' | 'costruzione';
 
 export const CATEGORY_LABELS: Record<GlossaryCategory, string> = {
   driver: 'Parametri dell’altoparlante',
   cassa: 'Progetto della cassa',
   condotto: 'Condotto reflex',
   reti: 'Reti di compensazione',
+  impianto: 'Impianto e amplificazione',
   materiali: 'Materiali fonoassorbenti',
   costruzione: 'Costruzione',
 };
@@ -24,6 +25,7 @@ export const CATEGORY_INTRO: Record<GlossaryCategory, string> = {
   driver: 'I parametri Thiele-Small descrivono l’altoparlante come un sistema massa-molla-smorzatore. Sono sovradeterminati: fra loro valgono identità esatte, e se due valori non tornano uno dei due è sbagliato.',
   cassa: 'Dal volume all’accordo: le grandezze che decidono come la cassa carica il cono e dove finisce la risposta in basso.',
   condotto: 'Il condotto non è un buco: è una massa d’aria che risuona con la cedevolezza della cassa. Forma, sezione e lunghezza cambiano l’accordo e il rumore.',
+  impianto: 'Dall’amplificatore al cono passando dai cavi. Sono conti elettrici elementari, ma decidono quanti decibel arrivano davvero e se la presa regge.',
   reti: 'Quello che la cassa non può risolvere da sola, e che si risolve con due o tre componenti prima del driver. Sono conti esatti, non ritocchi a orecchio.',
   materiali: 'Il materiale assorbente fa tre cose diverse contemporaneamente, e solo una si vede nel volume.',
   costruzione: 'Spessori, rinforzi e proporzioni: quello che separa un progetto sulla carta da una cassa che suona come previsto.',
@@ -1577,6 +1579,337 @@ export const GLOSSARY: GlossaryEntry[] = [
       'Ricavato dal circuito equivalente acustico (analogia delle impedenze, Beranek) e verificato contro il motore: guadagno 0,000 dB su 0 chiesti e i due estremi a −3 dB entro lo 0,07%',
       'Condizione di simmetria verificata per confronto: scarto del picco dal centro geometrico 0,0% con accordo pari alla risonanza posteriore, 4,7% con rapporto 0,85',
     ],
+  },
+  // ─── IMPIANTO ─────────────────────────────────────────────────────────────
+  {
+    id: 'amppower', symbol: 'Potenza', unit: 'W', category: 'impianto',
+    title: 'La potenza di un amplificatore',
+    summary: 'Non è una grandezza sola. Continua, media e di picco sono tre numeri diversi che non si sommano.',
+    typical: [
+      { label: 'Rapporto amplificatore / diffusore', value: '1,5–2×' },
+      { label: 'Potenza media con musica pop', value: '1/16 della continua' },
+      { label: 'Guadagno di 3 dB', value: 'potenza doppia' },
+      { label: 'Guadagno di 10 dB', value: 'potenza × 10' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'La potenza dichiarata è quella che l’amplificatore eroga in continuo su un carico dato, con una sinusoide, prima di distorcere. È un numero di laboratorio: la musica non è una sinusoide e non sta mai al massimo.',
+          'Quello che serve davvero sono due numeri. La potenza di PICCO, che dura millisecondi ed è quella che fa uscire pulito un colpo di rullante. E la potenza MEDIA, molto più bassa, che è quella che scalda la bobina e che decide se il diffusore sopravvive.',
+        ],
+        formula: {
+          expr: 'V = √(P · Z)        P = V² / Z',
+          caption: 'un finale da 1000 W su 4 Ω produce 63 V efficaci e chiede 22 A di picco',
+        },
+      },
+      {
+        heading: 'Perché la potenza dichiarata cambia col carico',
+        paragraphs: [
+          'Un amplificatore è un generatore di tensione: a parità di tensione d’uscita, dimezzare l’impedenza raddoppia la corrente e quindi la potenza. Per questo le schede dichiarano numeri diversi su 8, 4 e 2 Ω.',
+          'Il raddoppio però non è mai completo, perché l’alimentatore cede sotto carico. Un amplificatore che su 8 Ω dà 500 W e su 4 ne dà 800 invece di 1000 non sta mentendo: sta dicendo quanto regge davvero il suo alimentatore.',
+        ],
+      },
+      {
+        heading: 'Più grande è meglio, ma solo con il limitatore',
+        callout: {
+          kind: 'attenzione',
+          text: 'Un amplificatore troppo PICCOLO è più pericoloso di uno troppo grande. Arrivato al limite tosa la forma d’onda, e un segnale tosato porta fino a 3 dB di potenza in più — un’onda quadra ha il doppio della potenza della sinusoide di pari ampiezza — con l’energia spostata in alto, proprio dove sta il tweeter. Il margine serve, ma solo se c’è un limitatore che lo custodisce.',
+        },
+      },
+    ],
+    related: ['pe', 'crest', 'ampclass', 'loadimpedance'],
+    sources: [
+      'V = √(P·Z) e il rapporto fra onda quadra e sinusoide di pari ampiezza sono relazioni elementari, verificate nel motore',
+    ],
+  },
+  {
+    id: 'ampclass', symbol: 'Classe', category: 'impianto',
+    title: 'Classi di amplificazione',
+    summary: 'Decide il rendimento, e quindi quanto calore esce e quanta corrente entra. Non decide il suono da sola.',
+    typical: [
+      { label: 'Classe AB, rendimento reale', value: '50–60%' },
+      { label: 'Classe H / G', value: '70–75%' },
+      { label: 'Classe D', value: '85–92%' },
+      { label: 'Classe AB, massimo teorico', value: '78,5%' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Il rendimento è la frazione della potenza assorbita che esce dai morsetti. Tutto il resto esce dal dissipatore, e va da qualche parte: in un rack chiuso, dentro il rack.',
+          'Un finale da 1000 W in classe AB a piena potenza assorbe circa 1800 W e ne dissipa 800. Lo stesso in classe D ne assorbe 1140 e ne dissipa 140: quasi sei volte meno calore, a parità di watt utili.',
+        ],
+      },
+      {
+        heading: 'La corrente non è i watt diviso i volt',
+        paragraphs: [
+          'Un alimentatore a trasformatore e condensatori assorbe corrente a impulsi stretti attorno al picco della sinusoide di rete, non in modo continuo. Il risultato è un fattore di potenza basso, attorno a 0,5–0,6: la presa vede molti più volt-ampere di quanti siano i watt, e la corrente vera è quasi il doppio del conto ingenuo.',
+          'Gli alimentatori a commutazione con correzione del fattore di potenza arrivano a 0,95 e oltre. È il motivo per cui un classe D della stessa potenza si può collegare a una presa che un classe AB farebbe scattare.',
+        ],
+        formula: {
+          expr: 'VA = W / cosφ        I = VA / V',
+          caption: 'con cosφ 0,55 la corrente è 1,8 volte quella calcolata sui soli watt',
+        },
+      },
+      {
+        heading: 'Cosa NON decide la classe',
+        callout: {
+          kind: 'nota',
+          text: 'La classe dice come lo stadio finale gestisce la corrente, non come suona. Un classe D moderno ben progettato misura meglio di molti classe AB; un classe AB mediocre misura peggio di un classe D mediocre. Il rendimento è un fatto, la qualità è un’altra cosa.',
+        },
+      },
+    ],
+    related: ['amppower', 'mainscable', 'duty'],
+    sources: [
+      'Il 78,5% è il massimo teorico di uno stadio in classe B su sinusoide piena; i valori reali sono quelli d’uso, e servono a stimare calore e assorbimento, non a classificare i prodotti',
+    ],
+  },
+  {
+    id: 'loadimpedance', symbol: 'Carico', unit: 'Ω', category: 'impianto',
+    title: 'Impedenza di carico',
+    summary: 'Quanti diffusori si possono attaccare, e perché il numero da guardare non è quello scritto sopra.',
+    typical: [
+      { label: '2 × 8 Ω in parallelo', value: '4 Ω' },
+      { label: '2 × 8 Ω in serie', value: '16 Ω' },
+      { label: '4 × 8 Ω serie-parallelo', value: '8 Ω' },
+      { label: '4 Ω collegati a ponte', value: '2 Ω per canale' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Le impedenze si combinano come le resistenze: in serie si sommano, in parallelo si divide il prodotto per la somma. Con diffusori uguali diventa banale — in parallelo si divide per quanti sono, in serie si moltiplica.',
+          'Quello che non è banale è che l’impedenza non è un numero. Un diffusore «da 8 ohm» scende a 6 in qualche punto della banda e sale a 40 sui picchi di risonanza: la targa è una media di comodo.',
+        ],
+      },
+      {
+        heading: 'Il numero che protegge l’amplificatore è il minimo',
+        paragraphs: [
+          'Due casse da 8 ohm in parallelo fanno 4 ohm sulla carta, ma se ciascuna scende a 6 il minimo reale è 3. È lì che la corrente richiesta supera quella che l’uscita regge, ed è lì che interviene la protezione — o che si guasta lo stadio finale, su apparecchi che protezione non ne hanno.',
+          'Se il minimo non è dichiarato, contare circa l’80% del nominale è una stima prudente e di solito vicina.',
+        ],
+      },
+      {
+        heading: 'Il ponte non regala niente',
+        paragraphs: [
+          'A ponte i due canali lavorano in opposizione sullo stesso carico: la tensione disponibile raddoppia, e in teoria la potenza quadruplica. Ma ciascun canale ne pilota metà, quindi vede METÀ dell’impedenza collegata. Un 4 ohm a ponte è un 2 ohm per canale.',
+          'Per questo il limite di impedenza in ponte è quasi sempre il doppio di quello stereo: non è prudenza commerciale, è la stessa corrente vista da un solo canale.',
+        ],
+        callout: {
+          kind: 'attenzione',
+          text: 'La regola pratica: prima di collegare, calcola il minimo della curva e dividilo per due se vai a ponte. È quello il numero da confrontare con la scheda dell’amplificatore.',
+        },
+      },
+    ],
+    related: ['impedance', 'amppower', 'speakercable'],
+    sources: ['Combinazioni elementari di impedenze; la regola del ponte discende dalla definizione stessa del collegamento'],
+  },
+  {
+    id: 'speakercable', symbol: 'Cavo diffusori', unit: 'mm²', category: 'impianto',
+    title: 'Cavo di potenza verso i diffusori',
+    summary: 'Una resistenza in serie al cono. Fa tre danni diversi, e solo uno si recupera alzando il volume.',
+    typical: [
+      { label: '10 m di 1,5 mm² su 8 Ω', value: '0,23 Ω · −0,25 dB' },
+      { label: '10 m di 2,5 mm² su 8 Ω', value: '0,14 Ω · −0,15 dB' },
+      { label: '15 m di 2,5 mm² su 4 Ω', value: '0,21 Ω · −0,54 dB' },
+      { label: 'Criterio: R_cavo ≤ 5% di Z', value: '−0,42 dB' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'La resistenza di un cavo si calcola dalla resistività del rame, che vale 1/58 di ohm per millimetro quadro e metro. La lunghezza da usare è il DOPPIO di quella misurata col metro: la corrente fa il giro completo, andata e ritorno.',
+        ],
+        formula: {
+          expr: 'R = 2 · ρ · L / A        ρ(rame) = 1/58 Ω·mm²/m a 20 °C',
+          caption: 'un metro di cavo da 1 mm² pesa 17,2 mΩ per conduttore',
+        },
+      },
+      {
+        heading: 'I tre danni',
+        list: [
+          'PERDE POTENZA. È un partitore: al diffusore arriva Z/(Z+R). Sono decibel, e si recuperano alzando il volume — se l’amplificatore ne ha ancora.',
+          'ROVINA LO SMORZAMENTO. Questo non si recupera. La resistenza in serie si somma a quella della bobina e cambia il Qes del driver, cioè cambia l’allineamento della cassa: Qes′ = Qes·(Re+Rs)/Re.',
+          'SI SCALDA. Poco di solito, ma su tratte lunghe e impedenze basse diventa un numero vero: 15 metri di 2,5 su 4 ohm a 1000 W lasciano nel cavo 61 W.',
+        ],
+      },
+      {
+        heading: 'Il «fattore di smorzamento» è quasi sempre una cifra vuota',
+        paragraphs: [
+          'Un amplificatore che dichiara un fattore di smorzamento di 1000 su 8 ohm sta dicendo di avere 8 milliohm di impedenza d’uscita. Sono 58 centimetri di cavo da 2,5 mm²: il primo metro di collegamento cancella il vanto.',
+          'E a valle c’è dell’altro — l’induttanza del crossover ha la sua resistenza, e la bobina del driver ne ha 5 o 6 di ohm. Il numero che conta non è quello di targa ma di quanto sale il Qts del sistema, e quello si calcola.',
+        ],
+      },
+      {
+        heading: 'Come si sceglie la sezione',
+        callout: {
+          kind: 'nota',
+          text: 'Il criterio classico è che la resistenza del cavo non superi il 5% dell’impedenza del carico. Si inverte direttamente: A ≥ 2·ρ·L/(0,05·Z). Attenzione a una conseguenza che sorprende — dimezzare l’impedenza RADDOPPIA la sezione necessaria. Un impianto a 4 ohm vuole il doppio del rame di uno a 8.',
+        },
+      },
+    ],
+    related: ['loadimpedance', 'qes', 'qts', 'mainscable'],
+    sources: [
+      'Resistività del rame dallo standard IACS (1/58 Ω·mm²/m), coefficiente di temperatura 0,00393/K',
+      'Verifiche sul motore: un metro di rame da 1 mm² restituisce 1/58 Ω esatti, e dimezzando l’impedenza la sezione minima raddoppia esattamente',
+    ],
+  },
+  {
+    id: 'mainscable', symbol: 'Cavo di rete', unit: 'mm²', category: 'impianto',
+    title: 'Alimentazione, cavo e protezione',
+    summary: 'Tre criteri diversi da soddisfare insieme: portata, caduta di tensione e coordinamento con l’interruttore.',
+    typical: [
+      { label: '1000 W classe D, corrente', value: '5,2 A al massimo' },
+      { label: '1000 W classe AB, corrente', value: '14,4 A al massimo' },
+      { label: 'Caduta ammessa sulla linea', value: '4%' },
+      { label: 'Spunto di un toroidale', value: '10–60 volte la nominale' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'La domanda «per un amplificatore da 1000 W che cavo ci vuole?» non ha una risposta sola, perché i 1000 W sono quelli che ESCONO. Quanto entra dipende dal rendimento, e quanta corrente scorre dipende anche dal fattore di potenza.',
+          'Lo stesso finale da 1000 W chiede 5,2 A se è un classe D e 14,4 A se è un classe AB: quasi tre volte, a parità di watt utili.',
+        ],
+      },
+      {
+        heading: 'La corrente di progetto non è quella che assorbe con la musica',
+        paragraphs: [
+          'Con la musica un amplificatore sta al massimo per una frazione del tempo: la prassi dei costruttori è dichiarare l’assorbimento a 1/8 della potenza per il programma normale e a 1/3 per quello pesante. Sono i due numeri utili a stimare il calore e il consumo.',
+          'Ma cavo e protezione si dimensionano sul caso peggiore continuo, non sulla media: il cavo deve reggere quello che l’apparecchio PUÒ assorbire, non quello che assorbe di solito.',
+        ],
+      },
+      {
+        heading: 'I tre criteri, e quale comanda',
+        list: [
+          'PORTATA: il cavo deve poter condurre la corrente senza scaldarsi oltre il limite del suo isolante.',
+          'CADUTA DI TENSIONE: sulla linea si perde tensione proprio nei momenti in cui l’amplificatore tira, e la potenza disponibile cala con il quadrato. Il limite d’uso è il 4%.',
+          'COORDINAMENTO: la portata del cavo deve stare dietro alla protezione, non al carico — la regola è Ib ≤ In ≤ Iz. Un cavo che regge il carico ma non la taglia del magnetotermico lascia scoperta tutta la fascia di corrente fra i due: corrente che scalda il cavo senza far scattare niente.',
+        ],
+        formula: {
+          expr: 'A ≥ 2 · ρ · L · I / (0,04 · V)',
+          caption: 'sezione minima perché la caduta resti entro il 4%',
+        },
+      },
+      {
+        heading: 'Lo spunto all’accensione',
+        paragraphs: [
+          'Un trasformatore toroidale, all’istante dell’accensione, assorbe per pochi cicli di rete decine di volte la corrente nominale. È il motivo per cui un finale fa scattare un magnetotermico curva B, che interviene già a 3–5 volte la nominale.',
+          'La soluzione giusta non è alzare la protezione ma un avviamento dolce nell’apparecchio; la seconda migliore è una curva C o D. E con più apparecchi sulla stessa linea vanno accesi uno alla volta, o con un sequenziatore.',
+        ],
+      },
+      {
+        heading: 'Fin dove arriva questo calcolo',
+        callout: {
+          kind: 'attenzione',
+          text: 'Qui si calcola la fisica: corrente, caduta, calore. I valori di portata mostrati sono d’uso, per cavo in aria libera a 30 °C e non raggruppato, e servono all’ordine di grandezza. I numeri vincolanti stanno nella norma di installazione e cambiano con il tipo di posa, la temperatura ambiente e quanti cavi stanno nello stesso condotto: un impianto fisso lo dimensiona e lo firma chi è abilitato a farlo.',
+        },
+      },
+    ],
+    related: ['ampclass', 'duty', 'speakercable'],
+    sources: [
+      'Caduta di tensione e riscaldamento sono conti elementari dalla resistività; il coordinamento Ib ≤ In ≤ Iz è il principio della protezione dai sovraccarichi (CEI 64-8 / IEC 60364)',
+      'I valori di portata riportati sono quelli d’uso per cavi flessibili, corrispondenti alle spine da 10 e 16 A',
+    ],
+  },
+  {
+    id: 'crest', symbol: 'Fattore di cresta', unit: 'dB', category: 'impianto',
+    title: 'Fattore di cresta e margine',
+    summary: 'La distanza fra il picco e la media. È il motivo per cui servono amplificatori molto più grandi della potenza media.',
+    typical: [
+      { label: 'Sinusoide', value: '3 dB' },
+      { label: 'Musica molto compressa', value: '8 dB' },
+      { label: 'Pop / rock dal vivo', value: '12 dB' },
+      { label: 'Acustico / classica', value: '18 dB' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'Un segnale musicale passa la maggior parte del tempo molto sotto il suo massimo. Il fattore di cresta misura questa distanza, e per la musica vale dai 10 ai 20 decibel: significa che un picco da 1000 W nasce da una media di 10–100 W.',
+          'La conseguenza pratica è che un amplificatore dimensionato sulla potenza media clippa su tutti i picchi, mentre uno dimensionato sui picchi sta quasi sempre al minimo — ed è esattamente quello che deve fare.',
+        ],
+      },
+      {
+        heading: 'A cosa serve il numero nel progetto',
+        list: [
+          'Il PICCO decide se il transiente esce pulito, e quanta tensione deve poter dare l’amplificatore.',
+          'La MEDIA decide quanto scalda la bobina, e quindi la compressione di potenza e la sopravvivenza del diffusore.',
+          'La DIFFERENZA fra i due è il margine da lasciare: comprimere il programma non fa suonare più forte, fa solo alzare la media a parità di picco — e quello che si guadagna in livello percepito si paga in calore.',
+        ],
+      },
+      {
+        heading: 'La compressione di potenza',
+        paragraphs: [
+          'Mentre la bobina scalda, il rame aumenta di resistenza dello 0,393% per grado: il driver assorbe meno potenza a parità di tensione e il livello cala da solo, senza che niente si sia rotto.',
+          'A 150 gradi di sovratemperatura — che a piena potenza è ordinaria — la resistenza sale del 59% e si perdono circa 4 dB. È un effetto che quasi nessun conto di SPL include, e alzare il volume non lo recupera: scalda ancora di più.',
+        ],
+        formula: {
+          expr: 'Re(T) = Re₂₀ · (1 + 0,00393·ΔT)        perdita = 20·log₁₀(Re₂₀ / Re(T))',
+        },
+      },
+    ],
+    related: ['amppower', 'pe', 'sensitivity'],
+    sources: [
+      'Coefficiente di temperatura del rame 0,00393/K; i valori di fattore di cresta sono quelli d’uso per categoria di programma',
+    ],
+  },
+  {
+    id: 'duty', symbol: 'Regime di lavoro', category: 'impianto',
+    title: 'Regime di lavoro: 1/8 e 1/3',
+    summary: 'Le due convenzioni con cui si stima quanto un amplificatore assorbe e scalda davvero.',
+    blocks: [
+      {
+        paragraphs: [
+          'Nessun amplificatore lavora a potenza piena continua, se non su un banco di prova. Per dichiarare l’assorbimento serve una convenzione, e in audio professionale se ne usano due.',
+        ],
+        list: [
+          'UN OTTAVO della potenza continua: programma musicale normale, senza clip. È la condizione con cui si dichiarano consumo e dissipazione.',
+          'UN TERZO della potenza continua: programma pesante e compresso, o rumore rosa. È la condizione su cui si dimensionano raffreddamento e linea.',
+          'POTENZA PIENA: solo con una sinusoide. Serve come caso peggiore assoluto, ed è su questo che vanno calcolati cavo e protezione, perché il cavo deve reggere quello che l’apparecchio può fare, non quello che di solito fa.',
+        ],
+      },
+      {
+        heading: 'Perché sono frazioni così piccole',
+        paragraphs: [
+          'Vengono direttamente dal fattore di cresta. Un programma con 9 dB di cresta ha una media un ottavo del picco; con 5 dB è un terzo. Non sono numeri prudenziali inventati: sono la stessa cosa detta in un’altra unità.',
+        ],
+      },
+    ],
+    related: ['crest', 'ampclass', 'mainscable'],
+    sources: ['Le due frazioni corrispondono a 9 e 5 dB di fattore di cresta, cioè alle condizioni di prova usate in audio professionale'],
+  },
+  {
+    id: 'gainstructure', symbol: 'Guadagno', unit: 'dB', category: 'impianto',
+    title: 'Struttura di guadagno',
+    summary: 'Quanta tensione serve per portare l’amplificatore al massimo, e perché la manopola non è un volume.',
+    typical: [
+      { label: '0 dBu', value: '0,775 V' },
+      { label: '0 dBV', value: '1,000 V' },
+      { label: 'Sensibilità tipica di un finale', value: '0,775 – 1,4 V' },
+      { label: 'Guadagno tipico', value: '26 – 34 dB' },
+    ],
+    blocks: [
+      {
+        paragraphs: [
+          'La sensibilità d’ingresso è la tensione che porta l’amplificatore alla massima potenza. Il guadagno è il rapporto fra quella e la tensione che esce, espresso in decibel.',
+          'Non è una questione estetica. Se il guadagno è troppo alto, il rumore della sorgente viene amplificato insieme al segnale e la manopola lavora tutta nel primo quarto di corsa; se è troppo basso, il mixer va in clip prima dell’amplificatore e il finale non arriva mai al suo massimo.',
+        ],
+        formula: {
+          expr: 'V_max = √(P · Z)        G(dB) = 20·log₁₀(V_max / V_sens)',
+        },
+      },
+      {
+        heading: 'dBu e dBV non sono la stessa scala',
+        callout: {
+          kind: 'attenzione',
+          text: 'Lo 0 dBu vale 0,775 V, lo 0 dBV vale 1 V: fra le due scale ci sono 2,2 dB, ed è l’errore più comune nel leggere una scheda tecnica. Una sensibilità di «+4 dBu» sono 1,23 V, non 1,58.',
+        },
+      },
+      {
+        heading: 'La manopola non è un volume',
+        paragraphs: [
+          'Sul finale quella manopola è un attenuatore d’ingresso, non un controllo di livello: abbassarla non protegge il diffusore da un segnale già distorto a monte, e alzarla non aggiunge potenza. Il livello si imposta prima, e il finale si lascia al massimo o alla posizione che la struttura di guadagno richiede.',
+        ],
+      },
+    ],
+    related: ['amppower', 'crest'],
+    sources: ['Definizioni di dBu e dBV; V = √(P·Z) verificata nel motore'],
   },
 ];
 
