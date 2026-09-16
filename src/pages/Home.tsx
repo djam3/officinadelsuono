@@ -10,6 +10,7 @@
 import { ArrowRight, MessageCircle, Ruler, Waves, Scissors, ScrollText } from 'lucide-react';
 import { useSEO } from '../hooks/useSEO';
 import { Costruzione } from '../components/Costruzione';
+import { Cassa3D } from '../components/Cassa3D';
 import { Annot, Cartiglio, Griglia, IntestazioneSezione, Quota, Righello, Tavola } from '../components/blueprint';
 import { GLOSSARY } from '../data/glossary';
 import { DRIVER_LIBRARY } from '../data/driverLibrary';
@@ -78,11 +79,30 @@ export function Home({ onNavigate }: HomeProps) {
             <Annot>Scala 1:1</Annot>
           </div>
 
-          <h1 className="titolo text-[13vw] leading-[0.86] sm:text-7xl md:text-8xl lg:text-9xl mb-8 animate-fade-in-up">
-            <span className="block text-paper">Si progetta</span>
-            <span className="block titolo-tracciato">prima</span>
-            <span className="block text-marker">di tagliare.</span>
-          </h1>
+          {/* Il titolo e l'oggetto insieme: la frase dice cosa si fa, la cassa
+              dice cosa ne esce. Su schermo stretto la cassa passa sotto. */}
+          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-14 items-center mb-8">
+            <h1 className="titolo text-[13vw] leading-[0.86] sm:text-7xl md:text-8xl lg:text-8xl animate-fade-in-up">
+              <span className="block text-paper">Si progetta</span>
+              <span className="block titolo-tracciato">prima</span>
+              <span className="block text-marker">di tagliare.</span>
+            </h1>
+
+            <div className="relative animate-fade-in-up">
+              <Cassa3D
+                widthMm={260} heightMm={641} depthMm={267} wallMm={18}
+                driverDiaMm={196}
+                port={{ kind: 'fessura', widthMm: 150, heightMm: 40 }}
+                quote={false}
+                altezzaPx={440}
+              />
+              <div className="flex items-baseline gap-3 mt-2">
+                <span className="annot annot-blue">Reflex 43,1 L</span>
+                <div className="quota flex-1" aria-hidden />
+                <span className="annot">Trascina per girarla</span>
+              </div>
+            </div>
+          </div>
 
           <div className="grid lg:grid-cols-[1fr_auto] gap-10 lg:gap-16 items-end">
             <p className="text-lg md:text-xl text-graphite leading-relaxed max-w-2xl animate-fade-in-up">

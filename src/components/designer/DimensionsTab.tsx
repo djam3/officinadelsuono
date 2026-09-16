@@ -1,7 +1,9 @@
 import { NumField, SelectField, Section, Stat, CheckField } from './ui';
+import { Cassa3D } from '../Cassa3D';
 import { ABSORBERS, PLACEMENT_LABELS, SHAPE_LABELS } from '../../utils/audio';
 import type {
-  AbsorberId, AbsorberResult, BoxDimensions, BoxShape, CutPanel, DampingLevel, Placement, VolumeBreakdown,
+  AbsorberId, AbsorberResult, BoxDimensions, BoxShape, CutPanel, DampingLevel, Placement,
+  PortGeometry, VolumeBreakdown,
 } from '../../utils/audio';
 
 export interface DimensionSettings {
@@ -29,6 +31,10 @@ interface Props {
   panelAreaM2: number;
   weightKg: number;
   absorber: AbsorberResult | null;
+  /** diametro del foro del driver, per la vista in assonometria (mm) */
+  driverDiaMm?: number;
+  /** geometria del condotto, per la vista in assonometria */
+  portGeometry?: PortGeometry | null;
 }
 
 const MATERIAL_THICKNESS = [
@@ -42,6 +48,7 @@ const MATERIAL_THICKNESS = [
 
 export function DimensionsTab({
   settings, onChange, dimensions, volumes, panels, panelAreaM2, weightKg, absorber,
+  driverDiaMm, portGeometry,
 }: Props) {
   const set = <K extends keyof DimensionSettings>(key: K, value: DimensionSettings[K]) =>
     onChange({ ...settings, [key]: value });
@@ -158,6 +165,33 @@ export function DimensionsTab({
 
       {dimensions && volumes && (
         <>
+          {/* La vista prima delle misure: il numero si capisce meglio dopo
+              aver visto la forma a cui appartiene. */}
+          {dimensions.shape === 'rectangular' && (
+            <Section
+              title="Come viene"
+              subtitle="Proporzioni, foro del driver e condotto sono quelli calcolati. Trascina per girarla."
+            >
+              <div className="bg-ink/60 border border-paper/[0.07]">
+                <Cassa3D
+                  widthMm={dimensions.width}
+                  heightMm={dimensions.height}
+                  depthMm={dimensions.depth}
+                  wallMm={dimensions.wallThickness}
+                  driverDiaMm={driverDiaMm ?? Math.min(dimensions.width, dimensions.height) * 0.55}
+                  port={
+                    portGeometry?.diameterMm
+                      ? { kind: 'circolare', diaMm: portGeometry.diameterMm, count: portGeometry.count }
+                      : portGeometry?.widthMm && portGeometry?.heightMm
+                        ? { kind: 'fessura', widthMm: portGeometry.widthMm, heightMm: portGeometry.heightMm }
+                        : null
+                  }
+                  altezzaPx={420}
+                />
+              </div>
+            </Section>
+          )}
+
           <Section title="Dimensioni esterne" subtitle="Misure finali della cassa, spessore dei pannelli incluso.">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {dimensions.shape === 'cylindrical' ? (

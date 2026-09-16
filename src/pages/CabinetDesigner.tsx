@@ -269,6 +269,8 @@ export function CabinetDesigner() {
                 panelAreaM2={design?.panelAreaM2 ?? 0}
                 weightKg={design?.weightKg ?? 0}
                 absorber={design?.absorber ?? null}
+                driverDiaMm={effective?.ts.sd ? 2 * Math.sqrt((effective.ts.sd / 1e4) / Math.PI) * 1000 : undefined}
+                portGeometry={design?.acoustic.port?.geometry ?? null}
               />
             )}
 
