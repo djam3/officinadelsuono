@@ -266,11 +266,12 @@ export function Home({ onNavigate }: HomeProps) {
 
           <h2 className="titolo text-4xl md:text-6xl mb-6 max-w-3xl">
             Il progetto è pronto.<br />
-            <span className="text-marker">Serve una mano a costruirlo?</span>
+            <span className="text-marker">Ti è tornato un numero strano?</span>
           </h2>
           <p className="text-graphite leading-relaxed max-w-2xl mb-10">
-            Lo strumento ti porta fino alla lista di taglio. Se dopo servono un parere sul driver da scegliere,
-            una verifica del progetto o l&rsquo;attrezzatura per metterlo in funzione, si può parlarne.
+            Lo strumento ti porta fino alla lista di taglio, e prima di ogni numero c&rsquo;è una ⓘ che spiega
+            da dove viene. Se qualcosa non torna, segnalarlo è la cosa più utile che puoi fare: finora ogni
+            verifica seria ha fatto emergere qualcosa.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3">

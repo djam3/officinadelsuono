@@ -1,184 +1,188 @@
+/**
+ * Chi siamo.
+ *
+ * La versione precedente parlava di un'altra cosa: consulenza sull'acquisto di
+ * attrezzatura audio, sopralluoghi, «oltre 500 setup configurati». Erano i
+ * testi del progetto da cui questo sito è nato, rimasti in piedi dopo che il
+ * sito è diventato un calcolatore per casse acustiche.
+ *
+ * Qui non si vende niente e non si promette niente: c'è uno strumento, e
+ * questa pagina dice come è fatto e come si controlla. Le affermazioni che non
+ * potevo verificare sono state tolte invece che riscritte — meglio una pagina
+ * più corta di una piena di cose che nessuno ha misurato.
+ */
+
 import { motion } from 'framer-motion';
 import { useSEO } from '../hooks/useSEO';
-import { Award, Star, Music, ShieldCheck } from 'lucide-react';
+import { Ruler, ScrollText, AlertTriangle, Github } from 'lucide-react';
+import { Annot, Griglia, Righello, Tavola } from '../components/blueprint';
+import { GLOSSARY } from '../data/glossary';
+
+const CONTROLLI = [
+  {
+    titolo: 'Casi limite',
+    corpo:
+      'Un radiatore passivo senza sospensione deve ridursi a un bass-reflex; con la membrana bloccata, a una cassa chiusa. Un bandpass del sesto ordine col condotto posteriore tappato deve ridursi al quarto. Sono controlli che o tornano o no, e non dipendono da come è scritto il programma.',
+    numero: '0,00003 dB',
+    nota: 'lo scarto peggiore fra le due strade',
+  },
+  {
+    titolo: 'Ancore note',
+    corpo:
+      'Il Butterworth del quarto ordine esiste a un solo valore di Qts, cos(3π/8) = 0,38268, e lì il volume deve venire esattamente √2·Vas con accordo pari alla risonanza. È l’unico punto in cui il risultato si conosce in forma chiusa, quindi è l’unico controllo che non ammette opinioni.',
+    numero: 'α = √2',
+    nota: 'e h = 1, esatti',
+  },
+  {
+    titolo: 'Fonti pubblicate',
+    corpo:
+      'I valori delle perdite di cassa sono quelli misurati da Small nel 1973, non stime: cassa nuda oltre 100, rivestita 30–80, riempita 7–10. Ogni scheda del glossario dice da dove vengono i suoi numeri, e dove un conto è stato ricavato riporta anche il controllo che lo conferma.',
+    numero: 'JAES 1971–76',
+    nota: 'Thiele, Small, Keele, Bradbury',
+  },
+];
+
+const NON_FA = [
+  'Non misura. Un calcolatore dice come si comporterà una cassa costruita bene con un driver i cui parametri sono quelli dichiarati: sono due ipotesi, e la seconda è la più fragile.',
+  'Non conosce la stanza. La risposta calcolata è in spazio libero; quella che sentirai la decide l’ambiente, che sotto i 200 Hz conta più della cassa.',
+  'Non sostituisce il buon senso costruttivo. Un pannello che vibra, una giunzione che perde aria o un condotto che soffia non compaiono in nessuna formula.',
+];
 
 export function AboutUs() {
   useSEO({
-    title: 'Chi Siamo — Amerigo De Cristofaro & Officina del Suono',
-    description: 'Scopri chi è Amerigo De Cristofaro: sound engineer certificato MAT Academy, esperto di attrezzatura audio professionale. La storia di Officina del Suono.',
+    title: 'Come è fatto questo calcolatore',
+    description:
+      'Che cosa calcola, con quali fonti, e come si controlla che i numeri siano giusti. Più quello che un calcolatore non può fare.',
     url: '/chi-siamo',
   });
 
   return (
-    <div className="min-h-screen bg-ink text-white pt-24 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Hero Section / Storytelling */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-marker/10 text-marker border border-marker/20 mb-6">
-              <Music className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-wider">La Nostra Storia</span>
-            </div>
-            
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight mb-8 leading-tight">
-              Il suono giusto per <span className="text-marker">ogni progetto</span>.
-            </h1>
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-            <div className="space-y-6 text-lg text-graphite leading-relaxed">
-              <p>
-                Officina del Suono nasce da una convinzione semplice: la differenza tra un evento riuscito e uno mediocre è quasi sempre nella scelta dell'attrezzatura audio giusta. <strong>Amerigo De Cristofaro</strong>, sound engineer certificato MAT Academy, mette a disposizione competenza tecnica reale, testata sul campo.
-              </p>
-              <p className="text-white font-medium border-l-2 border-marker pl-6 italic">
-                "Ho visto troppi progetti rovinati da un setup sottodimensionato o collegato male. Io ti do consulenza professionale, verificata pezzo per pezzo."
-              </p>
-              <p>
-                Con sede a <strong>Forino (AV)</strong>, seguiamo ogni richiesta di persona: verifica tecnica, spiegazione chiara e assistenza diretta su WhatsApp. Prezzi chiari, senza sorprese.
-              </p>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="absolute inset-0 bg-marker/10 blur-3xl rounded-full"></div>
-            <div className="relative rounded-none overflow-hidden border border-paper/10 shadow-2xl aspect-[4/5]">
-              <img
-                src="/amerigo_hero.png"
-                alt="Amerigo De Cristofaro al mixer"
-                loading="lazy"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/60 to-transparent">
-                <p className="text-white font-bold text-xl">Amerigo De Cristofaro</p>
-                <p className="text-graphite text-sm">Founder & DJ Certificato MAT Academy</p>
-              </div>
-            </div>
-          </motion.div>
+        <div className="mb-14">
+          <div className="flex items-baseline gap-3 mb-6">
+            <Annot tone="blueprint">Tav. 90</Annot>
+            <div className="quota flex-1 max-w-[200px]" aria-hidden />
+            <Annot>Metodo</Annot>
+          </div>
+          <h1 className="titolo text-4xl md:text-6xl mb-6">
+            Un calcolatore che <span className="text-marker">si può controllare</span>
+          </h1>
+          <p className="text-lg text-graphite leading-relaxed max-w-3xl">
+            Un programma di calcolo può sbagliare in silenzio per anni: nessuno se ne accorge, perché il
+            numero sbagliato ha lo stesso aspetto di quello giusto. L’unico modo per accorgersene è
+            controllarlo contro qualcosa che non dipende da lui.
+          </p>
         </div>
 
-        {/* Proof of Concept / Certificate */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24 bg-ink-2/30 rounded-none p-8 md:p-16 border border-paper/[0.06]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="order-2 lg:order-1"
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-ink-2 text-graphite border border-paper/10 mb-6">
-              <ShieldCheck className="w-4 h-4 text-[#7FD8F5]" />
-              <span className="text-xs font-bold uppercase tracking-wider">Proof of Concept</span>
+        {/* ── i tre controlli ── */}
+        <div className="grid md:grid-cols-3 gap-5 mb-16">
+          {CONTROLLI.map((c, i) => (
+            <motion.div
+              key={c.titolo}
+              initial={{ opacity: 1, y: 0 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Tavola className="p-6 h-full flex flex-col">
+                <Annot tone="blueprint">{c.titolo}</Annot>
+                <p className="mt-4 text-paper/90 leading-relaxed text-[15px] flex-1">{c.corpo}</p>
+                <p className="mt-5 font-mono text-2xl text-marker">{c.numero}</p>
+                <p className="text-[11px] text-graphite-dim mt-1">{c.nota}</p>
+              </Tavola>
+            </motion.div>
+          ))}
+        </div>
+
+        <Righello fitto className="mb-16" />
+
+        {/* ── cosa c'è dentro ── */}
+        <div className="grid lg:grid-cols-2 gap-12 mb-16">
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <Ruler className="w-5 h-5 text-marker" strokeWidth={1.5} />
+              <h2 className="titolo text-2xl">Cosa calcola</h2>
             </div>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6">
-              La formazione è la tua <span className="text-marker">Garanzia</span>.
-            </h2>
-            <p className="text-lg text-graphite leading-relaxed mb-8">
-              Non ci improvvisiamo esperti. La certificazione <strong>MAT Academy</strong> è il "bollino di qualità" che assicura che ogni consiglio tecnico, ogni cablaggio e ogni configurazione software sia eseguita secondo i più alti standard dell'industria Pro-Audio.
+            <ul className="space-y-3 text-graphite leading-relaxed">
+              <li>— Sei cariche acustiche: cassa chiusa, bass-reflex, radiatore passivo, bandpass di quarto e sesto ordine, pannello aperto.</li>
+              <li>— Volume e accordo dalle forme chiuse degli allineamenti, non da tabelle interpolate.</li>
+              <li>— Risposta, escursione, impedenza, fase e ritardo di gruppo dal circuito equivalente: sono grandezze che da una curva di pressione non si ricavano.</li>
+              <li>— Condotto, velocità dell’aria, risonanza del tubo, filtro subsonico e limite meccanico di potenza.</li>
+              <li>— Dimensioni, lista di taglio, peso, e il materiale fonoassorbente con i suoi tre effetti separati.</li>
+              <li>— L’impianto a valle: carico, cavi, assorbimento di rete, reti di compensazione.</li>
+            </ul>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <AlertTriangle className="w-5 h-5 text-segnale" strokeWidth={1.5} />
+              <h2 className="titolo text-2xl">Cosa non fa</h2>
+            </div>
+            <ul className="space-y-3 text-graphite leading-relaxed">
+              {NON_FA.map(t => <li key={t}>— {t}</li>)}
+            </ul>
+            <p className="mt-6 text-sm text-paper/80 border-l-2 border-segnale/40 pl-5 leading-relaxed">
+              Dove i dati del costruttore non chiudono fra loro, il calcolatore lo dice invece di scegliere
+              per te quale credere. È il caso più frequente di tutti.
             </p>
-            <div className="flex items-center gap-4 text-paper/90">
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full border-2 border-ink bg-ink-3 flex items-center justify-center">
-                    <Star className="w-4 h-4 text-marker fill-current" />
-                  </div>
-                ))}
-              </div>
-              <p className="text-sm font-medium">Oltre 500 setup configurati con successo.</p>
-            </div>
-          </motion.div>
-
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, rotate: 2 }}
-            whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8, type: "spring" }}
-            whileHover={{ scale: 1.02, rotate: 0 }}
-            className="order-1 lg:order-2 relative p-[2px] rounded-none bg-paper/15  group transition-all duration-500"
-          >
-            <div className="bg-ink p-8 md:p-12 rounded-none border border-paper/10 relative overflow-hidden">
-              {/* Decorative Background Elements */}
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(242,125,38,0.05),transparent_70%)]"></div>
-              <div className="absolute top-0 left-0 w-full h-1 bg-marker/50"></div>
-              <Award className="absolute -right-12 -bottom-12 w-64 h-64 text-white/[0.03] -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
-
-              {/* Certificate Content */}
-              <div className="relative z-10">
-                <div className="text-center mb-10">
-                  <div className="inline-flex items-center justify-center gap-3 mb-6">
-                    <div className="flex gap-1.5">
-                      <div className="w-2 h-8 bg-[#7FD8F5] transform -skew-x-12"></div>
-                      <div className="w-2 h-10 bg-[#7FD8F5] transform -skew-x-12 -translate-y-1"></div>
-                      <div className="w-2 h-8 bg-marker transform -skew-x-12"></div>
-                    </div>
-                    <span className="text-2xl font-black tracking-[0.2em] text-white">MAT ACADEMY</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-4 mb-2">
-                    <div className="h-[1px] w-8 bg-ink-3"></div>
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-graphite">Attestato di Partecipazione</h3>
-                    <div className="h-[1px] w-8 bg-ink-3"></div>
-                  </div>
-                </div>
-
-                <div className="text-center mb-10">
-                  <p className="text-[11px] text-graphite uppercase tracking-[0.2em] mb-6 italic">Si attesta che lo studente</p>
-                  <p className="text-4xl md:text-5xl font-serif text-white tracking-tight mb-8">
-                    Amerigo <span className="text-marker italic">De Cristofaro</span>
-                  </p>
-                  <p className="text-[11px] text-graphite uppercase tracking-[0.2em] mb-4">Ha completato con successo il master</p>
-                  <div className="inline-block px-6 py-2 rounded-full bg-marker/5 border border-marker/20">
-                    <p className="text-xl md:text-2xl font-mono font-bold text-marker tracking-tighter">Pro DJ Academy [Full Course]</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-8 pt-10 border-t border-paper/[0.06]">
-                  <div className="text-left">
-                    <p className="text-[9px] text-graphite uppercase tracking-widest mb-2">Data di Rilascio</p>
-                    <p className="text-lg font-bold text-white">28 Febbraio 2025</p>
-                    <p className="text-[9px] font-mono text-graphite-dim mt-1">VERIFIED ID: 176913-176522</p>
-                  </div>
-                  <div className="text-right flex flex-col items-end justify-end">
-                    <div className="mb-2">
-                      <p className="font-serif text-xl text-white italic leading-none">Alex Tripi & Nello Greco</p>
-                      <div className="h-[1px] w-32 bg-marker/50 mt-2"></div>
-                    </div>
-                    <p className="text-[9px] text-graphite uppercase tracking-widest">Fondatori MAT Academy</p>
-                  </div>
-                </div>
-
-                {/* Seal */}
-                <div className="absolute top-0 right-0 opacity-20 group-hover:opacity-40 transition-opacity">
-                  <ShieldCheck className="w-12 h-12 text-marker" />
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          </div>
         </div>
 
-        {/* Contact CTA */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="p-12 rounded-none bg-ink-2/70 border border-marker/20 text-center"
-        >
-          <h3 className="text-2xl font-bold mb-4">Pronto per il tuo prossimo Setup?</h3>
-          <p className="text-graphite mb-8 max-w-xl mx-auto">Offriamo consulenza tecnica personalizzata per aiutarti a scegliere l'attrezzatura perfetta per le tue esigenze.</p>
-          <a 
-            href="https://wa.me/393477397016" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-marker text-ink rounded-none font-bold hover:bg-marker/85 transition-all"
-          >
-            Contattaci su WhatsApp
-          </a>
-        </motion.div>
+        <Righello fitto className="mb-16" />
+
+        {/* ── il glossario ── */}
+        <div className="grid lg:grid-cols-[auto_1fr] gap-10 items-start mb-16">
+          <ScrollText className="w-8 h-8 text-marker hidden lg:block" strokeWidth={1.2} />
+          <div>
+            <h2 className="titolo text-2xl mb-4">Niente scatole nere</h2>
+            <p className="text-graphite leading-relaxed max-w-3xl">
+              Accanto a ogni campo c’è una <span className="text-marker">ⓘ</span> che apre la scheda di quel
+              parametro: {GLOSSARY.length} schede, una per grandezza. Ognuna risponde alle stesse quattro
+              domande — che cos’è, a cosa serve nel progetto, quali valori aspettarsi, dove si sbaglia di
+              solito — e dichiara da dove vengono i suoi numeri. Se un risultato ti sembra strano, la strada
+              per capirlo parte da lì.
+            </p>
+          </div>
+        </div>
+
+        {/* ── chi l'ha fatto ── */}
+        <Tavola className="p-7 md:p-9">
+          <Annot tone="blueprint">Chi l’ha fatto</Annot>
+          <div className="grid md:grid-cols-[auto_1fr] gap-7 mt-5 items-start">
+            <img
+              src="/amerigo_hero.png"
+              alt="Amerigo De Cristofaro"
+              loading="lazy"
+              className="w-28 h-28 object-cover border border-paper/10 grayscale contrast-125"
+            />
+            <div>
+              <p className="text-paper text-lg font-medium mb-1">Amerigo De Cristofaro</p>
+              <p className="text-graphite leading-relaxed">
+                Officina del Suono è un progetto personale, gratuito e senza pubblicità. Nasce da un sito di
+                tutt’altro genere e ne ha tenuto solo il nome: quello che c’era prima non serviva a
+                progettare niente.
+              </p>
+              <p className="text-graphite leading-relaxed mt-4">
+                Se trovi un numero che non torna, scrivimi: è la segnalazione più utile che si possa fare a
+                uno strumento come questo, e finora ogni verifica seria ne ha fatti emergere.
+              </p>
+              <div className="flex flex-wrap gap-3 mt-6">
+                <a href="mailto:info@officina-del-suono.it" className="btn-marker">Segnala un errore</a>
+                <a
+                  href="https://github.com/djam3/officinadelsuono"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-tratto"
+                >
+                  <Github className="w-4 h-4" /> Il codice
+                </a>
+              </div>
+            </div>
+          </div>
+        </Tavola>
 
       </div>
     </div>

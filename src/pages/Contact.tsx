@@ -1,180 +1,151 @@
+/**
+ * Contatti.
+ *
+ * La versione precedente rispondeva a domande che questo sito non pone —
+ * tempi di risposta per gli ordini, consulenza sull'acquisto, zona servita.
+ * Erano i testi del progetto da cui il sito è nato.
+ *
+ * Qui non c'è niente da ordinare: le domande vere che arrivano a uno strumento
+ * di calcolo sono altre, e le prime tre di questa pagina sono quelle che il
+ * calcolatore stesso solleva più spesso nei suoi avvisi.
+ */
+
 import { useState } from 'react';
 import { useSEO } from '../hooks/useSEO';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Phone, Mail, Clock, MessageCircle, ChevronDown } from 'lucide-react';
+import { Mail, MessageCircle, ChevronDown, Bug, BookOpen } from 'lucide-react';
+import { Annot, Griglia, Tavola } from '../components/blueprint';
 
-const FAQS = [
+const EMAIL = 'info@officina-del-suono.it';
+const WHATSAPP = '393477397016';
+
+const DOMANDE = [
   {
-    question: "Offrite consulenza per la scelta dell'attrezzatura?",
-    answer: "Sì, Amerigo è a disposizione per consulenze personalizzate tramite WhatsApp o email per aiutarti a scegliere la soluzione audio giusta per le tue esigenze."
+    d: 'Il calcolatore mi dice che i parametri del mio driver non tornano. Chi ha ragione?',
+    r: 'Il controllo è aritmetico: fra Qms, Qes e Qts vale un’identità esatta, e se i tre valori dichiarati non la rispettano uno dei tre è sbagliato — quasi sempre perché arriva da un campione diverso o è stato arrotondato male. Il calcolatore non sceglie per te quale credere: ti dice quale scarto ha trovato e su quale grandezza. Se hai la scheda ufficiale del costruttore, quella vince su qualsiasi database.',
   },
   {
-    question: "In quanto tempo rispondete?",
-    answer: "Rispondiamo su WhatsApp solitamente entro 15 minuti negli orari di consulenza (Lun-Ven 09:00 - 18:00)."
+    d: 'La risposta calcolata sarà quella che sentirò?',
+    r: 'No, e non per un limite del programma. La curva è in spazio libero: sotto i 200 Hz quello che senti lo decide la stanza, che può aggiungere o togliere più di 10 dB a seconda di dove sei seduto. Il calcolo ti dice come si comporta la cassa; dove metterla è un altro problema, e più grosso.',
   },
   {
-    question: "Dove operate?",
-    answer: "Siamo con sede a Forino (AV) e operiamo principalmente ad Avellino e provincia."
+    d: 'Il condotto mi viene lunghissimo e non ci sta nella cassa. È un errore?',
+    r: 'No, è la fisica del risonatore: a parità di accordo, più il volume è piccolo più il condotto è lungo, e allargare la sezione lo allunga ancora. Le vie d’uscita sono tre e il calcolatore te le propone: ripiegarlo a L o a U, usare un radiatore passivo, o accettare un accordo più alto. Un condotto troppo stretto per farlo entrare è la scelta sbagliata: soffia.',
+  },
+  {
+    d: 'Posso usare i risultati per una cassa che poi vendo?',
+    r: 'Sì. Non c’è nessuna licenza da chiedere e nessun credito da dare. Ma i numeri vanno verificati con una misura prima di metterci il tuo nome sopra: nessun calcolo, per quanto controllato, sa com’è venuta la tua cassa.',
+  },
+  {
+    d: 'Perché è gratis?',
+    r: 'Perché è un progetto personale e non ha costi da coprire: niente pubblicità, niente registrazione, niente dati raccolti oltre a quelli che il tuo browser tiene per conto suo. Se ti è servito, la cosa più utile che puoi fare è segnalare un errore.',
   },
 ];
 
-function FAQItem({ question, answer, isOpen, onClick }: { question: string, answer: string, isOpen: boolean, onClick: () => void }) {
-  return (
-    <div className="border-b border-paper/[0.06] last:border-0">
-      <button
-        onClick={onClick}
-        className="w-full py-6 flex items-center justify-between text-left group"
-      >
-        <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-marker' : 'text-white group-hover:text-marker'}`}>
-          {question}
-        </span>
-        <ChevronDown className={`w-5 h-5 text-graphite transition-transform duration-300 ${isOpen ? 'rotate-180 text-marker' : ''}`} />
-      </button>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="overflow-hidden"
-          >
-            <p className="pb-6 text-graphite leading-relaxed">
-              {answer}
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export function Contact() {
   useSEO({
-    title: 'Contatti — Officina del Suono',
-    description: 'Contatta Officina del Suono per informazioni su prodotti, ordini o consulenza tecnica gratuita. Siamo disponibili su WhatsApp, email e telefono.',
+    title: 'Contatti e domande frequenti',
+    description:
+      'Come segnalare un errore di calcolo, e le domande che il calcolatore solleva più spesso: parametri che non tornano, risposta in ambiente, condotti troppo lunghi.',
     url: '/contatti',
   });
 
-  const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const [aperta, setAperta] = useState<number | null>(0);
 
   return (
-    <div className="min-h-screen bg-ink text-white pt-24 pb-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-widest mb-12 text-center">
-            Contatti
+    <div className="relative min-h-screen bg-ink text-paper pt-20 pb-24">
+      <Griglia />
+      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div className="mb-12">
+          <div className="flex items-baseline gap-3 mb-6">
+            <Annot tone="blueprint">Tav. 91</Annot>
+            <div className="quota flex-1 max-w-[200px]" aria-hidden />
+            <Annot>Contatti</Annot>
+          </div>
+          <h1 className="titolo text-4xl md:text-6xl mb-5">
+            Se un numero <span className="text-marker">non torna</span>
           </h1>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-ink-2 border border-paper/10 rounded-none p-8 shadow-2xl">
-              <h2 className="text-2xl font-bold mb-6 text-marker">Dati Aziendali</h2>
-              
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-graphite" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Sede Operativa</h3>
-                    <p className="text-graphite">Officinadelsuono di Amerigo De Cristofaro<br />Strada provinciale 30<br />Forino (AV) 83020</p>
-                  </div>
-                </div>
+          <p className="text-lg text-graphite leading-relaxed max-w-3xl">
+            È la segnalazione più utile che si possa fare a uno strumento come questo, e vale più di
+            qualsiasi complimento. Scrivi cosa hai inserito e cosa ti aspettavi: con quei due dati l’errore
+            si trova, o si scopre che l’errore non c’è e va spiegato meglio.
+          </p>
+        </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
-                    <Phone className="w-5 h-5 text-graphite" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">WhatsApp Business</h3>
-                    <a href="https://wa.me/393477397016" target="_blank" rel="noopener noreferrer" className="text-marker hover:text-white transition-colors">
-                      +39 347 7397016
-                    </a>
-                  </div>
-                </div>
+        {/* ── come scrivere ── */}
+        <div className="grid sm:grid-cols-2 gap-4 mb-14">
+          <a href={`mailto:${EMAIL}?subject=Officina%20del%20Suono%20%E2%80%94%20segnalazione`}
+            className="tavola tavola-hover p-6 block group">
+            <Mail className="w-5 h-5 text-marker mb-4" strokeWidth={1.5} />
+            <p className="text-paper font-medium mb-1 group-hover:text-white transition-colors">Email</p>
+            <p className="font-mono text-sm text-graphite break-all">{EMAIL}</p>
+            <p className="text-[11px] text-graphite-dim mt-3 leading-relaxed">
+              Per una segnalazione con dei numeri dentro: è il canale giusto, perché si possono allegare i
+              parametri e la scheda del driver.
+            </p>
+          </a>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-graphite" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Email Supporto</h3>
-                    <a href="mailto:info@officina-del-suono.it" className="text-marker hover:text-white transition-colors">
-                      info@officina-del-suono.it
-                    </a>
-                  </div>
-                </div>
+          <a href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener noreferrer"
+            className="tavola tavola-hover p-6 block group">
+            <MessageCircle className="w-5 h-5 text-marker mb-4" strokeWidth={1.5} />
+            <p className="text-paper font-medium mb-1 group-hover:text-white transition-colors">WhatsApp</p>
+            <p className="font-mono text-sm text-graphite">+39 347 7397016</p>
+            <p className="text-[11px] text-graphite-dim mt-3 leading-relaxed">
+              Per una domanda corta. Non è un servizio di assistenza: è una persona sola, e risponde quando
+              può.
+            </p>
+          </a>
+        </div>
 
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-ink-3 flex items-center justify-center shrink-0">
-                    <Clock className="w-5 h-5 text-graphite" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Orari di Consulenza</h3>
-                    <p className="text-graphite">
-                      Sempre attivi tramite Chat AI<br />
-                      Risposta umana: Lun-Ven 09:00 - 18:00
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-ink-2 border border-paper/10 rounded-none p-8 shadow-2xl flex flex-col justify-center items-center text-center">
-              <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mb-6">
-                <MessageCircle className="w-10 h-10 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold mb-4">Hai bisogno di aiuto?</h2>
-              <p className="text-graphite mb-8">
-                Siamo qui per aiutarti a scegliere il setup perfetto per le tue esigenze. Scrivici su WhatsApp per una risposta immediata.
+        {/* ── prima di scrivere ── */}
+        <Tavola className="p-6 mb-14">
+          <div className="flex items-start gap-4">
+            <BookOpen className="w-5 h-5 text-blueprint shrink-0 mt-1" strokeWidth={1.5} />
+            <div>
+              <p className="text-paper font-medium mb-2">Prima di scrivere, prova la ⓘ</p>
+              <p className="text-graphite leading-relaxed text-[15px]">
+                Accanto a ogni campo c’è un collegamento alla scheda di quel parametro, e la maggior parte
+                delle domande che arrivano hanno già la risposta lì — comprese quelle sui risultati che
+                sembrano sbagliati e non lo sono.
               </p>
-              <a 
-                href="https://wa.me/393477397016?text=Ciao%20Amerigo!%20%F0%9F%91%8B%20Ti%20scrivo%20dal%20sito%20Officinadelsuono." 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="bg-green-600 hover:bg-green-500 text-white px-8 py-4 rounded-none font-bold transition-all flex items-center gap-2"
-              >
-                <MessageCircle className="w-5 h-5" />
-                Chatta su WhatsApp
-              </a>
             </div>
           </div>
+        </Tavola>
 
-          {/* FAQ Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mt-24"
-          >
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-4">
-                Domande <span className="text-marker">Frequenti</span>
-              </h2>
-              <p className="text-graphite max-w-2xl mx-auto">
-                Tutto quello che devi sapere su spedizioni, garanzia e il nostro servizio di consulenza specializzata.
-              </p>
-            </div>
+        {/* ── domande ── */}
+        <div className="flex items-baseline gap-3 mb-6">
+          <Bug className="w-4 h-4 text-marker" strokeWidth={1.6} />
+          <h2 className="titolo text-2xl">Quelle che arrivano più spesso</h2>
+        </div>
 
-            <div className="bg-ink-2/70 border border-paper/10 rounded-[2rem] p-8 md:p-12 shadow-2xl">
-              <div className="divide-y divide-paper/[0.06]">
-                {FAQS.map((faq, index) => (
-                  <FAQItem
-                    key={index}
-                    question={faq.question}
-                    answer={faq.answer}
-                    isOpen={openIndex === index}
-                    onClick={() => setOpenIndex(openIndex === index ? null : index)}
+        <div className="border border-paper/10">
+          {DOMANDE.map((q, i) => {
+            const on = aperta === i;
+            return (
+              <div key={q.d} className={i > 0 ? 'border-t border-paper/10' : ''}>
+                <button
+                  type="button"
+                  onClick={() => setAperta(on ? null : i)}
+                  aria-expanded={on}
+                  className="w-full text-left px-5 py-4 flex items-start justify-between gap-4 hover:bg-ink-2/60 transition-colors"
+                >
+                  <span className={`text-[15px] leading-relaxed ${on ? 'text-marker' : 'text-paper'}`}>
+                    {q.d}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 shrink-0 mt-1 text-graphite transition-transform ${on ? 'rotate-180' : ''}`}
                   />
-                ))}
+                </button>
+                {on && (
+                  <p className="px-5 pb-5 -mt-1 text-graphite leading-relaxed text-[15px] max-w-3xl">
+                    {q.r}
+                  </p>
+                )}
               </div>
-            </div>
-          </motion.div>
-        </motion.div>
+            );
+          })}
+        </div>
+
       </div>
     </div>
   );

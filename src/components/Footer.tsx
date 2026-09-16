@@ -51,7 +51,7 @@ export function Footer({ onNavigate }: FooterProps) {
             </div>
             <p className="text-sm text-graphite leading-relaxed max-w-sm">
               Strumenti di progettazione per casse acustiche, con i conti in chiaro e le fonti citate.
-              Consulenza e attrezzatura audio in {BUSINESS.area}.
+              Calcolatore per casse acustiche. Gratuito, senza registrazione, senza pubblicità.
             </p>
           </div>
 

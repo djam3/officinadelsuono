@@ -5,9 +5,11 @@
 /** Contatti attività */
 export const BUSINESS = {
   name: 'Officina del Suono',
-  tagline: 'Il suono giusto per ogni progetto.',
-  description: 'Consulenza tecnica specializzata e attrezzatura audio professionale ad Avellino e provincia, curata da un Sound Engineer certificato MAT Academy.',
-  area: 'Avellino e provincia',
+  tagline: 'Si progetta prima di tagliare.',
+  description: 'Calcolatore per casse acustiche: parametri Thiele-Small verificati, sei cariche acustiche, curve di risposta, dimensioni e lista di taglio. Gratuito, senza registrazione.',
+  // cosa fa lo strumento, non dove si trova chi l'ha scritto: un calcolatore
+  // non ha una zona servita
+  area: 'progettazione di diffusori acustici',
   whatsapp: '393477397016',
   whatsappDisplay: '+39 347 739 7016',
   email: 'info@officina-del-suono.it',

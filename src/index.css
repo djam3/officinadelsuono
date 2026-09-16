@@ -117,6 +117,18 @@ html.cursore-mirino :is([disabled], [aria-disabled='true']) {
 
 a, button { transition: color .18s ease, background-color .18s ease, border-color .18s ease; }
 
+/* ═══ MESSA A FUOCO ════════════════════════════════════════════════════════
+   Chi naviga da tastiera deve vedere dov'è. Il contorno del sistema qui non
+   basta: su fondo blu scuro il tratto predefinito è quasi invisibile. Questo
+   è il colore d'accento, staccato di due pixel per non confondersi col bordo
+   del componente. */
+:is(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-marker);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+:is(a, button, input, select, textarea):focus:not(:focus-visible) { outline: none; }
+
 /* ═══ GRIGLIA MILLIMETRATA ═════════════════════════════════════════════════
    Due scale sovrapposte come sulla carta vera: il passo fine appena
    percepibile, quello grosso ogni cinque quadretti. */
@@ -260,6 +272,9 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   gap: 0.6rem;
 }
 .btn-marker:hover { background: #A5E6FA; border-color: #A5E6FA; }
+/* la pressione si sente: un pixel giù, come un tasto vero */
+.btn-marker:active, .btn-tratto:active { transform: translateY(1px); }
+.btn-marker, .btn-tratto { transition: background-color .18s ease, border-color .18s ease, color .18s ease, transform .06s ease; }
 
 .btn-tratto {
   font-family: var(--font-mono);
@@ -330,6 +345,12 @@ a, button { transition: color .18s ease, background-color .18s ease, border-colo
   background: rgba(127, 216, 245, 0.28);
   color: #DCE9F5;
 }
+
+/* ═══ CIFRE ════════════════════════════════════════════════════════════════
+   Le cifre proporzionali ballano quando un numero cambia sotto le dita: un
+   "1" è più stretto di un "8", e la colonna si muove a ogni battuta. Con le
+   cifre tabulari la larghezza è la stessa e il numero cresce fermo. */
+.font-mono, input[type="number"], table { font-variant-numeric: tabular-nums; }
 
 /* ─── Campi numerici senza frecce ───────────────────────────────── */
 input[type="number"]::-webkit-outer-spin-button,
