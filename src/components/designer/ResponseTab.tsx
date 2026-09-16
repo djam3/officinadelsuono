@@ -1,4 +1,5 @@
 import { NumField, SelectField, Section, Plot, PLOT_COLORS, CheckField, InfoLink, type Series } from './ui';
+import { TolleranzaSection } from './TolleranzaSection';
 import { ROOM_PRESETS, VENT_VELOCITY_LIMIT } from '../../utils/audio';
 import type { CurvePoint, DesignResult, RoomPreset, TSParams } from '../../utils/audio';
 
@@ -8,6 +9,9 @@ export interface ResponseSettings {
   powerW: number | '';
   roomPreset: RoomPreset;
   visible: Record<GraphKey, boolean>;
+  /** dispersione di produzione da simulare: sospensione e motore, in ±% */
+  tolCedevolezzaPct: number | '';
+  tolMotorePct: number | '';
 }
 
 interface Props {
@@ -15,6 +19,8 @@ interface Props {
   onChange: (next: ResponseSettings) => void;
   design: DesignResult | null;
   ts: TSParams | null;
+  /** quale carica: la tolleranza si simula solo su chiusa e reflex */
+  tipoTolleranza: 'sealed' | 'vented' | 'altro';
 }
 
 const GRAPH_LABELS: Record<GraphKey, string> = {
@@ -34,7 +40,7 @@ function limitLine(points: CurvePoint[], value: number): CurvePoint[] {
   return [{ f: points[0].f, v: value }, { f: points[points.length - 1].f, v: value }];
 }
 
-export function ResponseTab({ settings, onChange, design, ts }: Props) {
+export function ResponseTab({ settings, onChange, design, ts, tipoTolleranza }: Props) {
   const set = <K extends keyof ResponseSettings>(key: K, value: ResponseSettings[K]) =>
     onChange({ ...settings, [key]: value });
 
@@ -104,6 +110,15 @@ export function ResponseTab({ settings, onChange, design, ts }: Props) {
           />
         </Section>
       )}
+
+      <TolleranzaSection
+        ts={ts}
+        design={design}
+        tipo={tipoTolleranza}
+        cedevolezzaPct={settings.tolCedevolezzaPct}
+        motorePct={settings.tolMotorePct}
+        onChange={(campo, v) => onChange({ ...settings, [campo]: v })}
+      />
 
       {/* SPL massimo */}
       {hasFullModel && design?.maxOutput && settings.visible.maxspl && (

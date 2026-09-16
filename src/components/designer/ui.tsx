@@ -356,9 +356,34 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
   const xOf = (f: number) => padL + ((Math.log10(f) - lxMin) / (lxMax - lxMin)) * (W - padL - padR);
   const yOf = (v: number) => padT + (1 - (v - vMin) / (vMax - vMin)) * (H - padT - padB);
 
-  // decadi su X
-  const decades: number[] = [];
-  for (let d = Math.ceil(lxMin); d <= Math.floor(lxMax); d++) decades.push(Math.pow(10, d));
+  // ── tacche su X ───────────────────────────────────────────────────────────
+  //
+  // Solo le decadi non bastano. Su un grafico che va da 15 a 300 Hz cade una
+  // riga sola, a 100: il resto è area bianca e per capire dove sta un punto
+  // bisogna indovinare. La convenzione dei grafici di risposta è 1-2-5 per
+  // decade — 10, 20, 50, 100, 200, 500… — che su scala logaritmica cadono
+  // quasi equidistanti e sono i numeri che si leggono senza pensarci.
+  const xTicks: { f: number; decade: boolean }[] = [];
+  for (let d = Math.floor(lxMin) - 1; d <= Math.ceil(lxMax); d++) {
+    for (const m of [1, 2, 5]) {
+      const f = m * Math.pow(10, d);
+      if (f >= fMin && f <= fMax) xTicks.push({ f, decade: m === 1 });
+    }
+  }
+  // fascia molto stretta (meno di un'ottava e mezza): si scende a 1-2-3-5-7
+  if (xTicks.length < 3) {
+    xTicks.length = 0;
+    for (let d = Math.floor(lxMin) - 1; d <= Math.ceil(lxMax); d++) {
+      for (const m of [1, 1.5, 2, 3, 5, 7]) {
+        const f = m * Math.pow(10, d);
+        if (f >= fMin && f <= fMax) xTicks.push({ f, decade: m === 1 });
+      }
+    }
+  }
+  // quando sono tante, l'etichetta resta alle sole decadi: la riga serve
+  // comunque a leggere la posizione, il numero sotto no
+  const etichettaOgniTacca = xTicks.length <= 12;
+  const fmtHz = (f: number) => (f >= 1000 ? `${f / 1000}k` : String(Math.round(f * 10) / 10));
   // tick Y
   const yticks = 4;
   const yTickVals = Array.from({ length: yticks + 1 }, (_, i) => vMin + ((vMax - vMin) * i) / yticks);
@@ -419,11 +444,22 @@ export function Plot({ series, yLabel, yUnit, height = 240, yMin, yMax, decimals
           <text x={padL - 6} y={yOf(v) + 3} textAnchor="end" fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={GRAPHITE}>{v.toFixed(v > 100 ? 0 : 1)}</text>
         </g>
       ))}
-      {/* griglia X (decadi) */}
-      {decades.map(d => (
-        <g key={d}>
-          <line x1={xOf(d)} y1={padT} x2={xOf(d)} y2={H - padB} stroke="rgba(237,231,218,0.10)" strokeWidth="1" />
-          <text x={xOf(d)} y={H - padB + 14} textAnchor="middle" fontSize="9" fontFamily="IBM Plex Mono, monospace" fill={GRAPHITE}>{d >= 1000 ? `${d / 1000}k` : d}</text>
+      {/* griglia X (1-2-5 per decade) */}
+      {xTicks.map(t => (
+        <g key={t.f}>
+          <line
+            x1={xOf(t.f)} y1={padT} x2={xOf(t.f)} y2={H - padB}
+            stroke={t.decade ? 'rgba(237,231,218,0.13)' : 'rgba(237,231,218,0.06)'}
+            strokeWidth="1"
+          />
+          {(t.decade || etichettaOgniTacca) && (
+            <text
+              x={xOf(t.f)} y={H - padB + 14} textAnchor="middle" fontSize="9"
+              fontFamily="IBM Plex Mono, monospace" fill={GRAPHITE}
+            >
+              {fmtHz(t.f)}
+            </text>
+          )}
         </g>
       ))}
       {/* serie */}

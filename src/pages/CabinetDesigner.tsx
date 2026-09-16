@@ -77,6 +77,10 @@ const DEFAULT_RESPONSE: ResponseSettings = {
   powerW: 200,
   roomPreset: 'none',
   visible: ALL_GRAPHS,
+  // ipotesi di partenza, non una misura: il valore vero sta sulla scheda del
+  // driver quando il costruttore lo dichiara
+  tolCedevolezzaPct: 15,
+  tolMotorePct: 5,
 };
 
 const num = (v: number | '' | undefined): number | undefined =>
@@ -376,6 +380,11 @@ export function CabinetDesigner() {
                 onChange={setResponse}
                 design={design}
                 ts={effective?.ts ?? null}
+                tipoTolleranza={
+                  enclosure.enclosure === 'sealed' ? 'sealed'
+                    : enclosure.enclosure === 'vented' ? 'vented'
+                      : 'altro'
+                }
               />
             )}
           </div>
